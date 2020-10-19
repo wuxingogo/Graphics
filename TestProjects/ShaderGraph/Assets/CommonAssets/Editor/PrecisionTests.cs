@@ -19,22 +19,22 @@ namespace UnityEditor.ShaderGraph.UnitTests
         public void LoadGraph()
         {
             List<PropertyCollector.TextureInfo> lti;
-            var lsadp = new List<string>();
-            ShaderGraphImporter.GetShaderText(kGraphName, out lti, lsadp, out m_Graph);
+            var assetCollection = new AssetCollection();
+            ShaderGraphImporter.GetShaderText(kGraphName, out lti, assetCollection, out m_Graph);
             Assert.NotNull(m_Graph, $"Invalid graph data found for {kGraphName}");
 
             List<PreviewNode> previewNodes = m_Graph.GetNodes<PreviewNode>().ToList();
             Assert.AreNotEqual(0, previewNodes.Count, $"No PreviewNode found in {kGraphName}.");
             foreach(PreviewNode node in previewNodes)
             {
-                GroupData group = m_Graph.groups.Where(x => x.guid == node.groupGuid).FirstOrDefault();
-                Assert.NotNull(m_Graph, $"Invalid group data found for PreviewNode with guid {node.guid}");
+                GroupData group = m_Graph.groups.Where(x => x == node.group).FirstOrDefault();
+                Assert.NotNull(m_Graph, $"Invalid group data found for PreviewNode with guid {node.objectId}");
                 m_TestNodes.Add(group.title, node);
             }
         }
 
         [Test]
-        public void CanSetNodeToFloat()
+        public void CanSetNodeToSingle()
         {
             m_Graph.ValidateGraph();
 
@@ -43,7 +43,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
             if(!m_TestNodes.TryGetValue(testName, out testNode))
                 throw new Exception($"Failed to find test node for {testName}");
 
-            Assert.AreEqual(ConcretePrecision.Float, testNode.concretePrecision);
+            Assert.AreEqual(ConcretePrecision.Single, testNode.concretePrecision);
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
         }
 
         [Test]
-        public void CanCastToFloat()
+        public void CanCastToSingle()
         {
             m_Graph.ValidateGraph();
 
@@ -69,7 +69,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
             if(!m_TestNodes.TryGetValue(testName, out testNode))
                 throw new Exception($"Failed to find test node for {testName}");
 
-            Assert.AreEqual(ConcretePrecision.Float, testNode.concretePrecision);
+            Assert.AreEqual(ConcretePrecision.Single, testNode.concretePrecision);
         }
 
         [Test]
@@ -86,7 +86,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
         }
 
         [Test]
-        public void CanSetPropToFloat()
+        public void CanSetPropToSingle()
         {
             m_Graph.ValidateGraph();
 
@@ -95,7 +95,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
             if(!m_TestNodes.TryGetValue(testName, out testNode))
                 throw new Exception($"Failed to find test node for {testName}");
 
-            Assert.AreEqual(ConcretePrecision.Float, testNode.concretePrecision);
+            Assert.AreEqual(ConcretePrecision.Single, testNode.concretePrecision);
         }
 
         [Test]
@@ -160,7 +160,7 @@ namespace UnityEditor.ShaderGraph.UnitTests
             if(!m_TestNodes.TryGetValue(testName, out testNode))
                 throw new Exception($"Failed to find test node for {testName}");
 
-            Assert.AreEqual(ConcretePrecision.Float, testNode.concretePrecision);
+            Assert.AreEqual(ConcretePrecision.Single, testNode.concretePrecision);
         }
     }
 }

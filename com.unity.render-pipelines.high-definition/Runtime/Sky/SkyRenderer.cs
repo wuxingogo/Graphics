@@ -7,6 +7,9 @@ namespace UnityEngine.Rendering.HighDefinition
     {
         int m_LastFrameUpdate = -1;
 
+        /// <summary>Determines if the sky should be rendered when the sun light changes.</summary>
+        public bool SupportDynamicSunLight = true;
+
         /// <summary>
         /// Called on startup. Create resources used by the renderer (shaders, materials, etc).
         /// </summary>
@@ -41,7 +44,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public abstract void RenderSky(BuiltinSkyParameters builtinParams, bool renderForCubemap, bool renderSunDisk);
 
         /// <summary>
-        /// Returns exposure setting for the provided SkySettings. This will also take debug exposure into accound
+        /// Returns exposure setting for the provided SkySettings.
         /// </summary>
         /// <param name="skySettings">SkySettings for which exposure is required.</param>
         /// <param name="debugSettings">Current debug display settings</param>
@@ -49,14 +52,12 @@ namespace UnityEngine.Rendering.HighDefinition
         protected static float GetSkyIntensity(SkySettings skySettings, DebugDisplaySettings debugSettings)
         {
             float skyIntensity = 1.0f;
-            if (debugSettings != null && debugSettings.DebugNeedsExposure())
-            {
-                skyIntensity *= ColorUtils.ConvertEV100ToExposure(-debugSettings.data.lightingDebugSettings.debugExposure);
-            }
 
             switch(skySettings.skyIntensityMode.value)
             {
                 case SkyIntensityMode.Exposure:
+                    // Note: Here we use EV100 of sky as a multiplier, so it is the opposite of when use with a Camera
+                    // because for sky/light, higher EV mean brighter, but for camera higher EV mean darker scene
                     skyIntensity *= ColorUtils.ConvertEV100ToExposure(-skySettings.exposure.value);
                     break;
                 case SkyIntensityMode.Multiplier:

@@ -22,7 +22,7 @@ namespace UnityEngine.Rendering.HighDefinition
         [GenerateHLSL(PackingRules.Exact, false, false, true, 1500)]
         public struct SurfaceData
         {
-            [SurfaceDataAttributes("MaterialFeatures")]
+            [SurfaceDataAttributes("Material Features")]
             public uint materialFeatures;
 
             // Standard
@@ -31,13 +31,13 @@ namespace UnityEngine.Rendering.HighDefinition
             public Vector3 baseColor;
 
             [MaterialSharedPropertyMapping(MaterialSharedProperty.Normal)]
-            [SurfaceDataAttributes(new string[] { "Normal", "Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Normal", "Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 normalWS;
 
-            [SurfaceDataAttributes(new string[] { "Iris Normal", "Iris Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Iris Normal", "Iris Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 irisNormalWS;
 
-            [SurfaceDataAttributes(new string[] { "Geometric Normal", "Geometric Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Geometric Normal", "Geometric Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 geomNormalWS;
 
             [MaterialSharedPropertyMapping(MaterialSharedProperty.Smoothness)]
@@ -83,13 +83,13 @@ namespace UnityEngine.Rendering.HighDefinition
             public float ambientOcclusion;
             public float specularOcclusion;
 
-            [SurfaceDataAttributes(new string[] { "Normal WS", "Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Normal WS", "Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 normalWS; // Specular normal
 
-            [SurfaceDataAttributes(new string[] { "Diffuse Normal WS", "Diffuse Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Diffuse Normal WS", "Diffuse Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 diffuseNormalWS;
 
-            [SurfaceDataAttributes(new string[] { "Geometric Normal", "Geometric Normal View Space" }, true)]
+            [SurfaceDataAttributes(new string[] { "Geometric Normal", "Geometric Normal View Space" }, true, checkIsNormalized = true)]
             public Vector3 geomNormalWS;
 
             public float perceptualRoughness;

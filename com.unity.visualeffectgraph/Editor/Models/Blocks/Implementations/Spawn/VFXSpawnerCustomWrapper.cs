@@ -20,7 +20,7 @@ namespace UnityEditor.VFX
         }
     }
 
-    [VFXInfo(category = "Spawn/Custom", variantProvider = typeof(CustomSpawnerVariant))]
+    [VFXInfo(category = "Custom", variantProvider = typeof(CustomSpawnerVariant))]
     class VFXSpawnerCustomWrapper : VFXAbstractSpawner
     {
         [SerializeField, VFXSetting]
@@ -39,11 +39,11 @@ namespace UnityEditor.VFX
         {
             base.GetImportDependentAssets(dependencies);
 
-            if( m_customType != null)
+            if (m_customType != null)
             {
                 var function = ScriptableObject.CreateInstance(m_customType);
                 var monoScript = MonoScript.FromScriptableObject(function);
-                if( monoScript != null)
+                if (monoScript != null)
                     dependencies.Add(monoScript.GetInstanceID());
             }
         }

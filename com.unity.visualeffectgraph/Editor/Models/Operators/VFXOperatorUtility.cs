@@ -43,7 +43,7 @@ namespace UnityEditor.VFX
 
         static private VFXExpression BaseToConstant(Base _base, VFXValueType type)
         {
-            switch(_base)
+            switch (_base)
             {
                 case Base.Base2:    return TwoExpression[type];
                 case Base.Base10:   return TenExpression[type];
@@ -529,6 +529,17 @@ namespace UnityEditor.VFX
             return combine;
         }
 
+        static public VFXExpression BuildRandom(VFXSeedMode seedMode, bool constant, RandId randId, VFXExpression seed = null)
+        {
+            if (seedMode == VFXSeedMode.PerParticleStrip || constant)
+            {
+                if (seed == null)
+                    throw new ArgumentNullException("seed");
+                return FixedRandom(seed, seedMode);
+            }
+            return new VFXExpressionRandom(seedMode == VFXSeedMode.PerParticle, randId);
+        }
+
         static public VFXExpression FixedRandom(uint hash, VFXSeedMode mode)
         {
             return FixedRandom(VFXValue.Constant<uint>(hash), mode);
@@ -549,7 +560,7 @@ namespace UnityEditor.VFX
             Mirror
         };
 
-        static private VFXExpression ApplyAddressingMode(VFXExpression index, VFXExpression count, SequentialAddressingMode mode)
+        static public VFXExpression ApplyAddressingMode(VFXExpression index, VFXExpression count, SequentialAddressingMode mode)
         {
             VFXExpression r = null;
             if (mode == SequentialAddressingMode.Wrap)
@@ -575,7 +586,7 @@ namespace UnityEditor.VFX
             dt = new VFXExpressionCastUintToFloat(dt);
             var size = new VFXExpressionCastUintToFloat(count) - VFXOperatorUtility.OneExpression[VFXValueType.Float];
             size = new VFXExpressionMax(size, VFXOperatorUtility.OneExpression[VFXValueType.Float]);
-            dt = dt / size ;
+            dt = dt / size;
             dt = new VFXExpressionCombine(dt, dt, dt);
             return VFXOperatorUtility.Lerp(start, end, dt);
         }
@@ -640,5 +651,20 @@ namespace UnityEditor.VFX
             var theta = new VFXExpressionATan2(components[1], components[0]);
             return theta;
         }
+
+        static public VFXExpression Max3(VFXExpression x, VFXExpression y, VFXExpression z)
+        {
+            return new VFXExpressionMax( new VFXExpressionMax(x, y), z);
+        }
+
+        static public VFXExpression Max3(VFXExpression vector3)
+        {
+            var x = new VFXExpressionExtractComponent(vector3, 0);
+            var y = new VFXExpressionExtractComponent(vector3, 1);
+            var z = new VFXExpressionExtractComponent(vector3, 2);
+            return Max3(x, y, z);
+        }
     }
+
+
 }

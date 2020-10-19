@@ -22,12 +22,27 @@ namespace UnityEditor.Rendering.HighDefinition
                 keywords = SettingsProvider.GetSearchKeywordsFromGUIContentProperties<HDRenderPipelineUI.Styles.GeneralSection>()
                     .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<DefaultSettingsPanelIMGUI.Styles>())
                     .Concat(OverridableFrameSettingsArea.frameSettingsKeywords).ToArray(),
-                guiHandler = s_IMGUIImpl.OnGUI,
+                guiHandler = s_IMGUIImpl.DoGUI,
             };
         }
 
         class DefaultSettingsPanelIMGUI
         {
+            // A wrapper for CoreEditorDrawers
+            class CoreEditorDrawerEditorWrapper : Editor, IDefaultFrameSettingsType
+            {
+                public FrameSettingsRenderType GetFrameSettingsType()
+                {
+                    switch (HDRenderPipelineUI.selectedFrameSettings)
+                    {
+                        case HDRenderPipelineUI.SelectedFrameSettings.Camera: return FrameSettingsRenderType.Camera;
+                        case HDRenderPipelineUI.SelectedFrameSettings.RealtimeReflection: return FrameSettingsRenderType.RealtimeReflection;
+                        case HDRenderPipelineUI.SelectedFrameSettings.BakedOrCustomReflection: return FrameSettingsRenderType.CustomOrBakedReflection;
+                    }
+                    throw new Exception("unreachable");
+                }
+            }
+
             public class Styles
             {
                 public const int labelWidth = 220;
@@ -37,17 +52,31 @@ namespace UnityEditor.Rendering.HighDefinition
                 public static GUIContent frameSettingsLabel = new GUIContent("Frame Settings");
                 public static GUIContent volumeComponentsLabel = new GUIContent("Volume Components");
                 public static GUIContent customPostProcessOrderLabel = new GUIContent("Custom Post Process Orders");
+                public static GUIContent diffusionProfileSettingsLabel = new GUIContent("Default Diffusion Profile Assets");
             }
 
             Vector2 m_ScrollViewPosition = Vector2.zero;
             Editor m_CachedDefaultVolumeProfileEditor;
             Editor m_CachedLookDevVolumeProfileEditor;
             ReorderableList m_BeforeTransparentCustomPostProcesses;
+            ReorderableList m_BeforeTAACustomPostProcesses;
             ReorderableList m_BeforePostProcessCustomPostProcesses;
             ReorderableList m_AfterPostProcessCustomPostProcesses;
+            int m_CurrentVolumeProfileInstanceID;
+            private Editor m_Cache;
+            DiffusionProfileSettingsListUI m_DiffusionProfileUI;
+            SerializedHDRenderPipelineAsset m_SerializeHDRPAsset;
 
-            public void OnGUI(string searchContext)
+            public void DoGUI(string searchContext)
             {
+                if (HDRenderPipeline.defaultAsset == null)
+                {
+                    EditorGUILayout.HelpBox("Base SRP Asset is not a HDRenderPipelineAsset.", MessageType.Warning);
+                    return;
+                }
+
+                m_SerializeHDRPAsset.Update();
+
                 m_ScrollViewPosition = GUILayout.BeginScrollView(m_ScrollViewPosition, EditorStyles.largeLabel);
                 Draw_GeneralSettings();
                 EditorGUILayout.Space();
@@ -62,6 +91,9 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 EditorGUILayout.LabelField(Styles.customPostProcessOrderLabel, EditorStyles.largeLabel);
                 Draw_CustomPostProcess();
+
+                EditorGUILayout.LabelField(Styles.diffusionProfileSettingsLabel, EditorStyles.largeLabel);
+                Draw_DiffusionProfileSettings();
                 GUILayout.EndScrollView();
             }
 
@@ -72,8 +104,26 @@ namespace UnityEditor.Rendering.HighDefinition
             /// <param name="rootElement"></param>
             public void OnActivate(string searchContext, VisualElement rootElement)
             {
+                if (HDRenderPipeline.defaultAsset == null)
+                    return;
+
                 m_ScrollViewPosition = Vector2.zero;
                 InitializeCustomPostProcessesLists();
+
+                m_DiffusionProfileUI = new DiffusionProfileSettingsListUI()
+                {
+                    drawElement = DrawDiffusionProfileElement
+                };
+
+                var serializedObject = new SerializedObject(HDRenderPipeline.defaultAsset);
+                m_SerializeHDRPAsset = new SerializedHDRenderPipelineAsset(serializedObject);
+                
+                var editorResources = HDRenderPipeline.defaultAsset.renderPipelineEditorResources;
+                if (!EditorUtility.IsPersistent(editorResources))
+                {
+                    var editorResourcesPath = HDUtils.GetHDRenderPipelinePath() + "Editor/RenderPipelineResources/HDRenderPipelineEditorResources.asset";
+                    HDRenderPipeline.defaultAsset.renderPipelineEditorResources = AssetDatabase.LoadAssetAtPath<HDRenderPipelineEditorResources>(editorResourcesPath);
+                }
             }
 
             void InitializeCustomPostProcessesLists()
@@ -95,6 +145,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 }
 
                 InitList(ref m_BeforeTransparentCustomPostProcesses, hdrpAsset.beforeTransparentCustomPostProcesses, "After Opaque And Sky", CustomPostProcessInjectionPoint.AfterOpaqueAndSky);
+                InitList(ref m_BeforeTAACustomPostProcesses, hdrpAsset.beforeTAACustomPostProcesses, "Before TAA", CustomPostProcessInjectionPoint.BeforeTAA);
                 InitList(ref m_BeforePostProcessCustomPostProcesses, hdrpAsset.beforePostProcessCustomPostProcesses, "Before Post Process", CustomPostProcessInjectionPoint.BeforePostProcess);
                 InitList(ref m_AfterPostProcessCustomPostProcesses, hdrpAsset.afterPostProcessCustomPostProcesses, "After Post Process", CustomPostProcessInjectionPoint.AfterPostProcess);
 
@@ -149,6 +200,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     return;
 
                 m_BeforeTransparentCustomPostProcesses.DoLayoutList();
+                m_BeforeTAACustomPostProcesses.DoLayoutList();
                 m_BeforePostProcessCustomPostProcesses.DoLayoutList();
                 m_AfterPostProcessCustomPostProcesses.DoLayoutList();
             }
@@ -158,7 +210,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 var hdrpAsset = HDRenderPipeline.defaultAsset;
                 if (hdrpAsset == null)
                 {
-                    EditorGUILayout.HelpBox("Base SRP Asset is not an HDRenderPipelineAsset.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("Base SRP Asset is not a HDRenderPipelineAsset.", MessageType.Warning);
                     return;
                 }
 
@@ -169,12 +221,9 @@ namespace UnityEditor.Rendering.HighDefinition
                 EditorGUILayout.ObjectField(Styles.defaultHDRPAsset, hdrpAsset, typeof(HDRenderPipelineAsset), false);
                 GUI.enabled = true;
 
-                var serializedObject = new SerializedObject(hdrpAsset);
-                var serializedHDRPAsset = new SerializedHDRenderPipelineAsset(serializedObject);
+                HDRenderPipelineUI.GeneralSection.Draw(m_SerializeHDRPAsset, null);
 
-                HDRenderPipelineUI.GeneralSection.Draw(serializedHDRPAsset, null);
-
-                serializedObject.ApplyModifiedProperties();
+                m_SerializeHDRPAsset.serializedObject.ApplyModifiedProperties();
                 EditorGUIUtility.labelWidth = oldWidth;
             }
 
@@ -207,6 +256,13 @@ namespace UnityEditor.Rendering.HighDefinition
                 }
                 EditorGUILayout.EndHorizontal();
 
+                // The state of the profile can change without the asset reference changing so in this case we need to reset the editor.
+                if (m_CurrentVolumeProfileInstanceID != asset.GetInstanceID() && m_CachedDefaultVolumeProfileEditor != null)
+                {
+                    m_CurrentVolumeProfileInstanceID = asset.GetInstanceID();
+                    m_CachedDefaultVolumeProfileEditor = null;
+                }
+
                 Editor.CreateCachedEditor(asset, Type.GetType("UnityEditor.Rendering.VolumeProfileEditor"), ref m_CachedDefaultVolumeProfileEditor);
                 EditorGUIUtility.labelWidth -= 18;
                 bool oldEnabled = GUI.enabled;
@@ -230,13 +286,13 @@ namespace UnityEditor.Rendering.HighDefinition
                     hdrpAsset.defaultLookDevProfile = newLookDevAsset;
                     EditorUtility.SetDirty(hdrpAsset);
                 }
-                
+
                 if (GUILayout.Button(EditorGUIUtility.TrTextContent("New", "Create a new Volume Profile for default in your default resource folder (defined in Wizard)"), GUILayout.Width(38), GUILayout.Height(18)))
                 {
                     DefaultVolumeProfileCreator.CreateAndAssign(DefaultVolumeProfileCreator.Kind.LookDev);
                 }
                 EditorGUILayout.EndHorizontal();
-                
+
                 Editor.CreateCachedEditor(lookDevAsset, Type.GetType("UnityEditor.Rendering.VolumeProfileEditor"), ref m_CachedLookDevVolumeProfileEditor);
                 EditorGUIUtility.labelWidth -= 18;
                 oldEnabled = GUI.enabled;
@@ -257,11 +313,23 @@ namespace UnityEditor.Rendering.HighDefinition
                 if (hdrpAsset == null)
                     return;
 
-                var serializedObject = new SerializedObject(hdrpAsset);
-                var serializedHDRPAsset = new SerializedHDRenderPipelineAsset(serializedObject);
+                Editor.CreateCachedEditor(hdrpAsset, typeof(CoreEditorDrawerEditorWrapper), ref m_Cache);
 
-                HDRenderPipelineUI.FrameSettingsSection.Draw(serializedHDRPAsset, null);
-                serializedObject.ApplyModifiedProperties();
+                HDRenderPipelineUI.FrameSettingsSection.Draw(m_SerializeHDRPAsset, m_Cache);
+                m_SerializeHDRPAsset.serializedObject.ApplyModifiedProperties();
+            }
+
+            void DrawDiffusionProfileElement(SerializedProperty element, Rect rect, int index)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.ObjectField(rect, element, EditorGUIUtility.TrTextContent("Profile " + index));
+                if (EditorGUI.EndChangeCheck())
+                    m_SerializeHDRPAsset.serializedObject.ApplyModifiedProperties();
+            }
+
+            void Draw_DiffusionProfileSettings()
+            {
+                m_DiffusionProfileUI.OnGUI(m_SerializeHDRPAsset.diffusionProfileSettingsList);
             }
         }
     }
@@ -311,7 +379,7 @@ namespace UnityEditor.Rendering.HighDefinition
             }
             return defaultName;
         }
-        
+
         public static void CreateAndAssign(Kind kind)
         {
             var assetCreator = ScriptableObject.CreateInstance<DefaultVolumeProfileCreator>();

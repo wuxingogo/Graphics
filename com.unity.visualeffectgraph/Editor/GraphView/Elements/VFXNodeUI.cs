@@ -36,6 +36,7 @@ namespace UnityEditor.VFX.UI
                 OnNewController();
                 if (m_Controller != null)
                 {
+                    controller.model.RefreshErrors(controller.viewController.graph);
                     m_Controller.RegisterHandler(this);
                 }
             }
@@ -224,7 +225,7 @@ namespace UnityEditor.VFX.UI
                 }
             }
 
-            if(m_SettingsDivider != null)
+            if (m_SettingsDivider != null)
                 m_SettingsDivider.visible = hasSettingDivider && hasSettings;
             Profiler.EndSample();
         }
@@ -329,11 +330,11 @@ namespace UnityEditor.VFX.UI
         {
             title = controller.title;
 
-            foreach( var setting in m_Settings)
+            foreach (var setting in m_Settings)
             {
                 setting.UpdateGUI(true);
             }
-            foreach( VFXEditableDataAnchor input in GetPorts(true,false).OfType<VFXEditableDataAnchor>())
+            foreach (VFXEditableDataAnchor input in GetPorts(true, false).OfType<VFXEditableDataAnchor>())
             {
                 input.AssetMoved();
             }

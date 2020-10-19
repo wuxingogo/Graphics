@@ -1,32 +1,35 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
 namespace UnityEditor.ShaderGraph
 {
     [GenerationAPI]
     internal class TargetSetupContext
     {
-        public IMasterNode masterNode { get; private set; }
-        public SubShaderDescriptor descriptor { get; private set; }
-        public List<string> assetDependencyPaths { get; private set; }
+        public List<SubShaderDescriptor> subShaders { get; private set; }
+        public AssetCollection assetCollection { get; private set; }
+        public string defaultShaderGUI { get; private set; }
 
-        public TargetSetupContext()
+        // pass a HashSet to the constructor to have it gather asset dependency GUIDs
+        public TargetSetupContext(AssetCollection assetCollection = null)
         {
-            assetDependencyPaths = new List<string>();
+            subShaders = new List<SubShaderDescriptor>();
+            this.assetCollection = assetCollection;
         }
 
-        public void SetMasterNode(IMasterNode masterNode)
+        public void AddSubShader(SubShaderDescriptor subShader)
         {
-            this.masterNode = masterNode;
+            subShaders.Add(subShader);
         }
 
-        public void SetupSubShader(SubShaderDescriptor descriptor)
+        public void AddAssetDependency(GUID guid, AssetCollection.Flags flags)
         {
-            this.descriptor = descriptor;
+            assetCollection?.AddAssetDependency(guid, flags);
         }
 
-        public void AddAssetDependencyPath(string path)
+        public void SetDefaultShaderGUI(string defaultShaderGUI)
         {
-            assetDependencyPaths.Add(path);
+            this.defaultShaderGUI = defaultShaderGUI;
         }
     }
 }

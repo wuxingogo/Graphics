@@ -4,8 +4,10 @@ using UnityEngine.Scripting.APIUpdating;
 using UnityEditor;
 using UnityEditor.ProjectWindowCallback;
 using System.IO;
+using UnityEditorInternal;
 #endif
 using System.ComponentModel;
+using System.Linq;
 
 namespace UnityEngine.Rendering.LWRP
 {
@@ -18,13 +20,6 @@ namespace UnityEngine.Rendering.LWRP
 
 namespace UnityEngine.Rendering.Universal
 {
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public enum ShadowCascadesOption
-    {
-        NoCascades,
-        TwoCascades,
-        FourCascades,
-    }
-
     [MovedFrom("UnityEngine.Rendering.LWRP")] public enum ShadowQuality
     {
         Disabled,
@@ -80,6 +75,7 @@ namespace UnityEngine.Rendering.Universal
         AllShaders,
     }
 
+    [Obsolete("PipelineDebugLevel is unused and has no effect.", false)]
     public enum PipelineDebugLevel
     {
         Disabled,
@@ -100,7 +96,7 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [ExcludeFromPreset]
-    public class UniversalRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
+    public partial class UniversalRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
     {
         Shader m_DefaultShader;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
@@ -125,7 +121,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_SupportsTerrainHoles = true;
 
         // Quality settings
-        [SerializeField] bool m_SupportsHDR = false;
+        [SerializeField] bool m_SupportsHDR = true;
         [SerializeField] MsaaQuality m_MSAA = MsaaQuality.Disabled;
         [SerializeField] float m_RenderScale = 1.0f;
         // TODO: Shader Quality Tiers
@@ -143,8 +139,9 @@ namespace UnityEngine.Rendering.Universal
 
         // Shadows Settings
         [SerializeField] float m_ShadowDistance = 50.0f;
-        [SerializeField] ShadowCascadesOption m_ShadowCascades = ShadowCascadesOption.NoCascades;
+        [SerializeField] int m_ShadowCascadeCount = 1;
         [SerializeField] float m_Cascade2Split = 0.25f;
+        [SerializeField] Vector2 m_Cascade3Split = new Vector2(0.1f, 0.3f);
         [SerializeField] Vector3 m_Cascade4Split = new Vector3(0.067f, 0.2f, 0.467f);
         [SerializeField] float m_ShadowDepthBias = 1.0f;
         [SerializeField] float m_ShadowNormalBias = 1.0f;
@@ -154,7 +151,10 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_UseSRPBatcher = true;
         [SerializeField] bool m_SupportsDynamicBatching = false;
         [SerializeField] bool m_MixedLightingSupported = true;
-        [SerializeField] PipelineDebugLevel m_DebugLevel = PipelineDebugLevel.Disabled;
+        [SerializeField][Obsolete] PipelineDebugLevel m_DebugLevel;
+
+        // Adaptive performance settings
+        [SerializeField] bool m_UseAdaptivePerformance = true;
 
         // Post-processing settings
         [SerializeField] ColorGradingMode m_ColorGradingMode = ColorGradingMode.LowDynamicRange;
@@ -175,11 +175,15 @@ namespace UnityEngine.Rendering.Universal
         public const int k_MinLutSize = 16;
         public const int k_MaxLutSize = 65;
 
+        internal const int k_ShadowCascadeMinCount = 1;
+        internal const int k_ShadowCascadeMaxCount = 4;
+
 #if UNITY_EDITOR
         [NonSerialized]
         internal UniversalRenderPipelineEditorResources m_EditorResourcesAsset;
 
         public static readonly string packagePath = "Packages/com.unity.render-pipelines.universal";
+        public static readonly string editorResourcesGUID = "a3d8d823eedde654bb4c11a1cfaf1abb";
 
         public static UniversalRenderPipelineAsset Create(ScriptableRendererData rendererData = null)
         {
@@ -189,8 +193,10 @@ namespace UnityEngine.Rendering.Universal
                 instance.m_RendererDataList[0] = rendererData;
             else
                 instance.m_RendererDataList[0] = CreateInstance<ForwardRendererData>();
+
             // Initialize default Renderer
-            instance.m_EditorResourcesAsset = LoadResourceFile<UniversalRenderPipelineEditorResources>();
+            instance.m_EditorResourcesAsset = instance.editorResources;
+
             return instance;
         }
 
@@ -247,38 +253,16 @@ namespace UnityEngine.Rendering.Universal
             AssetDatabase.CreateAsset(instance, string.Format("Assets/{0}.asset", typeof(UniversalRenderPipelineEditorResources).Name));
         }
 
-        static T LoadResourceFile<T>() where T : ScriptableObject
-        {
-            T resourceAsset = null;
-            var guids = AssetDatabase.FindAssets(typeof(T).Name + " t:scriptableobject", new[] { "Assets" });
-            foreach (string guid in guids)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                resourceAsset = AssetDatabase.LoadAssetAtPath<T>(path);
-                if (resourceAsset != null)
-                    break;
-            }
-
-            // There's currently an issue that prevents FindAssets from find resources withing the package folder.
-            if (resourceAsset == null)
-            {
-                string path = packagePath + "/Runtime/Data/" + typeof(T).Name + ".asset";
-                resourceAsset = AssetDatabase.LoadAssetAtPath<T>(path);
-            }
-
-            // Validate the resource file
-            ResourceReloader.TryReloadAllNullIn(resourceAsset, packagePath);
-
-            return resourceAsset;
-        }
-
         UniversalRenderPipelineEditorResources editorResources
         {
             get
             {
-                if (m_EditorResourcesAsset == null)
-                    m_EditorResourcesAsset = LoadResourceFile<UniversalRenderPipelineEditorResources>();
+                if (m_EditorResourcesAsset != null && !m_EditorResourcesAsset.Equals(null))
+                    return m_EditorResourcesAsset;
 
+                string resourcePath = AssetDatabase.GUIDToAssetPath(editorResourcesGUID);
+                var objs = InternalEditorUtility.LoadSerializedFileAndForget(resourcePath);
+                m_EditorResourcesAsset = objs != null && objs.Length > 0 ? objs.First() as UniversalRenderPipelineEditorResources : null;
                 return m_EditorResourcesAsset;
             }
         }
@@ -320,8 +304,20 @@ namespace UnityEngine.Rendering.Universal
 
         void DestroyRenderers()
         {
-            foreach (var renderer in m_Renderers)
-                renderer?.Dispose();
+            if (m_Renderers == null)
+                return;
+
+            for (int i = 0; i < m_Renderers.Length; i++)
+                DestroyRenderer(ref m_Renderers[i]);
+        }
+
+        void DestroyRenderer(ref ScriptableRenderer renderer)
+        {
+            if (renderer != null)
+            {
+                renderer.Dispose();
+                renderer = null;
+            }
         }
 
         protected override void OnValidate()
@@ -344,7 +340,11 @@ namespace UnityEngine.Rendering.Universal
 
         void CreateRenderers()
         {
-            m_Renderers = new ScriptableRenderer[m_RendererDataList.Length];
+            DestroyRenderers();
+
+            if (m_Renderers == null || m_Renderers.Length != m_RendererDataList.Length)
+                m_Renderers = new ScriptableRenderer[m_RendererDataList.Length];
+
             for (int i = 0; i < m_RendererDataList.Length; ++i)
             {
                 if (m_RendererDataList[i] != null)
@@ -397,6 +397,7 @@ namespace UnityEngine.Rendering.Universal
 
                 if (scriptableRendererData.isInvalidated || m_Renderers[m_DefaultRendererIndex] == null)
                 {
+                    DestroyRenderer(ref m_Renderers[m_DefaultRendererIndex]);
                     m_Renderers[m_DefaultRendererIndex] = scriptableRendererData.InternalCreateRenderer();
                 }
 
@@ -429,7 +430,10 @@ namespace UnityEngine.Rendering.Universal
             // This renderer data is outdated or invalid, we recreate the renderer
             // so we construct all render passes with the updated data
             if (m_RendererDataList[index].isInvalidated || m_Renderers[index] == null)
+            {
+                DestroyRenderer(ref m_Renderers[index]);
                 m_Renderers[index] = m_RendererDataList[index].InternalCreateRenderer();
+            }
 
             return m_Renderers[index];
         }
@@ -560,40 +564,79 @@ namespace UnityEngine.Rendering.Universal
             get { return (int)m_AdditionalLightsShadowmapResolution; }
         }
 
+        /// <summary>
+        /// Controls the maximum distance at which shadows are visible.
+        /// </summary>
         public float shadowDistance
         {
             get { return m_ShadowDistance; }
             set { m_ShadowDistance = Mathf.Max(0.0f, value); }
         }
 
-        public ShadowCascadesOption shadowCascadeOption
+        /// <summary>
+        /// Returns the number of shadow cascades.
+        /// </summary>
+        public int shadowCascadeCount
         {
-            get { return m_ShadowCascades; }
-            set { m_ShadowCascades = value; }
+            get { return m_ShadowCascadeCount; }
+            set
+            {
+                if (value < k_ShadowCascadeMinCount || value > k_ShadowCascadeMaxCount)
+                {
+                    throw new ArgumentException($"Value ({value}) needs to be between {k_ShadowCascadeMinCount} and {k_ShadowCascadeMaxCount}.");
+                }
+                m_ShadowCascadeCount = value;
+            }
         }
 
+        /// <summary>
+        /// Returns the split value.
+        /// </summary>
+        /// <returns>Returns a Float with the split value.</returns>
         public float cascade2Split
         {
             get { return m_Cascade2Split; }
         }
 
+        /// <summary>
+        /// Returns the split values.
+        /// </summary>
+        /// <returns>Returns a Vector2 with the split values.</returns>
+        public Vector2 cascade3Split
+        {
+            get { return m_Cascade3Split; }
+        }
+
+        /// <summary>
+        /// Returns the split values.
+        /// </summary>
+        /// <returns>Returns a Vector3 with the split values.</returns>
         public Vector3 cascade4Split
         {
             get { return m_Cascade4Split; }
         }
 
+        /// <summary>
+        /// The Shadow Depth Bias, controls the offset of the lit pixels.
+        /// </summary>
         public float shadowDepthBias
         {
             get { return m_ShadowDepthBias; }
             set { m_ShadowDepthBias = ValidateShadowBias(value); }
         }
 
+        /// <summary>
+        /// Controls the distance at which the shadow casting surfaces are shrunk along the surface normal.
+        /// </summary>
         public float shadowNormalBias
         {
             get { return m_ShadowNormalBias; }
             set { m_ShadowNormalBias = ValidateShadowBias(value); }
         }
 
+        /// <summary>
+        /// Returns true Soft Shadows are supported, false otherwise.
+        /// </summary>
         public bool supportsSoftShadows
         {
             get { return m_SoftShadowsSupported; }
@@ -616,9 +659,10 @@ namespace UnityEngine.Rendering.Universal
             set { m_ShaderVariantLogLevel = value; }
         }
 
+        [Obsolete("PipelineDebugLevel is deprecated. Calling debugLevel is not necessary.", false)]
         public PipelineDebugLevel debugLevel
         {
-            get => m_DebugLevel;
+            get => PipelineDebugLevel.Disabled ;
         }
 
         public bool useSRPBatcher
@@ -637,6 +681,16 @@ namespace UnityEngine.Rendering.Universal
         {
             get { return m_ColorGradingLutSize; }
             set { m_ColorGradingLutSize = Mathf.Clamp(value, k_MinLutSize, k_MaxLutSize); }
+        }
+
+       /// <summary>
+       /// Set to true to allow Adaptive performance to modify graphics quality settings during runtime.
+       /// Only applicable when Adaptive performance package is available.
+       /// </summary>
+        public bool useAdaptivePerformance
+        {
+            get { return m_UseAdaptivePerformance; }
+            set { m_UseAdaptivePerformance = value; }
         }
 
         public override Material defaultMaterial
@@ -695,6 +749,12 @@ namespace UnityEngine.Rendering.Universal
                     if (defaultShader != null)
                         return defaultShader;
                 }
+
+                if (m_DefaultShader == null)
+                {
+                    string path = AssetDatabase.GUIDToAssetPath(ShaderUtils.GetShaderGUID(ShaderPathID.Lit));
+                    m_DefaultShader  = AssetDatabase.LoadAssetAtPath<Shader>(path);
+                }
 #endif
 
                 if (m_DefaultShader == null)
@@ -707,42 +767,42 @@ namespace UnityEngine.Rendering.Universal
 #if UNITY_EDITOR
         public override Shader autodeskInteractiveShader
         {
-            get { return editorResources.shaders.autodeskInteractivePS; }
+            get { return editorResources?.shaders.autodeskInteractivePS; }
         }
 
         public override Shader autodeskInteractiveTransparentShader
         {
-            get { return editorResources.shaders.autodeskInteractiveTransparentPS; }
+            get { return editorResources?.shaders.autodeskInteractiveTransparentPS; }
         }
 
         public override Shader autodeskInteractiveMaskedShader
         {
-            get { return editorResources.shaders.autodeskInteractiveMaskedPS; }
+            get { return editorResources?.shaders.autodeskInteractiveMaskedPS; }
         }
 
         public override Shader terrainDetailLitShader
         {
-            get { return editorResources.shaders.terrainDetailLitPS; }
+            get { return editorResources?.shaders.terrainDetailLitPS; }
         }
 
         public override Shader terrainDetailGrassShader
         {
-            get { return editorResources.shaders.terrainDetailGrassPS; }
+            get { return editorResources?.shaders.terrainDetailGrassPS; }
         }
 
         public override Shader terrainDetailGrassBillboardShader
         {
-            get { return editorResources.shaders.terrainDetailGrassBillboardPS; }
+            get { return editorResources?.shaders.terrainDetailGrassBillboardPS; }
         }
 
         public override Shader defaultSpeedTree7Shader
         {
-            get { return editorResources.shaders.defaultSpeedTree7PS; }
+            get { return editorResources?.shaders.defaultSpeedTree7PS; }
         }
 
         public override Shader defaultSpeedTree8Shader
         {
-            get { return editorResources.shaders.defaultSpeedTree8PS; }
+            get { return editorResources?.shaders.defaultSpeedTree8PS; }
         }
 #endif
 
@@ -778,6 +838,26 @@ namespace UnityEngine.Rendering.Universal
                 k_AssetPreviousVersion = k_AssetVersion;
                 k_AssetVersion = 5;
             }
+
+            if (k_AssetVersion < 6)
+            {
+#pragma warning disable 618 // Obsolete warning
+                // Adding an upgrade here so that if it was previously set to 2 it meant 4 cascades.
+                // So adding a 3rd cascade shifted this value up 1.
+                int value = (int)m_ShadowCascades;
+                if (value == 2)
+                {
+                    m_ShadowCascadeCount = 4;
+                }
+                else
+                {
+                    m_ShadowCascadeCount = value + 1;
+                }
+                k_AssetVersion = 6;
+#pragma warning restore 618 // Obsolete warning
+            }
+
+
 #if UNITY_EDITOR
             if (k_AssetPreviousVersion != k_AssetVersion)
             {

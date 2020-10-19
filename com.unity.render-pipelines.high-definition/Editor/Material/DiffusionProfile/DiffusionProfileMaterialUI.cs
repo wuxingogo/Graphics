@@ -8,7 +8,7 @@ namespace UnityEditor.Rendering.HighDefinition
 {
     static class DiffusionProfileMaterialUI
     {
-        static GUIContent    diffusionProfileNotInHDRPAsset = new GUIContent("You must add this diffusion profile in the HDRP asset to make it work", EditorGUIUtility.IconContent("console.warnicon").image);
+        static GUIContent    diffusionProfileNotInHDRPAsset = new GUIContent("You must make sure that this diffusion profile is either referenced in the HDRP asset or in the Diffusion Profile Override to make it work.", EditorGUIUtility.IconContent("console.infoicon").image);
 
         public static bool IsSupported(MaterialEditor materialEditor)
         {
@@ -18,7 +18,7 @@ namespace UnityEditor.Rendering.HighDefinition
             });
         }
 
-        public static void OnGUI(MaterialProperty diffusionProfileAsset, MaterialProperty diffusionProfileHash)
+        public static void OnGUI(MaterialEditor materialEditor, MaterialProperty diffusionProfileAsset, MaterialProperty diffusionProfileHash, int profileIndex, string displayName = "Diffusion Profile")
         {
             // We can't cache these fields because of several edge cases like undo/redo or pressing escape in the object picker
             string guid = HDUtils.ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
@@ -26,7 +26,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             // is it okay to do this every frame ?
             EditorGUI.BeginChangeCheck();
-            diffusionProfile = (DiffusionProfileSettings)EditorGUILayout.ObjectField("Diffusion Profile", diffusionProfile, typeof(DiffusionProfileSettings), false);
+            diffusionProfile = (DiffusionProfileSettings)EditorGUILayout.ObjectField(displayName, diffusionProfile, typeof(DiffusionProfileSettings), false);
             if (EditorGUI.EndChangeCheck())
             {
                 Vector4 newGuid = Vector4.zero;
@@ -42,6 +42,13 @@ namespace UnityEditor.Rendering.HighDefinition
                 // encode back GUID and it's hash
                 diffusionProfileAsset.vectorValue = newGuid;
                 diffusionProfileHash.floatValue = hash;
+
+                // Update external reference.
+                foreach (var target in materialEditor.targets)
+                {
+                    MaterialExternalReferences matExternalRefs = MaterialExternalReferences.GetMaterialExternalReferences(target as Material);
+                    matExternalRefs.SetDiffusionProfileReference(profileIndex, diffusionProfile);
+                }
             }
 
             DrawDiffusionProfileWarning(diffusionProfile);
@@ -49,9 +56,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
         static void DrawDiffusionProfileWarning(DiffusionProfileSettings materialProfile)
         {
-            var hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
-
-            if (materialProfile != null && !hdPipeline.asset.diffusionProfileSettingsList.Any(d => d == materialProfile))
+            if (materialProfile != null && !HDRenderPipeline.defaultAsset.diffusionProfileSettingsList.Any(d => d == materialProfile))
             {
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
                 {
@@ -60,7 +65,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     EditorGUILayout.LabelField(diffusionProfileNotInHDRPAsset, wordWrap);
                     if (GUILayout.Button("Fix", GUILayout.ExpandHeight(true)))
                     {
-                        hdPipeline.asset.AddDiffusionProfile(materialProfile);
+                        HDRenderPipeline.defaultAsset.AddDiffusionProfile(materialProfile);
                     }
                 }
             }

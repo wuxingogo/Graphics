@@ -1,11 +1,12 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Collections.Generic;
-using Type = System.Type;
-using System.IO;
-using System.Linq;
 using UnityEngine.Profiling;
+
+using Type = System.Type;
 
 using PositionType = UnityEngine.UIElements.Position;
 
@@ -13,8 +14,6 @@ namespace UnityEditor.VFX.UI
 {
     class VFXDataAnchor : Port, IControlledElement<VFXDataAnchorController>, IEdgeConnectorListener
     {
-        VisualElement m_ConnectorHighlight;
-
         VFXDataAnchorController m_Controller;
         Controller IControlledElement.controller
         {
@@ -32,6 +31,8 @@ namespace UnityEditor.VFX.UI
                 m_Controller = value;
                 if (m_Controller != null)
                 {
+                    if(m_Controller.model != null)
+                        m_Controller.model.RefreshErrors(m_Controller.sourceNode.viewController.graph);
                     m_Controller.RegisterHandler(this);
                 }
             }
@@ -51,19 +52,6 @@ namespace UnityEditor.VFX.UI
             AddToClassList("VFXDataAnchor");
             this.AddStyleSheetPath("VFXTypeColor");
 
-            m_ConnectorHighlight = new VisualElement();
-
-            m_ConnectorHighlight.style.position = PositionType.Absolute;
-            m_ConnectorHighlight.style.top = 0f;
-            m_ConnectorHighlight.style.left = 0f;
-            m_ConnectorHighlight.style.bottom = 0f;
-            m_ConnectorHighlight.style.right = 0f;
-            m_ConnectorHighlight.pickingMode = PickingMode.Ignore;
-
-            VisualElement connector = m_ConnectorBox as VisualElement;
-
-            connector.Add(m_ConnectorHighlight);
-
             m_Node = node;
 
             RegisterCallback<MouseEnterEvent>(OnMouseEnter);
@@ -72,6 +60,12 @@ namespace UnityEditor.VFX.UI
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
             Profiler.EndSample();
         }
+
+        public VisualElement connector
+        {
+            get { return m_ConnectorBox; }
+        }
+
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
@@ -91,7 +85,7 @@ namespace UnityEditor.VFX.UI
         public static VFXDataAnchor Create(VFXDataAnchorController controller, VFXNodeUI node)
         {
             var anchor = new VFXDataAnchor(controller.orientation, controller.direction, controller.portType, node);
-            anchor.m_EdgeConnector = new EdgeConnector<VFXDataEdge>(anchor);
+            anchor.m_EdgeConnector = new VFXEdgeConnector(anchor);
             anchor.controller = controller;
 
             anchor.AddManipulator(anchor.m_EdgeConnector);
@@ -232,14 +226,19 @@ namespace UnityEditor.VFX.UI
             VFXViewController viewController = view.controller;
 
 
+            List<VisualElement> picked = new List<VisualElement>();
+            panel.PickAll(position, picked);
             VFXNodeUI endNode = null;
-            foreach (var node in view.GetAllNodes())
+
+            foreach (var element in picked)
             {
-                if (node.worldBound.Contains(position))
+                if (element is VFXNodeUI node)
                 {
                     endNode = node;
+                    break;
                 }
             }
+
 
             VFXDataEdge dataEdge  = edge as VFXDataEdge;
             bool exists = false;
@@ -266,7 +265,7 @@ namespace UnityEditor.VFX.UI
                     }
                     else
                     {
-                        foreach (var input in nodeController.inputPorts.Where(t => t.model == null || t.model.IsMasterSlot()))
+                        foreach (var input in nodeController.inputPorts.Where(t => t.model == null || t.model.IsMasterSlot() && !t.model.HasLink(true)))
                         {
                             if (viewController.CreateLink(input, controller))
                                 break;
@@ -279,19 +278,22 @@ namespace UnityEditor.VFX.UI
                 VFXModelDescriptorParameters parameterDesc = VFXLibrary.GetParameters().FirstOrDefault(t => t.name == controller.portType.UserFriendlyName());
                 if (parameterDesc != null)
                 {
-                    VFXParameter parameter = viewController.AddVFXParameter(view.contentViewContainer.GlobalToBound(position) - new Vector2(140, 20), parameterDesc);
+                    Vector2 pos = view.contentViewContainer.GlobalToBound(position) - new Vector2(140, 20);
+                    VFXParameter parameter = viewController.AddVFXParameter(pos, parameterDesc, false);
                     parameter.SetSettingValue("m_Exposed", true);
                     startSlot.Link(parameter.outputSlots[0]);
 
                     CopyValueToParameter(parameter);
+
+                    viewController.AddVFXModel(pos, parameter);
                 }
             }
             else if (!exists)
             {
-                if( direction == Direction.Input)
+                if (direction == Direction.Input || viewController.model.visualEffectObject is VisualEffectSubgraphOperator) // no context for subgraph operators.
                     VFXFilterWindow.Show(VFXViewWindow.currentWindow, Event.current.mousePosition, view.ViewToScreenPosition(Event.current.mousePosition), new VFXNodeProvider(viewController, AddLinkedNode, ProviderFilter, new Type[] { typeof(VFXOperator), typeof(VFXParameter)}));
                 else
-                    VFXFilterWindow.Show(VFXViewWindow.currentWindow, Event.current.mousePosition, view.ViewToScreenPosition(Event.current.mousePosition), new VFXNodeProvider(viewController, AddLinkedNode, ProviderFilter, new Type[] { typeof(VFXOperator), typeof(VFXParameter), typeof(VFXContext) }));
+                VFXFilterWindow.Show(VFXViewWindow.currentWindow, Event.current.mousePosition, view.ViewToScreenPosition(Event.current.mousePosition), new VFXNodeProvider(viewController, AddLinkedNode, ProviderFilter, new Type[] { typeof(VFXOperator), typeof(VFXParameter), typeof(VFXContext) }));
             }
         }
 
@@ -327,7 +329,7 @@ namespace UnityEditor.VFX.UI
                 if (container == null)
                     return false;
 
-                if (    direction == Direction.Output
+                if (direction == Direction.Output
                     &&  mySlot != null
                     && container is VFXOperatorDynamicOperand
                     && (container as VFXOperatorDynamicOperand).validTypes.Contains(mySlot.property.type))

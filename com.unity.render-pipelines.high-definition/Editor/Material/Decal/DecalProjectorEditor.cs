@@ -14,11 +14,14 @@ namespace UnityEditor.Rendering.HighDefinition
         SerializedProperty m_MaterialProperty;
         SerializedProperty m_DrawDistanceProperty;
         SerializedProperty m_FadeScaleProperty;
+        SerializedProperty m_StartAngleFadeProperty;
+        SerializedProperty m_EndAngleFadeProperty;   
         SerializedProperty m_UVScaleProperty;
         SerializedProperty m_UVBiasProperty;
         SerializedProperty m_AffectsTransparencyProperty;
         SerializedProperty m_Size;
         SerializedProperty m_FadeFactor;
+        SerializedProperty m_DecalLayerMask;
 
         int layerMask => (target as Component).gameObject.layer;
         bool layerMaskHasMultipleValue
@@ -109,31 +112,51 @@ namespace UnityEditor.Rendering.HighDefinition
             UpdateMaterialEditor();
             foreach (var decalProjector in targets)
             {
-                (decalProjector as DecalProjector).OnMaterialChange += UpdateMaterialEditor;
+                (decalProjector as DecalProjector).OnMaterialChange += RequireUpdateMaterialEditor;
             }
 
             // Fetch serialized properties
             m_MaterialProperty = serializedObject.FindProperty("m_Material");
             m_DrawDistanceProperty = serializedObject.FindProperty("m_DrawDistance");
             m_FadeScaleProperty = serializedObject.FindProperty("m_FadeScale");
+            m_StartAngleFadeProperty = serializedObject.FindProperty("m_StartAngleFade");
+            m_EndAngleFadeProperty = serializedObject.FindProperty("m_EndAngleFade");
             m_UVScaleProperty = serializedObject.FindProperty("m_UVScale");
             m_UVBiasProperty = serializedObject.FindProperty("m_UVBias");
             m_AffectsTransparencyProperty = serializedObject.FindProperty("m_AffectsTransparency");
             m_Size = serializedObject.FindProperty("m_Size");
             m_FadeFactor = serializedObject.FindProperty("m_FadeFactor");
+            m_DecalLayerMask = serializedObject.FindProperty("m_DecalLayerMask");
         }
 
         private void OnDisable()
         {
-            foreach (var decalProjector in targets)
+            foreach (DecalProjector decalProjector in targets)
             {
-                (decalProjector as DecalProjector).OnMaterialChange -= UpdateMaterialEditor;
+                if (decalProjector != null)
+                    decalProjector.OnMaterialChange -= RequireUpdateMaterialEditor;
             }
             s_Owner = null;
         }
 
         private void OnDestroy() =>
             DestroyImmediate(m_MaterialEditor);
+
+        public bool HasFrameBounds()
+        {
+            return true;
+        }
+
+        public Bounds OnGetFrameBounds()
+        {
+            DecalProjector decalProjector = target as DecalProjector;
+
+            return new Bounds(decalProjector.transform.position, handle.size);
+        }
+
+        private bool m_RequireUpdateMaterialEditor = false;
+
+        private void RequireUpdateMaterialEditor() => m_RequireUpdateMaterialEditor = true;
 
         public void UpdateMaterialEditor()
         {
@@ -241,8 +264,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     if (needToRefreshDecalProjector)
                     {
                         // Smoothly update the decal image projected
-                        Matrix4x4 sizeOffset = Matrix4x4.Translate(decalProjector.decalOffset) * Matrix4x4.Scale(decalProjector.decalSize);
-                        DecalSystem.instance.UpdateCachedData(decalProjector.position, decalProjector.rotation, sizeOffset, decalProjector.drawDistance, decalProjector.fadeScale, decalProjector.uvScaleBias, decalProjector.affectsTransparency, decalProjector.Handle, decalProjector.gameObject.layer, decalProjector.fadeFactor);
+                        DecalSystem.instance.UpdateCachedData(decalProjector.Handle, decalProjector.GetCachedDecalData());
                     }
                 }
             }
@@ -305,41 +327,77 @@ namespace UnityEditor.Rendering.HighDefinition
 
         public override void OnInspectorGUI()
         {
-            EditorGUI.BeginChangeCheck();
+            serializedObject.Update();
 
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            DoInspectorToolbar(k_EditVolumeModes, editVolumeLabels, GetBoundsGetter, this);
-
-            //[TODO: add editable pivot. Uncomment this when ready]
-            //DoInspectorToolbar(k_EditPivotModes, editPivotLabels, GetBoundsGetter, this);
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space();
-
-            EditorGUILayout.PropertyField(m_Size, k_SizeContent);
-            EditorGUILayout.PropertyField(m_MaterialProperty, k_MaterialContent);
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_DrawDistanceProperty, k_DistanceContent);
-            if (EditorGUI.EndChangeCheck() && m_DrawDistanceProperty.floatValue < 0f)
-                m_DrawDistanceProperty.floatValue = 0f;
-
-            EditorGUILayout.PropertyField(m_FadeScaleProperty, k_FadeScaleContent);
-            EditorGUILayout.PropertyField(m_UVScaleProperty, k_UVScaleContent);
-            EditorGUILayout.PropertyField(m_UVBiasProperty, k_UVBiasContent);
-            EditorGUILayout.PropertyField(m_FadeFactor, k_FadeFactorContent);
-
-            // only display the affects transparent property if material is HDRP/decal
-            if (showAffectTransparencyHaveMultipleDifferentValue)
+            if (m_RequireUpdateMaterialEditor)
             {
-                using (new EditorGUI.DisabledScope(true))
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Multiple material type in selection"));
+                UpdateMaterialEditor();
+                m_RequireUpdateMaterialEditor = false;
             }
-            else if (showAffectTransparency)
-                EditorGUILayout.PropertyField(m_AffectsTransparencyProperty, k_AffectTransparentContent);
 
+            EditorGUI.BeginChangeCheck();
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                DoInspectorToolbar(k_EditVolumeModes, editVolumeLabels, GetBoundsGetter, this);
+
+                //[TODO: add editable pivot. Uncomment this when ready]
+                //DoInspectorToolbar(k_EditPivotModes, editPivotLabels, GetBoundsGetter, this);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.PropertyField(m_Size, k_SizeContent);
+                EditorGUILayout.PropertyField(m_MaterialProperty, k_MaterialContent);
+
+                bool decalLayerEnabled = false;
+                HDRenderPipelineAsset hdrp = HDRenderPipeline.currentAsset;
+                if (hdrp != null)
+                {
+                    decalLayerEnabled = hdrp.currentPlatformRenderPipelineSettings.supportDecals && hdrp.currentPlatformRenderPipelineSettings.supportDecalLayers;
+                    using (new EditorGUI.DisabledScope(!decalLayerEnabled))
+                    {
+                        EditorGUILayout.PropertyField(m_DecalLayerMask, k_DecalLayerMaskContent);
+                    }
+                }
+
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_DrawDistanceProperty, k_DistanceContent);
+                if (EditorGUI.EndChangeCheck() && m_DrawDistanceProperty.floatValue < 0f)
+                    m_DrawDistanceProperty.floatValue = 0f;
+
+                EditorGUILayout.PropertyField(m_FadeScaleProperty, k_FadeScaleContent);
+                using (new EditorGUI.DisabledScope(!decalLayerEnabled))
+                {
+                    EditorGUILayout.PropertyField(m_StartAngleFadeProperty, k_StartAngleFadeContent);
+                    if (EditorGUI.EndChangeCheck() && m_StartAngleFadeProperty.floatValue > m_EndAngleFadeProperty.floatValue)
+                        m_EndAngleFadeProperty.floatValue = m_StartAngleFadeProperty.floatValue;
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(m_EndAngleFadeProperty, k_EndAngleFadeContent);
+                    if (EditorGUI.EndChangeCheck() && m_EndAngleFadeProperty.floatValue < m_StartAngleFadeProperty.floatValue)
+                        m_StartAngleFadeProperty.floatValue = m_EndAngleFadeProperty.floatValue;
+                }
+
+                if (!decalLayerEnabled)
+                {
+                    EditorGUILayout.HelpBox("Enable 'Decal Layers' in your HDRP Asset if you want to control the Angle Fade. There is a performance cost of enabling this option.",
+                    MessageType.Info);
+                }
+
+                EditorGUILayout.PropertyField(m_UVScaleProperty, k_UVScaleContent);
+                EditorGUILayout.PropertyField(m_UVBiasProperty, k_UVBiasContent);
+                EditorGUILayout.PropertyField(m_FadeFactor, k_FadeFactorContent);
+
+                // only display the affects transparent property if material is HDRP/decal
+                if (showAffectTransparencyHaveMultipleDifferentValue)
+                {
+                    using (new EditorGUI.DisabledScope(true))
+                        EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Multiple material type in selection"));
+                }
+                else if (showAffectTransparency)
+                    EditorGUILayout.PropertyField(m_AffectsTransparencyProperty, k_AffectTransparentContent);
+            }
             if (EditorGUI.EndChangeCheck())
                 serializedObject.ApplyModifiedProperties();
 
@@ -353,25 +411,38 @@ namespace UnityEditor.Rendering.HighDefinition
 
             if (m_MaterialEditor != null)
             {
-                // Draw the material's foldout and the material shader field
-                // Required to call m_MaterialEditor.OnInspectorGUI ();
-                m_MaterialEditor.DrawHeader();
-
                 // We need to prevent the user to edit default decal materials
                 bool isDefaultMaterial = false;
+                bool isValidDecalMaterial = true;
                 var hdrp = HDRenderPipeline.currentAsset;
                 if (hdrp != null)
                 {
                     foreach(var decalProjector in targets)
                     {
-                        isDefaultMaterial |= (decalProjector as DecalProjector).material == hdrp.GetDefaultDecalMaterial();
+                        var mat = (decalProjector as DecalProjector).material;
+
+                        isDefaultMaterial |= mat == hdrp.GetDefaultDecalMaterial();
+                        isValidDecalMaterial = isValidDecalMaterial && DecalSystem.IsDecalMaterial(mat);
                     }
                 }
-                using (new EditorGUI.DisabledGroupScope(isDefaultMaterial))
+
+                if (isValidDecalMaterial)
                 {
-                    // Draw the material properties
-                    // Works only if the foldout of m_MaterialEditor.DrawHeader () is open
-                    m_MaterialEditor.OnInspectorGUI();
+                    // Draw the material's foldout and the material shader field
+                    // Required to call m_MaterialEditor.OnInspectorGUI ();
+                    m_MaterialEditor.DrawHeader();
+
+                    using (new EditorGUI.DisabledGroupScope(isDefaultMaterial))
+                    {
+                        // Draw the material properties
+                        // Works only if the foldout of m_MaterialEditor.DrawHeader () is open
+                        m_MaterialEditor.OnInspectorGUI();
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Decal only work with Decal Material. Decal Material can be selected in the shader list HDRP/Decal or can be created from a Decal Master Node.",
+                        MessageType.Error);
                 }
             }
         }

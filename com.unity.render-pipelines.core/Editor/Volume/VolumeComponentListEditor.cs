@@ -16,24 +16,24 @@ namespace UnityEditor.Rendering
     /// in the inspector:
     /// <code>
     /// using UnityEngine.Rendering;
-    /// 
+    ///
     /// [CustomEditor(typeof(VolumeProfile))]
     /// public class CustomVolumeProfileEditor : Editor
     /// {
     ///     VolumeComponentListEditor m_ComponentList;
-    /// 
+    ///
     ///     void OnEnable()
     ///     {
     ///         m_ComponentList = new VolumeComponentListEditor(this);
     ///         m_ComponentList.Init(target as VolumeProfile, serializedObject);
     ///     }
-    /// 
+    ///
     ///     void OnDisable()
     ///     {
     ///         if (m_ComponentList != null)
     ///             m_ComponentList.Clear();
     ///     }
-    /// 
+    ///
     ///     public override void OnInspectorGUI()
     ///     {
     ///         serializedObject.Update();
@@ -58,7 +58,7 @@ namespace UnityEditor.Rendering
         Dictionary<Type, Type> m_EditorTypes; // Component type => Editor type
         List<VolumeComponentEditor> m_Editors;
 
-        static VolumeComponent s_ClipboardContent;
+        int m_CurrentHashCode;
 
         /// <summary>
         /// Creates a new instance of <see cref="VolumeComponentListEditor"/> to use in an
@@ -119,8 +119,14 @@ namespace UnityEditor.Rendering
 
             // Dumb hack to make sure the serialized object is up to date on undo (else there'll be
             // a state mismatch when this class is used in a GameObject inspector).
-            m_SerializedObject.Update();
-            m_SerializedObject.ApplyModifiedProperties();
+            if (m_SerializedObject != null
+                 && !m_SerializedObject.Equals(null)
+                 && m_SerializedObject.targetObject != null
+                 && !m_SerializedObject.targetObject.Equals(null))
+            {
+                m_SerializedObject.Update();
+                m_SerializedObject.ApplyModifiedProperties();
+            }
 
             // Seems like there's an issue with the inspector not repainting after some undo events
             // This will take care of that
@@ -197,9 +203,12 @@ namespace UnityEditor.Rendering
             if (asset == null)
                 return;
 
-            if (asset.isDirty)
+            // Even if the asset is not dirty, the list of component may have been changed by another inspector.
+            // In this case, only the hash will tell us that we need to refresh.
+            if (asset.isDirty || asset.GetComponentListHashCode() != m_CurrentHashCode)
             {
                 RefreshEditors();
+                m_CurrentHashCode = asset.GetComponentListHashCode();
                 asset.isDirty = false;
             }
 
@@ -256,15 +265,30 @@ namespace UnityEditor.Rendering
             var menu = new GenericMenu();
 
             if (id == 0)
+            {
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Move Up"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Move to Top"));
+            }
             else
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Move to Top"), false, () => MoveComponent(id, -id));
                 menu.AddItem(EditorGUIUtility.TrTextContent("Move Up"), false, () => MoveComponent(id, -1));
+            }
 
             if (id == m_Editors.Count - 1)
+            {
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Move to Bottom"));
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Move Down"));
+            }
             else
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Move to Bottom"), false, () => MoveComponent(id, (m_Editors.Count -1) - id));
                 menu.AddItem(EditorGUIUtility.TrTextContent("Move Down"), false, () => MoveComponent(id, 1));
+            }
 
+            menu.AddSeparator(string.Empty);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All"), false, () => CollapseComponents());
+            menu.AddItem(EditorGUIUtility.TrTextContent("Expand All"), false, () => ExpandComponents());
             menu.AddSeparator(string.Empty);
             menu.AddItem(EditorGUIUtility.TrTextContent("Reset"), false, () => ResetComponent(targetComponent.GetType(), id));
             menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, () => RemoveComponent(id));
@@ -410,39 +434,72 @@ namespace UnityEditor.Rendering
             m_ComponentsProperty.MoveArrayElement(id, id + offset);
             m_SerializedObject.ApplyModifiedProperties();
 
+            // We need to keep track of what was expanded before to set it afterwards.
+            bool targetExpanded = m_Editors[id + offset].baseProperty.isExpanded;
+            bool sourceExpanded = m_Editors[id].baseProperty.isExpanded;
+
             // Move editors
             var prev = m_Editors[id + offset];
             m_Editors[id + offset] = m_Editors[id];
             m_Editors[id] = prev;
+
+            // Set the expansion values
+            m_Editors[id + offset].baseProperty.isExpanded = targetExpanded;
+            m_Editors[id].baseProperty.isExpanded = sourceExpanded;
         }
 
-        // Copy/pasting is simply done by creating an in memory copy of the selected component and
-        // copying over the serialized data to another; it doesn't use nor affect the OS clipboard
+        internal void CollapseComponents()
+        {
+            // Move components
+            m_SerializedObject.Update();
+            int numEditors = m_Editors.Count;
+            for (int i = 0; i < numEditors; ++i)
+            {
+                m_Editors[i].baseProperty.isExpanded = false;
+            }
+            m_SerializedObject.ApplyModifiedProperties();
+        }
+
+        internal void ExpandComponents()
+        {
+            // Move components
+            m_SerializedObject.Update();
+            int numEditors = m_Editors.Count;
+            for (int i = 0; i < numEditors; ++i)
+            {
+                m_Editors[i].baseProperty.isExpanded = true;
+            }
+            m_SerializedObject.ApplyModifiedProperties();
+        }
+        
+
         static bool CanPaste(VolumeComponent targetComponent)
         {
-            return s_ClipboardContent != null
-                && s_ClipboardContent.GetType() == targetComponent.GetType();
+            if (string.IsNullOrWhiteSpace(EditorGUIUtility.systemCopyBuffer))
+                return false;
+
+            string clipboard = EditorGUIUtility.systemCopyBuffer;
+            int separator = clipboard.IndexOf('|');
+
+            if (separator < 0)
+                return false;
+
+            return targetComponent.GetType().AssemblyQualifiedName == clipboard.Substring(0, separator);
         }
 
         static void CopySettings(VolumeComponent targetComponent)
         {
-            if (s_ClipboardContent != null)
-            {
-                CoreUtils.Destroy(s_ClipboardContent);
-                s_ClipboardContent = null;
-            }
-
-            s_ClipboardContent = (VolumeComponent)ScriptableObject.CreateInstance(targetComponent.GetType());
-            EditorUtility.CopySerializedIfDifferent(targetComponent, s_ClipboardContent);
+            string typeName = targetComponent.GetType().AssemblyQualifiedName;
+            string typeData = JsonUtility.ToJson(targetComponent);
+            EditorGUIUtility.systemCopyBuffer = $"{typeName}|{typeData}";
         }
 
         static void PasteSettings(VolumeComponent targetComponent)
         {
-            Assert.IsNotNull(s_ClipboardContent);
-            Assert.AreEqual(s_ClipboardContent.GetType(), targetComponent.GetType());
-
+            string clipboard = EditorGUIUtility.systemCopyBuffer;
+            string typeData = clipboard.Substring(clipboard.IndexOf('|') + 1);
             Undo.RecordObject(targetComponent, "Paste Settings");
-            EditorUtility.CopySerializedIfDifferent(s_ClipboardContent, targetComponent);
+            JsonUtility.FromJsonOverwrite(typeData, targetComponent);
         }
     }
 }

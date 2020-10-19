@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 
 public class DebugViewController : MonoBehaviour
 {
-    public enum SettingType { Material, Rendering }
+    public enum SettingType { Material, Lighting, Rendering }
     public SettingType settingType = SettingType.Material;
 
     [Header("Material")]
@@ -16,6 +16,9 @@ public class DebugViewController : MonoBehaviour
     //DebugItemHandlerIntEnum(MaterialDebugSettings.debugViewMaterialGBufferStrings, MaterialDebugSettings.debugViewMaterialGBufferValues)
     [Header("Rendering")]
     [SerializeField] int fullScreenDebugMode = 0;
+
+    [Header("Lighting")]
+    [SerializeField] bool lightlayers = false;
 
     [ContextMenu("Set Debug View")]
     public void SetDebugView()
@@ -26,22 +29,22 @@ public class DebugViewController : MonoBehaviour
         {
             case SettingType.Material:
                 hdPipeline.debugDisplaySettings.SetDebugViewGBuffer(gBuffer);
-                hdPipeline.debugDisplaySettings.data.fullScreenDebugMode = FullScreenDebugMode.None;
+                break;
+            case SettingType.Lighting:
+                hdPipeline.debugDisplaySettings.SetDebugLightLayersMode(lightlayers);
+                hdPipeline.debugDisplaySettings.data.lightingDebugSettings.debugLightLayersFilterMask = (DebugLightLayersMask)0b10111101;
                 break;
             case SettingType.Rendering:
-                hdPipeline.debugDisplaySettings.SetDebugViewGBuffer(0);
-                hdPipeline.debugDisplaySettings.data.fullScreenDebugMode = (FullScreenDebugMode) fullScreenDebugMode;
+                hdPipeline.debugDisplaySettings.SetFullScreenDebugMode((FullScreenDebugMode) fullScreenDebugMode);
                 break;
         }
+
     }
 
     void OnDestroy()
     {
         HDRenderPipeline hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
         if (hdPipeline != null)
-        {
-            hdPipeline.debugDisplaySettings.SetDebugViewGBuffer(0);
-            hdPipeline.debugDisplaySettings.data.fullScreenDebugMode = FullScreenDebugMode.None;
-        }
+            ((IDebugData)hdPipeline.debugDisplaySettings).GetReset().Invoke();
     }
 }
