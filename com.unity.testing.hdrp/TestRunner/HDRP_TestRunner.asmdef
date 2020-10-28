@@ -4,6 +4,9 @@
         "Unity.RenderPipelines.HighDefinition.Runtime",
         "Unity.Postprocessing.Runtime",
         "Unity.RenderPipelines.Core.Runtime",
+        "Unity.XR.Management",
+        "Unity.XR.MockHMD",
+        "UnityEditor.TestTools.Graphics",
         "UnityEngine.TestTools.Graphics"
     ],
     "optionalUnityReferences": [
