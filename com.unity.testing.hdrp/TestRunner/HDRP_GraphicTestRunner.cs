@@ -9,9 +9,12 @@ using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
 using UnityEngine.Events;
 using System.IO;
+using UnityEngine.XR;
+using UnityEngine.XR.Management;
 
 public class HDRP_GraphicTestRunner
 {
+    [UnityTest]
     [PrebuildSetup("SetupGraphicsTestCases")]
     [UseGraphicsTestCases]
     [Timeout(300 * 1000)] // Set timeout to 5 minutes to handle complex scenes with many shaders (default timeout is 3 minutes)
@@ -25,6 +28,7 @@ public class HDRP_GraphicTestRunner
 
         // Load the test settings
         var settings = GameObject.FindObjectOfType<HDRP_TestSettings>();
+        int waitFrames = settings.waitFrames;
 
         var camera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         if (camera == null) camera = GameObject.FindObjectOfType<Camera>();
@@ -37,25 +41,8 @@ public class HDRP_GraphicTestRunner
 
         if (XRGraphicsAutomatedTests.enabled)
         {
-            if (settings.xrCompatible)
-            {
-                XRGraphicsAutomatedTests.running = true;
-
-                // Increase tolerance to account for slight changes due to float precision
-                settings.ImageComparisonSettings.AverageCorrectnessThreshold *= settings.xrThresholdMultiplier;
-                settings.ImageComparisonSettings.PerPixelCorrectnessThreshold *= settings.xrThresholdMultiplier;
-
-                // Increase number of volumetric slices to compensate for initial half-resolution due to XR single-pass optimization
-                foreach (var volume in GameObject.FindObjectsOfType<Volume>())
-                {
-                    if (volume.profile.TryGet<Fog>(out Fog fog))
-                        fog.volumeSliceCount.value *= 2;
-                }
-            }
-            else
-            {
-                Assert.Ignore("Test scene is not compatible with XR and will be skipped.");
-            }
+            ConfigureXR(settings.xrCompatible, settings);
+            waitFrames = Mathf.Max(waitFrames, 4);
         }
 
         if (settings.doBeforeTest != null)
@@ -63,14 +50,14 @@ public class HDRP_GraphicTestRunner
             settings.doBeforeTest.Invoke();
 
             // Wait again one frame, to be sure.
-            yield return null;
+            yield return new WaitForEndOfFrame();
         }
 
         // Reset temporal effects on hdCamera
         HDCamera.GetOrCreate(camera).Reset();
 
-        for (int i=0 ; i<settings.waitFrames ; ++i)
-            yield return null;
+        for (int i=0 ; i<waitFrames ; ++i)
+            yield return new WaitForEndOfFrame();
 
         var settingsSG = (GameObject.FindObjectOfType<HDRP_TestSettings>() as HDRP_ShaderGraph_TestSettings);
         if (settingsSG == null || !settingsSG.compareSGtoBI)
@@ -113,8 +100,8 @@ public class HDRP_GraphicTestRunner
 
             settingsSG.sgObjs.SetActive(true);
             settingsSG.biObjs.SetActive(false);
-            yield return null; // Wait a frame
-            yield return null;
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
             bool sgFail = false;
             bool biFail = false;
 
@@ -131,8 +118,8 @@ public class HDRP_GraphicTestRunner
             settingsSG.sgObjs.SetActive(false);
             settingsSG.biObjs.SetActive(true);
             settingsSG.biObjs.transform.position = settingsSG.sgObjs.transform.position; // Move to the same location.
-            yield return null; // Wait a frame
-            yield return null;
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
 
             // Second test: HDRP/Lit Materials
             try
@@ -149,6 +136,62 @@ public class HDRP_GraphicTestRunner
             else if (sgFail) Assert.Fail("Shader Graph Objects failed.");
             else if (biFail) Assert.Fail("Non-Shader Graph Objects failed to match Shader Graph objects.");
         }
+    }
+
+    void ConfigureXR(bool xrCompatible, HDRP_TestSettings settings)
+    {
+#if ENABLE_VR && UNITY_2020_2_OR_NEWER
+        if (xrCompatible)
+        {
+            XRGraphicsAutomatedTests.running = true;
+
+            // Increase tolerance to account for slight changes due to float precision
+            settings.ImageComparisonSettings.AverageCorrectnessThreshold *= settings.xrThresholdMultiplier;
+            settings.ImageComparisonSettings.PerPixelCorrectnessThreshold *= settings.xrThresholdMultiplier;
+
+            // Increase number of volumetric slices to compensate for initial half-resolution due to XR single-pass optimization
+            foreach (var volume in GameObject.FindObjectsOfType<Volume>())
+            {
+                if (volume.profile.TryGet<Fog>(out Fog fog))
+                    fog.volumeSliceCount.value *= 2;
+            }
+
+            List<XRDisplaySubsystem> xrDisplays = new List<XRDisplaySubsystem>();
+            SubsystemManager.GetInstances(xrDisplays);
+            Assume.That(xrDisplays.Count == 1 && xrDisplays[0].running, "XR display MockHMD is not running!");
+
+            // Configure MockHMD to use single-pass and compare reference image against second view (right eye)
+            xrDisplays[0].SetPreferredMirrorBlitMode(XRMirrorViewBlitMode.RightEye);
+
+            // Configure MockHMD stereo mode
+            bool useMultipass = false;
+            if (useMultipass)
+            {
+                xrDisplays[0].textureLayout = XRDisplaySubsystem.TextureLayout.SeparateTexture2Ds;
+                Unity.XR.MockHMD.MockHMD.SetRenderMode(Unity.XR.MockHMD.MockHMDBuildSettings.RenderMode.MultiPass);
+            }
+            else
+            {
+                xrDisplays[0].textureLayout = XRDisplaySubsystem.TextureLayout.Texture2DArray;
+                Unity.XR.MockHMD.MockHMD.SetRenderMode(Unity.XR.MockHMD.MockHMDBuildSettings.RenderMode.SinglePassInstanced);
+            }
+
+            // Configure MockHMD to match the original settings from the test scene
+            ImageAssert.GetImageResolution(settings.ImageComparisonSettings, out int w, out int h);
+            Unity.XR.MockHMD.MockHMD.SetEyeResolution(w, h);
+            Unity.XR.MockHMD.MockHMD.SetMirrorViewCrop(0.0f);
+
+#if UNITY_EDITOR
+            UnityEditor.TestTools.Graphics.SetupGraphicsTestCases.SetGameViewSize(w, h);
+#else
+            Screen.SetResolution(w, h, FullScreenMode.Windowed);
+#endif
+        }
+        else
+        {
+            Assert.Ignore("Test scene is not compatible with XR and will be skipped.");
+        }
+#endif
     }
 
 #if UNITY_EDITOR

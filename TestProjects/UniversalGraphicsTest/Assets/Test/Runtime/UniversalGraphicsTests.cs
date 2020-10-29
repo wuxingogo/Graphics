@@ -9,6 +9,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering.Universal;
+using System.Collections.Generic;
+using UnityEngine.XR.Management;
 
 public class UniversalGraphicsTests
 {
@@ -16,20 +18,14 @@ public class UniversalGraphicsTests
     static bool wasFirstSceneRan = false;
     const int firstSceneAdditionalFrames = 3;
 #endif
+
     public const string universalPackagePath = "Assets/ReferenceImages";
 
     [UnityTest, Category("UniversalRP")]
     [PrebuildSetup("SetupGraphicsTestCases")]
     [UseGraphicsTestCases(universalPackagePath)]
-
-
     public IEnumerator Run(GraphicsTestCase testCase)
     {
-#if ENABLE_VR
-        // XRTODO: Fix XR tests on macOS or disable them from Yamato directly
-        if (XRGraphicsAutomatedTests.enabled && (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer))
-            Assert.Ignore("Universal XR tests do not run on macOS.");
-#endif
         SceneManager.LoadScene(testCase.ScenePath);
 
         // Always wait one frame for scene load
@@ -39,19 +35,8 @@ public class UniversalGraphicsTests
         var settings = Object.FindObjectOfType<UniversalGraphicsTestSettings>();
         Assert.IsNotNull(settings, "Invalid test scene, couldn't find UniversalGraphicsTestSettings");
 
-#if ENABLE_VR
         if (XRGraphicsAutomatedTests.enabled)
-        {
-            if (settings.XRCompatible)
-            {
-                XRGraphicsAutomatedTests.running = true;
-            }
-            else
-            {
-                Assert.Ignore("Test scene is not compatible with XR and will be skipped.");
-            }
-        }
-#endif
+            ConfigureXR(settings.XRCompatible, settings.ImageComparisonSettings);
 
         Scene scene = SceneManager.GetActiveScene();
 
@@ -60,9 +45,11 @@ public class UniversalGraphicsTests
         int waitFrames = settings.WaitFrames;
 
         if (settings.ImageComparisonSettings.UseBackBuffer && settings.WaitFrames < 1)
-        {
             waitFrames = 1;
-        }
+
+        if (XRGraphicsAutomatedTests.running)
+            waitFrames = Mathf.Max(4, waitFrames);
+
         for (int i = 0; i < waitFrames; i++)
             yield return new WaitForEndOfFrame();
 
@@ -96,6 +83,51 @@ public class UniversalGraphicsTests
 
         if (allocatesMemory)
             Assert.Fail("Allocated memory when rendering what is on main camera");
+    }
+
+    void ConfigureXR(bool xrCompatible, ImageComparisonSettings settings)
+    {
+#if ENABLE_VR && UNITY_2020_2_OR_NEWER
+        if (xrCompatible)
+        {
+            XRGraphicsAutomatedTests.running = true;
+
+            List<XRDisplaySubsystem> xrDisplays = new List<XRDisplaySubsystem>();
+            SubsystemManager.GetInstances(xrDisplays);
+            Assume.That(xrDisplays.Count == 1 && xrDisplays[0].running, "XR display MockHMD is not running!");
+
+            // Configure MockHMD to use single-pass and compare reference image against second view (right eye)
+            xrDisplays[0].SetPreferredMirrorBlitMode(XRMirrorViewBlitMode.RightEye);
+
+            // Configure MockHMD stereo mode
+            bool useMultipass = false;
+            if (useMultipass)
+            {
+                xrDisplays[0].textureLayout = XRDisplaySubsystem.TextureLayout.SeparateTexture2Ds;
+                Unity.XR.MockHMD.MockHMD.SetRenderMode(Unity.XR.MockHMD.MockHMDBuildSettings.RenderMode.MultiPass);
+            }
+            else
+            {
+                xrDisplays[0].textureLayout = XRDisplaySubsystem.TextureLayout.Texture2DArray;
+                Unity.XR.MockHMD.MockHMD.SetRenderMode(Unity.XR.MockHMD.MockHMDBuildSettings.RenderMode.SinglePassInstanced);
+            }
+
+            // Configure MockHMD to match the original settings from the test scene
+            ImageAssert.GetImageResolution(settings, out int w, out int h);
+            Unity.XR.MockHMD.MockHMD.SetEyeResolution(w, h);
+            Unity.XR.MockHMD.MockHMD.SetMirrorViewCrop(0.0f);
+
+#if UNITY_EDITOR
+            UnityEditor.TestTools.Graphics.SetupGraphicsTestCases.SetGameViewSize(w, h);
+#else
+            Screen.SetResolution(w, h, FullScreenMode.Windowed);
+#endif
+        }
+        else
+        {
+            Assert.Ignore("Test scene is not compatible with XR and will be skipped.");
+        }
+#endif
     }
 
 #if UNITY_EDITOR

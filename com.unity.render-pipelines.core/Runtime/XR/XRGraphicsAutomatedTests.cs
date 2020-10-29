@@ -8,7 +8,16 @@ namespace UnityEngine.Rendering
     public static class XRGraphicsAutomatedTests
     {
         // XR tests can be enabled from the command line. Cache result to avoid GC.
-        static bool activatedFromCommandLine { get => Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-xr-tests"); }
+        static bool activatedFromCommandLine
+        {
+#if UNITY_EDITOR
+            get => Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-xr-reuse-tests");
+#elif XR_REUSE_TESTS_STANDALONE
+            get => true;
+#else
+            get => false;
+#endif
+        }
 
         /// <summary>
         /// Used by render pipelines to initialize XR tests.
