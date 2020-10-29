@@ -196,7 +196,7 @@ namespace UnityEngine.Rendering.Universal
                 RenderTexture.ReleaseTemporary(testRenderTexture);
         }
 
-        bool RefreshXrSdk()
+        internal bool RefreshXrSdk()
         {
             GetDisplaySubsystem();
 
