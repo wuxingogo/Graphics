@@ -24,7 +24,7 @@ public class HDRP_GraphicTestRunner
 
         // Arbitrary wait for 5 frames for the scene to load, and other stuff to happen (like Realtime GI to appear ...)
         for (int i=0 ; i<5 ; ++i)
-            yield return null;
+            yield return new WaitForEndOfFrame();
 
         // Load the test settings
         var settings = GameObject.FindObjectOfType<HDRP_TestSettings>();
