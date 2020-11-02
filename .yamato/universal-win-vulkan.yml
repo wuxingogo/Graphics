@@ -116,7 +116,7 @@ Universal_Win_Vulkan_playmode_XR_il2cpp_apiNet4_Linear_trunk:
                   set /p GIT_REVISIONDATE=<revdate.tmp
                   echo %GIT_REVISIONDATE%
                   del revdate.tmp
-                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=IL2CPP --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-tests" --extra-editor-arg="-force-vulkan"
+                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=IL2CPP --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-reuse-tests" --extra-editor-arg="-force-vulkan"
     artifacts:
         logs:
             paths:
@@ -235,7 +235,7 @@ Universal_Win_Vulkan_playmode_XR_mono_apiNet2_Linear_trunk:
                   set /p GIT_REVISIONDATE=<revdate.tmp
                   echo %GIT_REVISIONDATE%
                   del revdate.tmp
-                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=Mono2x --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-tests" --extra-editor-arg="-force-vulkan"
+                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=Mono2x --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-reuse-tests" --extra-editor-arg="-force-vulkan"
     artifacts:
         logs:
             paths:
@@ -370,7 +370,7 @@ Universal_Win_Vulkan_playmode_XR_il2cpp_apiNet4_Linear_CUSTOM-REVISION:
                   set /p GIT_REVISIONDATE=<revdate.tmp
                   echo %GIT_REVISIONDATE%
                   del revdate.tmp
-                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=IL2CPP --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-tests" --extra-editor-arg="-force-vulkan"
+                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=IL2CPP --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-reuse-tests" --extra-editor-arg="-force-vulkan"
     artifacts:
         logs:
             paths:
@@ -508,7 +508,7 @@ Universal_Win_Vulkan_playmode_XR_mono_apiNet2_Linear_CUSTOM-REVISION:
                   set /p GIT_REVISIONDATE=<revdate.tmp
                   echo %GIT_REVISIONDATE%
                   del revdate.tmp
-                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=Mono2x --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-tests" --extra-editor-arg="-force-vulkan"
+                  cd TestProjects/UniversalGraphicsTest && utr --suite=playmode --testproject=. --editor-location=.Editor --artifacts_path=test-results --scripting-backend=Mono2x --extra-editor-arg="-colorspace=Linear" --reruncount=2 --extra-editor-arg="-xr-reuse-tests" --extra-editor-arg="-force-vulkan"
     artifacts:
         logs:
             paths:

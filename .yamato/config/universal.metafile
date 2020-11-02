@@ -14,7 +14,7 @@ test_platforms:
   - type: playmode
     name: playmode_XR
     extra_utr_flags:
-      - --extra-editor-arg="-xr-tests" 
+      - --extra-editor-arg="-xr-reuse-tests" 
 platforms:
   - name: Win
     apis:
