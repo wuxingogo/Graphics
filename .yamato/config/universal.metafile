@@ -14,7 +14,14 @@ test_platforms:
   - type: playmode
     name: playmode_XR
     extra_utr_flags:
-      - --extra-editor-arg="-xr-reuse-tests" 
+      - --extra-editor-arg="-xr-reuse-tests"
+  - type: Standalone
+    name: Standalone_XR
+    extra_utr_flags:
+      - --extra-editor-arg="-xr-reuse-tests"
+    timeout_build:
+      Android: 3600
+      Win: 3600
 platforms:
   - name: Win
     apis:
@@ -60,6 +67,7 @@ all:
       color_space: Linear
       test_platforms:
         - Standalone
+        - Standalone_XR
         - editmode
         - playmode
         - playmode_XR
