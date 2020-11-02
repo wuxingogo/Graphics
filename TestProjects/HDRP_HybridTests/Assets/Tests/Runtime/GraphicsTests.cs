@@ -5,8 +5,8 @@ using System.Collections;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.TestTools;
-//using UnityEngine.XR;
 using UnityEngine.TestTools.Graphics;
 using UnityEngine.SceneManagement;
 using Unity.Entities;
@@ -16,6 +16,7 @@ public class GraphicsTests
     [UnityTest, Category("Custom Graphics Tests")]
     [PrebuildSetup("SetupGraphicsTestCases")]
     [UseGraphicsTestCases]
+    [Timeout(5 * 60 * 1000)] // Set timeout to 5 minutes to handle complex scenes with many shaders (default timeout is 3 minutes)
     public IEnumerator Run(GraphicsTestCase testCase)
     {
         CleanUp();
@@ -40,9 +41,12 @@ public class GraphicsTests
         GameObject[] camObjects = GameObject.FindGameObjectsWithTag("MainCamera");
         var cameras = camObjects.Select(x=>x.GetComponent<Camera>());
 
+        // Activate XR test path if required
+        XRGraphicsAutomatedTests.running = XRGraphicsAutomatedTests.enabled;
+
         // WaitFrames according to settings
         for (int i = 0; i < settings.WaitFrames; i++)
-            yield return null;
+            yield return new WaitForEndOfFrame();
 
         // Test Assert
         ImageAssert.AreEqual(testCase.ReferenceImage, cameras.Where(x => x != null), settings.ImageComparisonSettings);
@@ -66,6 +70,8 @@ public class GraphicsTests
     {
         EntityManager m_Manager = World.DefaultGameObjectInjectionWorld.EntityManager;
         m_Manager.DestroyEntity(m_Manager.GetAllEntities());
+
+        XRGraphicsAutomatedTests.running = false;
     }
 
 }
