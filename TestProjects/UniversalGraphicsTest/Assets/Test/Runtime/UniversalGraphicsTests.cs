@@ -90,6 +90,7 @@ public class UniversalGraphicsTests
 #if ENABLE_VR && UNITY_2020_2_OR_NEWER
         if (xrCompatible)
         {
+            Debug.Log("Testing XR code path with MockHMD.");
             XRGraphicsAutomatedTests.running = true;
 
             List<XRDisplaySubsystem> xrDisplays = new List<XRDisplaySubsystem>();
