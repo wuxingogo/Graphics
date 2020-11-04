@@ -49,9 +49,11 @@ platforms:
       - name: Metal
         exclude_test_platforms:
           - editmode
+          - playmode_XR
       - name: OpenGLCore
         exclude_test_platforms:
           - Standalone
+          - playmode_XR
     components:
       - editor
       - il2cpp
