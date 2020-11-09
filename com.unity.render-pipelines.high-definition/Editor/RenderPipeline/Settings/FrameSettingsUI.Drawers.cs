@@ -106,8 +106,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     ),
                 CED.Group((serialized, owner) =>
                 {
-                    //TODOJENNY - should we have a global settings for DXR support + keep a finer grained toggle on the asset
-                    //if (HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportRayTracing)
+                    if (HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportRayTracing)
                     {
                         bool rtEffectUseAsync = (serialized.IsEnabled(FrameSettingsField.SSRAsync) ?? false) || (serialized.IsEnabled(FrameSettingsField.SSAOAsync) ?? false)
                         //|| (serialized.IsEnabled(FrameSettingsField.ContactShadowsAsync) ?? false) // Contact shadow async is not visible in the UI for now and defaults to true.
@@ -143,9 +142,11 @@ namespace UnityEditor.Rendering.HighDefinition
         static void Drawer_SectionRenderingSettings(SerializedFrameSettings serialized, Editor owner, bool withOverride)
         {
             bool isGUIenabled = GUI.enabled;
+            RenderPipelineSettings hdrpSettings = GetHDRPAssetFor(owner).currentPlatformRenderPipelineSettings;
             FrameSettings defaultFrameSettings = GetDefaultFrameSettingsFor(owner);
+            var frameSettingType = owner is IDefaultFrameSettingsType getType ? getType.GetFrameSettingsType() : FrameSettingsRenderType.Camera;
             var area = OverridableFrameSettingsArea.GetGroupContent(0, defaultFrameSettings, serialized);
-            /* TODOJENNY
+
             LitShaderMode defaultShaderLitMode;
             switch (hdrpSettings.supportedLitShaderMode)
             {
@@ -242,7 +243,7 @@ namespace UnityEditor.Rendering.HighDefinition
             area.AmmendInfo(FrameSettingsField.TransparentsWriteMotionVector, overrideable: () => hdrpSettings.supportMotionVectors);
             area.AmmendInfo(FrameSettingsField.Decals, overrideable: () => hdrpSettings.supportDecals);
             area.AmmendInfo(FrameSettingsField.Distortion, overrideable: () => hdrpSettings.supportDistortion);
-
+            
             area.AmmendInfo(FrameSettingsField.Postprocess, overrideable: () => (frameSettingType != FrameSettingsRenderType.CustomOrBakedReflection &&
                                                                                 frameSettingType != FrameSettingsRenderType.RealtimeReflection));
 
@@ -297,7 +298,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 hasMixedValues: serialized.materialQuality.hasMultipleDifferentValues
             );
             area.Draw(withOverride);
-            */
+
             GUI.enabled = isGUIenabled;
         }
 

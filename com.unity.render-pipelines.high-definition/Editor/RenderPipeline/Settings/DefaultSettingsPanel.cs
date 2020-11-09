@@ -80,8 +80,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
             internal static readonly GUIContent shaderVariantLogLevel = EditorGUIUtility.TrTextContent("Shader Variant Log Level","Controls the level logging in of shader variants information is outputted when a build is performed. Information appears in the Unity Console when the build finishes.");
 
-            internal static readonly GUIContent diffusionProfileSettingsLabel = EditorGUIUtility.TrTextContent("Default Diffusion Profile Assets", "TODOJENNY"); //TODOJENNY
-
             internal static GUIStyle sectionHeaderStyle = new GUIStyle(EditorStyles.boldLabel) { richText = true };
             internal static GUIStyle introStyle = new GUIStyle(EditorStyles.largeLabel) { wordWrap = true };
 
@@ -116,14 +114,7 @@ namespace UnityEditor.Rendering.HighDefinition
         HDDefaultSettings settingsSerialized;
         DiffusionProfileSettingsListUI m_DiffusionProfileUI;
         public void DoGUI(string searchContext)
-        {
-        
-            if (HDRenderPipeline.defaultAsset == null) //TODOJENNY - fix that
-            {
-                EditorGUILayout.HelpBox("Base SRP Asset is not a HDRenderPipelineAsset.", MessageType.Warning);
-                return;
-            }
-            
+        {            
             if(HDRenderPipeline.currentPipeline == null)
             {
                 EditorGUILayout.HelpBox("No HDRP pipeline currently active (see Quality Settings active level).",MessageType.Warning);
@@ -146,9 +137,6 @@ namespace UnityEditor.Rendering.HighDefinition
                 EditorGUILayout.Space();
                 Inspector.Draw(serializedSettings,null);
             }
-// TODOJENNY
-//            EditorGUILayout.LabelField(Styles.diffusionProfileSettingsLabel,EditorStyles.largeLabel);
-//            Draw_DiffusionProfileSettings();
 
             serializedSettings.serializedObject.ApplyModifiedProperties();
             
@@ -220,16 +208,13 @@ namespace UnityEditor.Rendering.HighDefinition
                 EditorGUILayout.PropertyField(serialized.renderPipelineResources,Styles.renderPipelineResourcesContent);
                 bool oldGuiEnabled = GUI.enabled;
                 GUI.enabled = false;
-                /*
-                HDRenderPipeline hdrp = HDRenderPipeline.currentPipeline;
-                if(hdrp != null && hdrp.rayTracingSupported)*/
+
                 EditorGUILayout.PropertyField(serialized.renderPipelineRayTracingResources,Styles.renderPipelineRayTracingResourcesContent);
 
                 // Not serialized as editor only datas... Retrieve them in data
                 EditorGUI.showMixedValue = serialized.editorResourceHasMultipleDifferentValues;
                 var editorResources = EditorGUILayout.ObjectField(Styles.renderPipelineEditorResourcesContent,serialized.firstEditorResources,typeof(HDRenderPipelineEditorResources),allowSceneObjects: false) as HDRenderPipelineEditorResources;
-
-                //TODOJENNY check how to do this for default settings
+                
                 EditorGUI.showMixedValue = false;
 
                 GUI.enabled = oldGuiEnabled;

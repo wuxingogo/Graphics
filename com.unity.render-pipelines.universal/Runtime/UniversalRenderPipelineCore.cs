@@ -393,12 +393,12 @@ namespace UnityEngine.Rendering.Universal
         }
 
         /// <summary>
-        /// Returns the current render pipeline asset for the current quality setting.
-        /// If no render pipeline asset is assigned in QualitySettings, then returns the one assigned in GraphicsSettings.
+        /// Returns the active render pipeline asset as a UniversalRenderPipelineAsset
+        /// Will return null if no URP Asset is currently active.
         /// </summary>
         public static UniversalRenderPipelineAsset asset
         {
-            get => QualitySettings.renderPipeline as UniversalRenderPipelineAsset; //TODOJENNY
+            get => GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         }
 
         /// <summary>
@@ -442,7 +442,6 @@ namespace UnityEngine.Rendering.Universal
                 desc.width = (int)((float)desc.width * renderScale);
                 desc.height = (int)((float)desc.height * renderScale);
 
-
                 GraphicsFormat hdrFormat;
                 if (!needsAlpha && RenderingUtils.SupportsGraphicsFormat(GraphicsFormat.B10G11R11_UFloatPack32, FormatUsage.Linear | FormatUsage.Render))
                     hdrFormat = GraphicsFormat.B10G11R11_UFloatPack32;
@@ -461,6 +460,7 @@ namespace UnityEngine.Rendering.Universal
                 desc = camera.targetTexture.descriptor;
                 desc.width = camera.pixelWidth;
                 desc.height = camera.pixelHeight;
+                desc.graphicsFormat = isHdrEnabled ? desc.graphicsFormat : renderTextureFormatDefault;
                 // SystemInfo.SupportsRenderTextureFormat(camera.targetTexture.descriptor.colorFormat)
                 // will assert on R8_SINT since it isn't a valid value of RenderTextureFormat.
                 // If this is fixed then we can implement debug statement to the user explaining why some

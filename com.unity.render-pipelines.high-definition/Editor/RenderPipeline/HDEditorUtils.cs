@@ -230,7 +230,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
         internal static void DrawDecalLayerMask_Internal(Rect rect, GUIContent label, SerializedProperty property)
         {
-            if (HDRenderPipeline.defaultAsset == null) //TODOJENNY - remove?
+            if (HDRenderPipeline.defaultAsset == null)
                 return ;
 
             EditorGUI.BeginProperty(rect, label, property);
@@ -250,7 +250,7 @@ namespace UnityEditor.Rendering.HighDefinition
         internal static int DrawLightLayerMask(Rect rect, int value, GUIContent label = null)
         {
             int lightLayer = HDAdditionalLightData.RenderingLayerMaskToLightLayer(value);
-            if (HDRenderPipeline.currentAsset == null) //TODOJENNY move to default
+            if (HDRenderPipeline.currentAsset == null)
                 return lightLayer;
 
             EditorGUI.BeginChangeCheck();

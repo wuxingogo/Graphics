@@ -143,15 +143,19 @@ namespace UnityEngine.Rendering.HighDefinition
             }),
             MigrationStep.New(Version.RoughDistortion, (HDRenderPipelineAsset data) =>
             {
+#pragma warning disable 618 // Type or member is obsolete
                 FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings);
                 FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings);
                 FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings);
+#pragma warning restore 618
             }),
             MigrationStep.New(Version.VirtualTexturing, (HDRenderPipelineAsset data) =>
             {
+#pragma warning disable 618 // Type or member is obsolete
                 FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings);
                 FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings);
                 FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings);
+#pragma warning restore 618
             }) ,
             MigrationStep.New(Version.DefaultSettingsAsAnAsset,(HDRenderPipelineAsset data) =>
             {
