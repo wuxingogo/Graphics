@@ -25,6 +25,8 @@ namespace UnityEngine.Rendering.HighDefinition
             ReplaceTextureArraysByAtlasForCookieAndPlanar,
             AddedAdaptiveSSS,
             RemoveCookieCubeAtlasToOctahedral2D,
+            RoughDistortion,
+            VirtualTexturing,
             DefaultSettingsAsAnAsset
         }
 
@@ -114,7 +116,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 // Clamp to avoid too large atlases
                 cookieAtlasSize = Mathf.Clamp(cookieAtlasSize, (int)CookieAtlasResolution.CookieResolution256, (int)CookieAtlasResolution.CookieResolution8192);
-                planarSize = Mathf.Clamp(planarSize, (int)PlanarReflectionAtlasResolution.PlanarReflectionResolution256, (int)PlanarReflectionAtlasResolution.PlanarReflectionResolution8192);
+                planarSize = Mathf.Clamp(planarSize, (int)PlanarReflectionAtlasResolution.Resolution256, (int)PlanarReflectionAtlasResolution.Resolution8192);
 
                 lightLoopSettings.cookieAtlasSize = (CookieAtlasResolution)cookieAtlasSize;
                 lightLoopSettings.planarReflectionAtlasSize = (PlanarReflectionAtlasResolution)planarSize;
@@ -137,11 +139,20 @@ namespace UnityEngine.Rendering.HighDefinition
                 float planarSize = Mathf.Sqrt((int)lightLoopSettings.planarReflectionAtlasSize * (int)lightLoopSettings.planarReflectionAtlasSize * lightLoopSettings.maxPlanarReflectionOnScreen);
 #pragma warning restore 618
 
-                if(cookieAtlasSize > 128f && planarSize <= 1024f)
-                {
-                    Debug.LogWarning("HDRP Internally change the storage of Cube Cookie to Octahedral Projection inside the Planar Reflection Atlas. It is recommended that you increase the size of the Planar Projection Atlas if the cookies no longer fit.");
-                }
+                Debug.Log("HDRP Internally changed the storage of Cube Cookie to use Octahedral Projection inside the 2D Cookie Atlas. It is recommended that you increase the size of the 2D Cookie Atlas if your cookies no longer fit.");
             }),
+            MigrationStep.New(Version.RoughDistortion, (HDRenderPipelineAsset data) =>
+            {
+                FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings);
+                FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings);
+                FrameSettings.MigrateRoughDistortion(ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings);
+            }),
+            MigrationStep.New(Version.VirtualTexturing, (HDRenderPipelineAsset data) =>
+            {
+                FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings);
+                FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings);
+                FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings);
+            }) ,
             MigrationStep.New(Version.DefaultSettingsAsAnAsset,(HDRenderPipelineAsset data) =>
             {
 #if UNITY_EDITOR

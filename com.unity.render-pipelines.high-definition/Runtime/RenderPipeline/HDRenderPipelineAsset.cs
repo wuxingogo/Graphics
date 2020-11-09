@@ -14,6 +14,12 @@ namespace UnityEngine.Rendering.HighDefinition
         AllShaders,
     }
 
+    enum LensAttenuationMode
+    {
+        ImperfectLens,
+        PerfectLens
+    }
+
     /// <summary>
     /// High Definition Render Pipeline asset.
     /// </summary>
@@ -25,7 +31,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         HDRenderPipelineAsset()
         {
-            
+
         }
 
         void Reset() => OnValidate();
@@ -77,7 +83,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     maxPlanarReflectionProbePerCamera = currentPlatformRenderPipelineSettings.lightLoopSettings.maxPlanarReflectionOnScreen,
                     maxActivePlanarReflectionProbe = 512,
-                    planarReflectionProbeSize = (int)PlanarReflectionAtlasResolution.PlanarReflectionResolution512,
+                    planarReflectionProbeSize = (int)PlanarReflectionAtlasResolution.Resolution512,
                     maxActiveReflectionProbe = 512,
                     reflectionProbeSize = (int)currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCubemapSize
                 };
@@ -189,6 +195,23 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 return m_LightLayerNames;
             }
+        }
+
+
+        [SerializeField] private LensAttenuationMode m_LensAttenuation;
+
+        internal LensAttenuationMode lensAttenuationMode // TODOJENNY move to default
+        {
+            get => m_LensAttenuation;
+            set => m_LensAttenuation = value;
+        }
+
+        [SerializeField] private bool m_UseRenderGraph = true; //TODOJENNY - move to default
+
+        internal bool useRenderGraph
+        {
+            get => m_UseRenderGraph;
+            set => m_UseRenderGraph = value;
         }
 
         [System.NonSerialized]
@@ -331,7 +354,9 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 #endif
 
-        // Implement IVirtualTexturingEnabledRenderPipeline
+        /// <summary>
+        /// Indicates if virtual texturing is currently enabled for this render pipeline instance.
+        /// </summary>
         public bool virtualTexturingEnabled { get { return true; } }
     }
 }

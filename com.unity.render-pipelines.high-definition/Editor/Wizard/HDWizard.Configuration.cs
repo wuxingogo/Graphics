@@ -126,15 +126,18 @@ namespace UnityEditor.Rendering.HighDefinition
             public readonly int indent;
             public readonly bool forceDisplayCheck;
             public readonly bool skipErrorIcon;
-            public Entry(InclusiveScope scope, Style.ConfigStyle configStyle, Checker check, Fixer fix, bool forceDisplayCheck = false, bool skipErrorIcon = false)
+            public readonly bool displayAssetName;
+
+            public Entry(InclusiveScope scope, Style.ConfigStyle configStyle, Checker check, Fixer fix, bool forceDisplayCheck = false, bool skipErrorIcon = false, bool displayAssetName = false)
             {
                 this.scope = scope;
                 this.configStyle = configStyle;
                 this.check = check;
                 this.fix = fix;
                 this.forceDisplayCheck = forceDisplayCheck;
-                indent = scope == InclusiveScope.HDRPAsset || scope == InclusiveScope.XRManagement || scope == InclusiveScope.DXROptional ? 1 : 0;
+                indent = scope == InclusiveScope.HDRPAsset || scope == InclusiveScope.XRManagement ? 1 : 0;
                 this.skipErrorIcon = skipErrorIcon;
+                this.displayAssetName = displayAssetName;
             }
         }
 
@@ -173,13 +176,18 @@ namespace UnityEditor.Rendering.HighDefinition
                         new Entry(InclusiveScope.DXR, Style.dxrD3D12, IsDXRDirect3D12Correct, FixDXRDirect3D12),
                         new Entry(InclusiveScope.DXR, Style.dxrStaticBatching, IsDXRStaticBatchingCorrect, FixDXRStaticBatching),
                         new Entry(InclusiveScope.DXR, Style.dxrActivated, IsDXRActivationCorrect, FixDXRActivation),
+                        new Entry(InclusiveScope.DXR, Style.dxr64bits, IsArchitecture64Bits, FixArchitecture64Bits),
                         new Entry(InclusiveScope.DXR, Style.dxrResources, IsDXRAssetCorrect, FixDXRAsset),
-                        // Optional checks
-                        new Entry(InclusiveScope.DXROptional, Style.dxrScreenSpaceShadow, IsDXRScreenSpaceShadowCorrect, null, forceDisplayCheck: true, skipErrorIcon: true),
-                        new Entry(InclusiveScope.DXROptional, Style.dxrReflections, IsDXRReflectionsCorrect, null, forceDisplayCheck: true, skipErrorIcon: true),
-                        new Entry(InclusiveScope.DXROptional, Style.dxrTransparentReflections, IsDXRTransparentReflectionsCorrect, null, forceDisplayCheck: true, skipErrorIcon: true),
-                        new Entry(InclusiveScope.DXROptional, Style.dxrGI, IsDXRGICorrect, null, forceDisplayCheck: true, skipErrorIcon: true),
 
+                        // Optional checks
+                        new Entry(InclusiveScope.DXROptional, Style.dxrScreenSpaceShadow, IsDXRScreenSpaceShadowCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrScreenSpaceShadowFS, IsDXRScreenSpaceShadowFSCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrReflections, IsDXRReflectionsCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrReflectionsFS, IsDXRReflectionsFSCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrTransparentReflections, IsDXRTransparentReflectionsCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrTransparentReflectionsFS, IsDXRTransparentReflectionsFSCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrGI, IsDXRGICorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
+                        new Entry(InclusiveScope.DXROptional, Style.dxrGIFS, IsDXRGIFSCorrect, null, forceDisplayCheck: true, skipErrorIcon: true, displayAssetName: true),
                     };
                 return m_Entries;
             }
@@ -217,7 +225,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     });
         }
 
-        #endregion 
+        #endregion
 
         #region Queue
 
@@ -231,7 +239,7 @@ namespace UnityEditor.Rendering.HighDefinition
             public void Stop() => m_StopRequested = true;
 
             // Function to pause/unpause the action execution
-            public void Pause() => m_OnPause = true;  
+            public void Pause() => m_OnPause = true;
             public void Unpause() => m_OnPause = false;
 
             public int remainingFixes => m_Queue.Count;
@@ -530,8 +538,8 @@ namespace UnityEditor.Rendering.HighDefinition
             => !PlayerSettings.GetUseDefaultGraphicsAPIs(CalculateSelectedBuildTarget());
         void FixDXRAutoGraphicsAPI(bool fromAsyncUnused)
             => PlayerSettings.SetUseDefaultGraphicsAPIs(CalculateSelectedBuildTarget(), false);
-        
-        bool IsDXRDirect3D12Correct()
+
+        internal bool IsDXRDirect3D12Correct()
             => PlayerSettings.GetGraphicsAPIs(CalculateSelectedBuildTarget()).FirstOrDefault() == GraphicsDeviceType.Direct3D12 && !HDProjectSettings.wizardNeedRestartAfterChangingToDX12;
         void FixDXRDirect3D12(bool fromAsyncUnused)
         {
@@ -571,21 +579,17 @@ namespace UnityEditor.Rendering.HighDefinition
             if (WillEditorUseFirstGraphicsAPI(target))
             {
                 if (EditorUtility.DisplayDialog("Changing editor graphics device",
-                    "You've changed the active graphics API. This requires a restart of the Editor. After restarting finish fixing DXR configuration by launching the wizard again.",
+                    "You've changed the active graphics API. This requires a restart of the Editor. After restarting, finish fixing DXR configuration by launching the wizard again.",
                     "Restart Editor", "Not now"))
                 {
-                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                    {
-                        HDProjectSettings.wizardNeedRestartAfterChangingToDX12 = false;
-                        RequestCloseAndRelaunchWithCurrentArguments();
-                        GUIUtility.ExitGUI();
-                    }
+                    HDProjectSettings.wizardNeedRestartAfterChangingToDX12 = false;
+                    RequestCloseAndRelaunchWithCurrentArguments();
                 }
                 else
                     EditorApplication.quitting += () => HDProjectSettings.wizardNeedRestartAfterChangingToDX12 = false;
             }
         }
-        
+
         void CheckPersistantNeedReboot()
         {
             if (HDProjectSettings.wizardNeedRestartAfterChangingToDX12)
@@ -594,7 +598,9 @@ namespace UnityEditor.Rendering.HighDefinition
 
         bool IsDXRAssetCorrect()
             => HDDefaultSettings.instance != null
-            && HDDefaultSettings.instance.AreRayTracingResourcesCreated();
+            && HDDefaultSettings.instance.AreRayTracingResourcesCreated()
+            && UnityEngine.SystemInfo.supportsRayTracing;
+
         void FixDXRAsset(bool fromAsyncUnused)
         {
             if (!IsHdrpAssetUsedCorrect())
@@ -607,18 +613,48 @@ namespace UnityEditor.Rendering.HighDefinition
             => HDRenderPipeline.currentAsset != null
             && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.hdShadowInitParams.supportScreenSpaceShadows;
 
+        bool IsDXRScreenSpaceShadowFSCorrect()
+        {
+            FrameSettings defaultCameraFS = HDDefaultSettings.instance.GetDefaultFrameSettings(FrameSettingsRenderType.Camera);
+            return defaultCameraFS.IsEnabled(FrameSettingsField.ScreenSpaceShadows);
+        }
+
         bool IsDXRReflectionsCorrect()
             => HDRenderPipeline.currentAsset != null
             && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportSSR;
+
+        bool IsDXRReflectionsFSCorrect()
+        {
+            FrameSettings defaultCameraFS = HDDefaultSettings.instance.GetDefaultFrameSettings(FrameSettingsRenderType.Camera);
+            return defaultCameraFS.IsEnabled(FrameSettingsField.SSR);
+        }
 
         bool IsDXRTransparentReflectionsCorrect()
             => HDRenderPipeline.currentAsset != null
             && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportSSRTransparent;
 
+        bool IsDXRTransparentReflectionsFSCorrect()
+        {
+            FrameSettings defaultCameraFS = HDDefaultSettings.instance.GetDefaultFrameSettings(FrameSettingsRenderType.Camera);
+            return defaultCameraFS.IsEnabled(FrameSettingsField.TransparentSSR);
+        }
+
         bool IsDXRGICorrect()
             => HDRenderPipeline.currentAsset != null
             && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportSSGI;
 
+        bool IsDXRGIFSCorrect()
+        {
+            FrameSettings defaultCameraFS = HDDefaultSettings.instance.GetDefaultFrameSettings(FrameSettingsRenderType.Camera);
+            return defaultCameraFS.IsEnabled(FrameSettingsField.SSGI);
+        }
+
+        bool IsArchitecture64Bits()
+            => EditorUserBuildSettings.activeBuildTarget == BuildTarget.StandaloneWindows64;
+		void FixArchitecture64Bits(bool fromAsyncUnused)
+		{
+			EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
+		}
 
         bool IsDXRStaticBatchingCorrect()
             => !GetStaticBatching(CalculateSelectedBuildTarget());
@@ -659,7 +695,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 callback?.Invoke(lastPackageConfigInstalledCheck = false);
                 return;
             }
-            
+
             m_UsedPackageRetriever.ProcessAsync(
                 k_HdrpConfigPackageName,
                 (installed, info) =>
@@ -682,7 +718,23 @@ namespace UnityEditor.Rendering.HighDefinition
                 {
                     // installed is not used because this one will be always installed
 
+                    bool copyFolder = false;
                     if (!Directory.Exists(k_LocalHdrpConfigPackagePath))
+                    {
+                        copyFolder = true;
+                    }
+                    else
+                    {
+                        if (EditorUtility.DisplayDialog("Installing local configuration package",
+                            "A local configuration package already exists. Do you want to replace it or keep it? Replacing it may overwrite local changes you made and keeping it may make it desynchronized with the main HDRP packages version.",
+                            "Replace", "Keep"))
+                        {
+                            Directory.Delete(k_LocalHdrpConfigPackagePath, true);
+                            copyFolder = true;
+                        }
+                    }
+
+                    if (copyFolder)
                     {
                         CopyFolder(info.resolvedPath, k_LocalHdrpConfigPackagePath);
                     }
@@ -693,7 +745,7 @@ namespace UnityEditor.Rendering.HighDefinition
                         onCompletion?.Invoke();
                     });
                 });
-        
+
         void RefreshDisplayOfConfigPackageArea()
         {
             if (!m_UsedPackageRetriever.isRunning)
@@ -727,7 +779,7 @@ namespace UnityEditor.Rendering.HighDefinition
             string m_CurrentPackageName;
 
             Queue<(string packageName, Action<bool, PackageManager.PackageInfo> action)> m_Queue = new Queue<(string packageName, Action<bool, PackageManager.PackageInfo> action)>();
-            
+
             bool isCurrentInProgress => m_CurrentRequest != null && !m_CurrentRequest.Equals(null) && !m_CurrentRequest.IsCompleted;
 
             public bool isRunning => isCurrentInProgress || m_Queue.Count() > 0;
@@ -790,7 +842,7 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
         UsedPackageRetriever m_UsedPackageRetriever = new UsedPackageRetriever();
-        
+
         class LastAvailablePackageVersionRetriever
         {
             PackageManager.Requests.SearchRequest m_CurrentRequest;
@@ -855,7 +907,7 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
         LastAvailablePackageVersionRetriever m_LastAvailablePackageRetriever = new LastAvailablePackageVersionRetriever();
-        
+
         class PackageInstaller
         {
             PackageManager.Requests.AddRequest m_CurrentRequest;

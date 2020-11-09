@@ -23,8 +23,9 @@ namespace UnityEditor.Rendering.HighDefinition
                 activateHandler = s_IMGUIImpl.OnActivate,
                 keywords = SettingsProvider.GetSearchKeywordsFromGUIContentProperties<HDRenderPipelineUI.Styles>()
                     .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<DefaultSettingsPanelIMGUI.Styles>())
-                    .Concat(OverridableFrameSettingsArea.frameSettingsKeywords).ToArray(),
-                guiHandler = s_IMGUIImpl.OnGUI,
+                    .Concat(OverridableFrameSettingsArea.frameSettingsKeywords)
+                    .ToArray(),
+                guiHandler = s_IMGUIImpl.DoGUI
             };
         }
     }
@@ -79,8 +80,11 @@ namespace UnityEditor.Rendering.HighDefinition
 
             internal static readonly GUIContent shaderVariantLogLevel = EditorGUIUtility.TrTextContent("Shader Variant Log Level","Controls the level logging in of shader variants information is outputted when a build is performed. Information appears in the Unity Console when the build finishes.");
 
+            internal static readonly GUIContent diffusionProfileSettingsLabel = EditorGUIUtility.TrTextContent("Default Diffusion Profile Assets", "TODOJENNY"); //TODOJENNY
+
             internal static GUIStyle sectionHeaderStyle = new GUIStyle(EditorStyles.boldLabel) { richText = true };
             internal static GUIStyle introStyle = new GUIStyle(EditorStyles.largeLabel) { wordWrap = true };
+
         }
 
         Vector2 m_ScrollViewPosition = Vector2.zero;
@@ -110,12 +114,21 @@ namespace UnityEditor.Rendering.HighDefinition
 
         SerializedHDDefaultSettings serializedSettings;
         HDDefaultSettings settingsSerialized;
-        public void OnGUI(string searchContext)
+        DiffusionProfileSettingsListUI m_DiffusionProfileUI;
+        public void DoGUI(string searchContext)
         {
+        
+            if (HDRenderPipeline.defaultAsset == null) //TODOJENNY - fix that
+            {
+                EditorGUILayout.HelpBox("Base SRP Asset is not a HDRenderPipelineAsset.", MessageType.Warning);
+                return;
+            }
+            
             if(HDRenderPipeline.currentPipeline == null)
             {
                 EditorGUILayout.HelpBox("No HDRP pipeline currently active (see Quality Settings active level).",MessageType.Warning);
             }
+            
             if((serializedSettings == null) || (settingsSerialized != HDDefaultSettings.instance))
             {
                 settingsSerialized = HDDefaultSettings.instance;
@@ -133,7 +146,12 @@ namespace UnityEditor.Rendering.HighDefinition
                 EditorGUILayout.Space();
                 Inspector.Draw(serializedSettings,null);
             }
+// TODOJENNY
+//            EditorGUILayout.LabelField(Styles.diffusionProfileSettingsLabel,EditorStyles.largeLabel);
+//            Draw_DiffusionProfileSettings();
+
             serializedSettings.serializedObject.ApplyModifiedProperties();
+            
         }
 
         /// <summary>
@@ -145,7 +163,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             m_ScrollViewPosition = Vector2.zero;
         }
-
+        
         #region Global HDDefaultSettings asset selection
         void Draw_AssetSelection(ref SerializedHDDefaultSettings serialized, Editor owner)
         {
@@ -222,7 +240,7 @@ namespace UnityEditor.Rendering.HighDefinition
         #endregion // Resources
 
         #region Frame Settings
-
+        
         public enum SelectedFrameSettings
         {
             Camera,
@@ -462,7 +480,6 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
         #endregion
-
     }
 
     class VolumeProfileCreator:ProjectWindowCallback.EndNameEditAction
