@@ -106,7 +106,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     ),
                 CED.Group((serialized, owner) =>
                 {
-                    if (HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportRayTracing)
+                    if (HDRenderPipeline.currentAsset != null && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.supportRayTracing)
                     {
                         bool rtEffectUseAsync = (serialized.IsEnabled(FrameSettingsField.SSRAsync) ?? false) || (serialized.IsEnabled(FrameSettingsField.SSAOAsync) ?? false)
                         //|| (serialized.IsEnabled(FrameSettingsField.ContactShadowsAsync) ?? false) // Contact shadow async is not visible in the UI for now and defaults to true.
