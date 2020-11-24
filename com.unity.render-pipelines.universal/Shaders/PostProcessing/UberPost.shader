@@ -9,7 +9,6 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
         #pragma multi_compile_local_fragment _ _FILM_GRAIN
         #pragma multi_compile_local_fragment _ _DITHERING
         #pragma multi_compile_local_fragment _ _LINEAR_TO_SRGB_CONVERSION
-        #pragma multi_compile_local_fragment _ _USE_FAST_SRGB_LINEAR_CONVERSION
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -143,7 +142,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             // Gamma space... Just do the rest of Uber in linear and convert back to sRGB at the end
             #if UNITY_COLORSPACE_GAMMA
             {
-                color = GetSRGBToLinear(color);
+                color = SRGBToLinear(color);
             }
             #endif
 
@@ -206,7 +205,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             // Back to sRGB
             #if UNITY_COLORSPACE_GAMMA || _LINEAR_TO_SRGB_CONVERSION
             {
-                color = GetLinearToSRGB(color);
+                color = LinearToSRGB(color);
             }
             #endif
 

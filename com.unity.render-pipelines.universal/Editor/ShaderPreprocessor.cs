@@ -24,8 +24,7 @@ namespace UnityEditor.Rendering.Universal
         DeferredShading = (1 << 8), // DeferredRenderer is in the list of renderer
         DeferredWithAccurateGbufferNormals = (1 << 9),
         DeferredWithoutAccurateGbufferNormals = (1 << 10),
-        ScreenSpaceOcclusion = (1 << 11),
-        UseFastSRGBLinearConversion = (1 << 12)
+        ScreenSpaceOcclusion = (1 << 11)
     }
 
     internal class ShaderPreprocessor : IPreprocessShaders
@@ -56,7 +55,6 @@ namespace UnityEditor.Rendering.Universal
         ShaderKeyword m_GbufferNormalsOct = new ShaderKeyword(ShaderKeywordStrings._GBUFFER_NORMALS_OCT);
         ShaderKeyword m_UseDrawProcedural = new ShaderKeyword(ShaderKeywordStrings.UseDrawProcedural);
         ShaderKeyword m_ScreenSpaceOcclusion = new ShaderKeyword(ShaderKeywordStrings.ScreenSpaceOcclusion);
-        ShaderKeyword m_UseFastSRGBLinearConversion = new ShaderKeyword(ShaderKeywordStrings.UseFastSRGBLinearConversion);
 
         ShaderKeyword m_LocalDetailMulx2;
         ShaderKeyword m_LocalDetailScaled;
@@ -114,10 +112,6 @@ namespace UnityEditor.Rendering.Universal
             // Left for backward compatibility
             if (compilerData.shaderKeywordSet.IsEnabled(m_MixedLightingSubtractive) &&
                 !IsFeatureEnabled(features, ShaderFeatures.MixedLighting))
-                return true;
-
-            if (compilerData.shaderKeywordSet.IsEnabled(m_UseFastSRGBLinearConversion) &&
-                !IsFeatureEnabled(features, ShaderFeatures.UseFastSRGBLinearConversion))
                 return true;
 
             // Strip here only if mixed lighting is disabled
@@ -400,9 +394,6 @@ namespace UnityEditor.Rendering.Universal
 
             if (pipelineAsset.supportsTerrainHoles)
                 shaderFeatures |= ShaderFeatures.TerrainHoles;
-
-            if (pipelineAsset.useFastSRGBLinearConversion)
-                shaderFeatures |= ShaderFeatures.UseFastSRGBLinearConversion;
 
             bool hasScreenSpaceOcclusion = false;
             bool hasDeferredRenderer = false;
