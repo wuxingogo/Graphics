@@ -1,27 +1,8 @@
-# What's new in URP 11.0
+# What's new in the Universal Render Pipeline
 
-This section contains information about new features, improvements, and issues fixed in URP 11.0.
+This section contains information about new features, improvements, and issues fixed in different versions of the Universal Render Pipeline.
 
-For a complete list of changes made in URP 11, refer to the [Changelog](../../changelog/CHANGELOG.html).
+The section contains the following pages:
 
-## Features
+* [URP 10](urp-whats-new-10.md)
 
-This section contains the overview of the new features in this release.
-
-### TODO: Feature 1
-
-## Improvements
-
-This section contains the overview of the major improvements in this release.
-
-### TODO: Improvement 1
-
-## Issues resolved
-
-TODO: If we would like to highlight some particular fixes, list them here. 
-
-For a complete list of issues resolved in URP 11, see the [Changelog](../../changelog/CHANGELOG.html).
-
-## Known issues
-
-For information on the known issues in URP 11, see the section [Known issues](../known-issues.md).
