@@ -12,6 +12,10 @@ namespace UnityEditor.Rendering.HighDefinition
     // We don't reuse the other surface option ui block, AxF is too different
     class AxfSurfaceInputsUIBlock : MaterialUIBlock
     {
+        public class Config
+        {
+            public static bool s_ShowAdvanced = true;
+        }
         public class Styles
         {
             public const string header = "Advanced Surface Inputs";
@@ -220,9 +224,9 @@ namespace UnityEditor.Rendering.HighDefinition
         static string               m_ClearcoatIORMapText = "_SVBRDF_ClearcoatIORMap";
         MaterialProperty  m_ClearcoatIORMap = null;
 
-        ExpandableBit  m_ExpandableBit;
+        Expandable  m_ExpandableBit;
 
-        public AxfSurfaceInputsUIBlock(ExpandableBit expandableBit)
+        public AxfSurfaceInputsUIBlock(Expandable expandableBit)
         {
             m_ExpandableBit = expandableBit;
         }

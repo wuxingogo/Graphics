@@ -35,9 +35,9 @@ namespace UnityEditor.Rendering.HighDefinition
         static string m_MaterialTilingOffsetText = "_Material_SO";
         MaterialProperty m_MaterialTilingOffset = null;
 
-        ExpandableBit  m_ExpandableBit;
+        Expandable  m_ExpandableBit;
 
-        public AxfMainSurfaceInputsUIBlock(ExpandableBit expandableBit)
+        public AxfMainSurfaceInputsUIBlock(Expandable expandableBit)
         {
             m_ExpandableBit = expandableBit;
         }

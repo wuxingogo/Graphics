@@ -10,12 +10,9 @@ using static UnityEngine.Rendering.HighDefinition.HDMaterialProperties;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
-    /// <summary>
-    /// The UI block that represents a material layer list. The Layered Lit shader uses this UI block.
-    /// </summary>
-    public class LayerListUIBlock : MaterialUIBlock
+    class LayerListUIBlock : MaterialUIBlock
     {
-        internal class Styles
+        public class Styles
         {
             public const string header = "Layer List";
             public static readonly GUIContent layerNameHeader = EditorGUIUtility.TrTextContent("Layer name");
@@ -34,7 +31,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
         MaterialProperty layerCount = null;
 
-        ExpandableBit      m_ExpandableBit;
+        Expandable      m_ExpandableBit;
         bool[]          m_WithUV;
         Material[]      m_MaterialLayers = new Material[kMaxLayerCount];
         AssetImporter   m_MaterialImporter;
@@ -53,28 +50,21 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             if (layerNumber == 4)
             {
-                materialEditor.SetExpandedAreas((uint)ExpandableBit.ShowLayer3, true);
+                materialEditor.SetExpandedAreas((uint)Expandable.ShowLayer3, true);
             }
             if (layerNumber >= 3)
             {
-                materialEditor.SetExpandedAreas((uint)ExpandableBit.ShowLayer2, true);
+                materialEditor.SetExpandedAreas((uint)Expandable.ShowLayer2, true);
             }
-            materialEditor.SetExpandedAreas((uint)ExpandableBit.ShowLayer1, true);
+            materialEditor.SetExpandedAreas((uint)Expandable.ShowLayer1, true);
         }
 
-        /// <summary>
-        /// Constructs a LayerListUIBlock based on the parameters.
-        /// </summary>
-        /// <param name="expandableBit">Bit index used to store the state of the foldout</param>
-        public LayerListUIBlock(ExpandableBit expandableBit)
+        public LayerListUIBlock(Expandable expandableBit)
         {
             m_ExpandableBit = expandableBit;
             m_WithUV = new bool[] { true, true, true, true };
         }
 
-        /// <summary>
-        /// Loads the material properties for the block.
-        /// </summary>
         public override void LoadMaterialProperties()
         {
             layerCount = FindProperty(kLayerCount);
@@ -107,9 +97,6 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
 
-        /// <summary>
-        /// Renders the properties in the block.
-        /// </summary>
         public override void OnGUI()
         {
             using (var header = new MaterialHeaderScope(Styles.header, (uint)m_ExpandableBit, materialEditor))
@@ -207,7 +194,7 @@ namespace UnityEditor.Rendering.HighDefinition
             {
                 foreach (var mat in materials)
                 {
-                    LayeredLitGUI.SetupLayeredLitKeywordsAndPass(mat);
+                    LayeredLitGUI.SetupMaterialKeywordsAndPass(mat);
                 }
 
                 // SaveAssetsProcessor the referenced material in the users data

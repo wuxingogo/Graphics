@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using System.Linq;
-using System;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -15,7 +14,7 @@ namespace UnityEditor.Rendering.HighDefinition
     /// <summary>
     /// Wrapper to handle Material UI Blocks, it will handle initialization of the blocks when drawing the GUI.
     /// </summary>
-    public class MaterialUIBlockList : List<MaterialUIBlock>
+    class MaterialUIBlockList : List<MaterialUIBlock>
     {
         [System.NonSerialized]
         bool                        m_Initialized = false;
@@ -41,10 +40,11 @@ namespace UnityEditor.Rendering.HighDefinition
         /// <summary>
         /// Construct a ui block list
         /// </summary>
+        /// <returns></returns>
         public MaterialUIBlockList() : this(null) {}
 
         /// <summary>
-        /// Render the list of ui blocks
+        /// Render the list of ui blocks added contained in the materials property
         /// </summary>
         /// <param name="materialEditor"></param>
         /// <param name="properties"></param>
@@ -55,25 +55,16 @@ namespace UnityEditor.Rendering.HighDefinition
             Initialize(materialEditor, properties);
             foreach (var uiBlock in this)
             {
-                try
-                {
-                    // We load material properties at each frame because materials can be animated and to make undo/redo works
-                    uiBlock.UpdateMaterialProperties(properties);
-                    uiBlock.OnGUI();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
+                // We load material properties at each frame because materials can be animated and to make undo/redo works
+                uiBlock.UpdateMaterialProperties(properties);
+                uiBlock.OnGUI();
             }
         }
 
         /// <summary>
-        /// Initialize the ui blocks
+        /// Initialize the ui blocks, can be called at every frame, a guard is prevents more that one initialization
         /// <remarks>This function is called automatically by MaterialUIBlockList.OnGUI so you only need this when you want to render the UI Blocks in a custom order</remarks>
         /// </summary>
-        /// <param name="materialEditor">Material editor instance.</param>
-        /// <param name="properties">The list of properties in the inspected material(s).</param>
         public void Initialize(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             if (!m_Initialized)
