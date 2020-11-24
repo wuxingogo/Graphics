@@ -14,6 +14,8 @@ namespace UnityEngine.Rendering
     /// </summary>
     public sealed class VolumeManager
     {
+        internal static bool needIsolationFilteredByRenderer = false;
+
         static readonly Lazy<VolumeManager> s_Instance = new Lazy<VolumeManager>(() => new VolumeManager());
 
         /// <summary>
@@ -317,12 +319,18 @@ namespace UnityEngine.Rendering
             if (!onlyGlobal)
                 trigger.TryGetComponent<Camera>(out camera);
 
+#if UNITY_EDITOR
+            // requested or prefab isolation mode.
+            bool needIsolation = needIsolationFilteredByRenderer || (UnityEditor.SceneManagement.StageUtility.GetCurrentStageHandle() != UnityEditor.SceneManagement.StageUtility.GetMainStageHandle());
+#endif
+
             // Traverse all volumes
             foreach (var volume in volumes)
             {
 #if UNITY_EDITOR
                 // Skip volumes that aren't in the scene currently displayed in the scene view
-                if (!IsVolumeRenderedByCamera(volume, camera))
+                if (needIsolation
+                    && !IsVolumeRenderedByCamera(volume, camera))
                     continue;
 #endif
 
@@ -461,18 +469,19 @@ namespace UnityEngine.Rendering
     /// <summary>
     /// A scope in which a Camera filters a Volume.
     /// </summary>
-    [Obsolete("VolumeIsolationScope is deprecated, it does not have any effect anymore.")]
     public struct VolumeIsolationScope : IDisposable
     {
         /// <summary>
         /// Constructs a scope in which a Camera filters a Volume.
         /// </summary>
         /// <param name="unused">Unused parameter.</param>
-        public VolumeIsolationScope(bool unused) {}
+        public VolumeIsolationScope(bool unused)
+            => VolumeManager.needIsolationFilteredByRenderer = true;
 
         /// <summary>
         /// Stops the Camera from filtering a Volume.
         /// </summary>
-        void IDisposable.Dispose() {}
+        void IDisposable.Dispose()
+            => VolumeManager.needIsolationFilteredByRenderer = false;
     }
 }
