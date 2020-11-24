@@ -92,7 +92,7 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         /// <summary>
-        /// When enabled, bloom uses multiple bilinear samples for the prefiltering pass.
+        /// When enabled, bloom uses bicubic sampling instead of bilinear sampling for the upsampling passes.
         /// </summary>
         public bool highQualityPrefiltering
         {

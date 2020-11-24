@@ -105,8 +105,7 @@ void Frag(  PackedVaryingsToPS packedInput,
 
         if (angleFade.y < 0.0f) // if angle fade is enabled
         {
-            float3 decalNormal = float3(normalToWorld[0].z, normalToWorld[1].z, normalToWorld[2].z);
-            float dotAngle = dot(material.geomNormalWS, decalNormal);
+            float dotAngle = dot(material.geomNormalWS, normalToWorld[2].xyz);
             // See equation in DecalSystem.cs - simplified to a madd mul add here
             angleFadeFactor = saturate(angleFade.x + angleFade.y * (dotAngle * (dotAngle - 2.0)));
         }

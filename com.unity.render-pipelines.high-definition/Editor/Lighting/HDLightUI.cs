@@ -629,7 +629,6 @@ namespace UnityEditor.Rendering.HighDefinition
             unitRect.width = k_UnitWidth + .5f;
 
             // Draw the unit textfield
-            EditorGUI.BeginChangeCheck();
             EditorGUI.PropertyField(valueRect, serialized.intensity, s_Styles.empty);
             DrawLightIntensityUnitPopup(unitRect, serialized, owner);
 
@@ -690,6 +689,8 @@ namespace UnityEditor.Rendering.HighDefinition
                 else
                     EditorGUILayout.PropertyField(serialized.settings.color, s_Styles.color);
             }
+
+            EditorGUI.BeginChangeCheck();
 
             DrawLightIntensityGUILayout(serialized, owner);
 

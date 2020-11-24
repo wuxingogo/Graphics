@@ -703,18 +703,11 @@ CTYPE SharpenColor(NeighbourhoodSamples samples, CTYPE color, float sharpenStren
 {
     CTYPE linearC = color * PerceptualInvWeight(color);
     CTYPE linearAvg = samples.avgNeighbour * PerceptualInvWeight(samples.avgNeighbour);
+    linearC = linearC + (linearC - linearAvg) * sharpenStrength * 3;
 
 #if YCOCG
-    // Rotating back to RGB it leads to better behaviour when sharpening, a better approach needs definitively to be investigated in the future.
-
-    linearC.xyz = ConvertToOutputSpace(linearC.xyz);
-    linearAvg.xyz = ConvertToOutputSpace(linearAvg.xyz);
-    linearC.xyz = linearC.xyz + (linearC.xyz - linearAvg.xyz) * sharpenStrength * 3;
-    linearC.xyz = clamp(linearC.xyz, 0, CLAMP_MAX);
-
-    linearC = ConvertToWorkingSpace(linearC);
+    linearC.x = clamp(linearC.x, 0, CLAMP_MAX);
 #else
-    linearC = linearC + (linearC - linearAvg) * sharpenStrength * 3;
     linearC = clamp(linearC, 0, CLAMP_MAX);
 #endif
     return linearC * PerceptualWeight(linearC);
