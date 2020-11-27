@@ -3339,13 +3339,10 @@ namespace UnityEngine.Rendering.HighDefinition
             var initialMaximumLODLevel = QualitySettings.maximumLODLevel;
             try
             {
-#if UNITY_2021_1_OR_NEWER
-                // Modifying the variables this way does not set the dirty flag, which avoids repainting all views
-                QualitySettings.SetLODSettings(hdCamera.frameSettings.GetResolvedLODBias(hdrp), hdCamera.frameSettings.GetResolvedMaximumLODLevel(hdrp), false);
-#else
+
                 QualitySettings.lodBias = hdCamera.frameSettings.GetResolvedLODBias(hdrp);
                 QualitySettings.maximumLODLevel = hdCamera.frameSettings.GetResolvedMaximumLODLevel(hdrp);
-#endif
+
 
                 // This needs to be called before culling, otherwise in the case where users generate intermediate renderers, it can provoke crashes.
                 BeginCameraRendering(renderContext, camera);
