@@ -106,10 +106,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
         public static SortingLayer[] GetCachedSortingLayer()
         {
-            if (s_SortingLayers is null)
-            {
-                s_SortingLayers = SortingLayer.layers;
-            }
+            s_SortingLayers ??= SortingLayer.layers;
 #if UNITY_EDITOR
             // we should fix. Make a non allocating version of this
             if(!Application.isPlaying)
