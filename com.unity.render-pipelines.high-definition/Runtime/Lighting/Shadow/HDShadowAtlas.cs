@@ -203,7 +203,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     continue;
 
                 bool mixedInDynamicAtlas = false;
-#if UNITY_2021_1_OR_NEWER
+#if MIXED_CACHED_SHADOW
                 if (shadowRequest.isMixedCached)
                 {
                     mixedInDynamicAtlas = !renderingOnAShadowCache;
