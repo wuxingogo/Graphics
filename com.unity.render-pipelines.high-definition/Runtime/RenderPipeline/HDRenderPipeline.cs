@@ -3406,12 +3406,8 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             finally
             {
-#if UNITY_2021_1_OR_NEWER
-                QualitySettings.SetLODSettings(initialLODBias, initialMaximumLODLevel, false);
-#else
                 QualitySettings.lodBias = initialLODBias;
                 QualitySettings.maximumLODLevel = initialMaximumLODLevel;
-#endif
             }
         }
 
