@@ -17,8 +17,5 @@ class Project_StandaloneBuildJob():
         project_folder = project.get("folder_standalone", project["folder"])
         cmd = get_cmd(platform["name"], api, 'standalone_build', "")
         job = _job(project, f'{test_platform["name"]}_build', editor, platform, api, cmd(project_folder, platform, api, test_platform, editor, build_config, color_space), build_config, color_space)
-        if project["name"] == "URP_Performance_BoatAttack":
-            job.add_artifacts_players_extra()
-        else:
-            job.add_artifacts_players()
+        job.add_artifacts_players()
         return job
