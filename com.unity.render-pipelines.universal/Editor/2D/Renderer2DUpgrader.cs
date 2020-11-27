@@ -26,19 +26,21 @@ namespace UnityEditor.Experimental.Rendering.Universal
             }
         }
 
+
         public static void UpgradeObjectWithParametricLights(GameObject obj)
         {
             Light2D[] lights = obj.GetComponents<Light2D>();
-            if (lights.Length > 0)
+            if(lights.Length > 0)
             {
                 foreach (var light in lights)
                     UpgradeParametricLight(light);
             }
         }
 
+
         public static void UpgradeParametricLight(Light2D light)
         {
-            if (light.lightType == (Light2D.LightType)Light2D.DeprecatedLightType.Parametric)
+            if(light.lightType == (Light2D.LightType)Light2D.DeprecatedLightType.Parametric)
             {
                 light.lightType = Light2D.LightType.Freeform;
 
@@ -105,6 +107,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
                         {
                             newMaterials[i] = renderer.sharedMaterials[i];
                         }
+
                     }
 
                     if (upgraded)
@@ -133,6 +136,8 @@ namespace UnityEditor.Experimental.Rendering.Universal
             }
         }
 
+
+
         [MenuItem("Edit/Render Pipeline/Universal Render Pipeline/Upgrade Project Materials to 2D Renderer Materials", false)]
         static void UpgradeProjectTo2DRenderer()
         {
@@ -159,7 +164,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
                 }
             }
         }
-
+        
         [MenuItem("Edit/Render Pipeline/Universal Render Pipeline/Upgrade Project Materials to 2D Renderer Materials", true)]
         [MenuItem("Edit/Render Pipeline/Universal Render Pipeline/Upgrade Scene Materials to 2D Renderer Materials", true)]
         static bool MenuValidation()
@@ -211,5 +216,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
         {
             UpgradeParametricLightsInScene(true);
         }
+
+        
     }
 }

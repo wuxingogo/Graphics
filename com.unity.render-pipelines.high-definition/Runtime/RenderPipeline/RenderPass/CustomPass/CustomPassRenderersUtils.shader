@@ -1,4 +1,4 @@
-Shader "Renderers/CustomPassRenderersUtils"
+﻿Shader "Renderers/CustomPassRenderersUtils"
 {
     Properties
     {

@@ -65,7 +65,6 @@ namespace UnityEditor.Rendering.HighDefinition
                 }
             }
         }
-
         public override QualitySettingsBlob SaveCustomQualitySettingsAsObject(QualitySettingsBlob settings = null)
         {
             if (settings == null)

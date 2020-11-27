@@ -59,7 +59,6 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             return true;
         }
-
         public string GetCacheName()
         {
             return m_CacheName;

@@ -64,13 +64,14 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
                     m_OutputCamera.enabled = value;
 
                     // also change the layers
-                    foreach (var layer in m_InputLayers)
+                    foreach(var layer in m_InputLayers)
                     {
                         if (layer.camera && layer.isUsingACameraClone)
                         {
                             layer.camera.enabled = value;
                         }
                     }
+
                 }
             }
         }
@@ -133,8 +134,8 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
 
         static private CompositionManager s_CompositorInstance;
 
-        // Built-in Color.black has an alpha of 1, so defien here a fully transparent black
-        static Color s_TransparentBlack = new Color(0, 0, 0, 0);
+        // Built-in Color.black has an alpha of 1, so defien here a fully transparent black 
+        static Color s_TransparentBlack = new Color(0, 0, 0, 0); 
 
         #region Validation
         public bool ValidateLayerListOrder(int oldIndex, int newIndex)
@@ -163,6 +164,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             }
             return true;
         }
+
 
         // Validates the rendering pipeline and fixes potential issues
         bool ValidatePipeline()
@@ -286,7 +288,6 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
 
             return true;
         }
-
         #endregion
 
         // This is called when we change camera, to remove the custom draw callback from the old camera before we set the new one
@@ -357,7 +358,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             {
                 m_InputLayers[i].DestroyCameras();
             }
-
+            
             for (int i = m_InputLayers.Count - 1; i >= 0; --i)
             {
                 m_InputLayers[i].DestroyRT();
@@ -396,7 +397,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
 
         public void SetNewCompositionShader()
         {
-            // When we load a new shader, we need to clear the serialized material.
+            // When we load a new shader, we need to clear the serialized material. 
             m_Material = null;
             SetupCompositionMaterial();
         }
@@ -452,7 +453,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             var compositorVolumes = Resources.FindObjectsOfTypeAll(typeof(CustomPassVolume));
             foreach (CustomPassVolume volume in compositorVolumes)
             {
-                if (volume.isGlobal && volume.injectionPoint == CustomPassInjectionPoint.BeforeRendering)
+                if(volume.isGlobal && volume.injectionPoint == CustomPassInjectionPoint.BeforeRendering)
                 {
                     Debug.LogWarning($"A custom volume pass with name ${volume.name} was already registered on the BeforeRendering injection point.");
                 }
@@ -607,7 +608,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
         public void AddNewLayer(int index, CompositorLayer.LayerType type = CompositorLayer.LayerType.Camera)
         {
             var newLayer = CompositorLayer.CreateStackLayer(type, GetNewSubLayerName(index, type));
-
+            
             if (index >= 0 && index < m_InputLayers.Count)
             {
                 m_InputLayers.Insert(index, newLayer);
@@ -744,7 +745,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
                 cmdbuff.ClearRenderTarget(false, true, Color.black);
                 return;
             }
-
+                
 
             timeSinceLastRepaint = 0;
 
@@ -754,7 +755,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             int layerIndex = 0;
             foreach (var layer in m_InputLayers)
             {
-                if (layer.outputTarget != CompositorLayer.OutputTarget.CameraStack)  // stacked cameras are not exposed as compositor layers
+                if (layer.outputTarget != CompositorLayer.OutputTarget.CameraStack)  // stacked cameras are not exposed as compositor layers 
                 {
                     m_Material.SetTexture(layer.name, layer.GetRenderTarget(), RenderTextureSubElement.Color);
                 }
@@ -794,7 +795,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
                 ConstantBuffer.PushGlobal(cmd, m_ShaderVariablesGlobalCB, HDShaderIDs._ShaderVariablesGlobal);
                 cmd.Blit(null, BuiltinRenderTextureType.CameraTarget, m_Material, m_Material.FindPass("ForwardOnly"));
             }
-
+            
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
         }
@@ -814,6 +815,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             int count = 0;
             foreach (var layer in m_InputLayers)
             {
+                
                 if (layer.outputTarget == CompositorLayer.OutputTarget.CameraStack &&
                     camera.Equals(layer.sourceCamera))
                 {
@@ -855,7 +857,7 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
                 float alphaMax = compositorData.alphaMax;
 
                 if (alphaMax == alphaMin)
-                    alphaMax += 0.0001f; // Mathf.Epsilon is too small and in this case it creates precission issues
+                    alphaMax += 0.0001f; // Mathf.Epsilon is too small and in this case it creates precission issues 
 
                 float alphaScale = 1.0f / (alphaMax - alphaMin);
                 float alphaBias = -alphaMin * alphaScale;
@@ -900,5 +902,6 @@ namespace UnityEngine.Rendering.HighDefinition.Compositor
             }
             return null;
         }
+
     }
 }

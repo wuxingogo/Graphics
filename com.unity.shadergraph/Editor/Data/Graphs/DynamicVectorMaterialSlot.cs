@@ -141,5 +141,6 @@ namespace UnityEditor.ShaderGraph
                 m_DefaultValue = ms.defaultValue;
             }
         }
+
     }
 }

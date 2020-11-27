@@ -7,6 +7,7 @@ namespace UnityEditor.ShaderGraph
     [Serializable]
     class StickyNoteData : JsonObject, IGroupItem
     {
+
         [SerializeField]
         string m_Title;
 
@@ -75,5 +76,7 @@ namespace UnityEditor.ShaderGraph
             m_Position = position;
             m_Content = content;
         }
+
     }
 }
+

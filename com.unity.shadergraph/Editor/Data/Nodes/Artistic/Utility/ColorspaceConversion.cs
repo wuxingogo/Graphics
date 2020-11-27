@@ -46,6 +46,7 @@ namespace UnityEditor.ShaderGraph
             name = "Colorspace Conversion";
         }
 
+
         [SerializeField]
         ColorspaceConversion m_Conversion = new ColorspaceConversion(Colorspace.RGB, Colorspace.RGB);
 
@@ -84,7 +85,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     Out = In;
 }
@@ -97,7 +98,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision3 linearRGBLo = In / 12.92;
     $precision3 linearRGBHi = pow(max(abs((In + 0.055) / 1.055), 1.192092896e-07), $precision3(2.4, 2.4, 2.4));
@@ -112,7 +113,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision4 K = $precision4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
     $precision4 P = lerp($precision4(In.bg, K.wz), $precision4(In.gb, K.xy), step(In.b, In.g));
@@ -130,7 +131,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision3 sRGBLo = In * 12.92;
     $precision3 sRGBHi = (pow(max(abs(In), 1.192092896e-07), $precision3(1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4)) * 1.055) - 0.055;
@@ -145,7 +146,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     Out = In;
 }
@@ -158,7 +159,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision3 sRGBLo = In * 12.92;
     $precision3 sRGBHi = (pow(max(abs(In), 1.192092896e-07), $precision3(1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4)) * 1.055) - 0.055;
@@ -179,7 +180,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision4 K = $precision4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     $precision3 P = abs(frac(In.xxx + K.xyz) * 6.0 - K.www);
@@ -194,7 +195,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     $precision4 K = $precision4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     $precision3 P = abs(frac(In.xxx + K.xyz) * 6.0 - K.www);
@@ -212,7 +213,7 @@ namespace UnityEditor.ShaderGraph
         {
             Out = Vector3.zero;
             return
-@"
+                @"
 {
     Out = In;
 }

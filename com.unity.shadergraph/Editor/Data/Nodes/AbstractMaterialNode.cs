@@ -185,7 +185,7 @@ namespace UnityEditor.ShaderGraph
 
         public void SetOverrideActiveState(ActiveState overrideState, bool updateConnections = true)
         {
-            if (m_ActiveState == overrideState)
+            if(m_ActiveState == overrideState)
             {
                 return;
             }
@@ -200,7 +200,7 @@ namespace UnityEditor.ShaderGraph
                     }
                     break;
                 case ActiveState.ExplicitInactive:
-                    if (m_IsActive == false)
+                    if(m_IsActive == false)
                     {
                         break;
                     }
@@ -215,7 +215,7 @@ namespace UnityEditor.ShaderGraph
                         break;
                     }
                 case ActiveState.ExplicitActive:
-                    if (m_IsActive == true)
+                    if(m_IsActive == true)
                     {
                         break;
                     }
@@ -237,7 +237,7 @@ namespace UnityEditor.ShaderGraph
             if (m_IsActive == value)
                 return;
 
-            if (m_ActiveState != ActiveState.Implicit)
+            if(m_ActiveState != ActiveState.Implicit)
             {
                 Debug.LogError($"Cannot set IsActive on Node {this} when value is explicitly overriden by ActiveState {m_ActiveState}");
                 return;
@@ -251,19 +251,22 @@ namespace UnityEditor.ShaderGraph
             {
                 NodeUtils.ReevaluateActivityOfConnectedNodes(this);
             }
+
         }
+
 
         public virtual bool isValid
         {
             get { return m_IsValid; }
             set
             {
-                if (m_IsValid == value)
+                if(m_IsValid == value)
                     return;
 
                 m_IsValid = value;
             }
         }
+
 
 
         string m_DefaultVariableName;
@@ -301,7 +304,6 @@ namespace UnityEditor.ShaderGraph
         {
             m_CustomColors.Set(provider, color);
         }
-
         #endregion
 
         protected AbstractMaterialNode()
@@ -422,10 +424,10 @@ namespace UnityEditor.ShaderGraph
             if (slot == null)
                 return string.Empty;
 
-            if (fromSocketRef.node.isActive)
-                return GenerationUtils.AdaptNodeOutput(this, slot.id, valueType);
-            else
-                return slot.GetDefaultValue(generationMode);
+                if (fromSocketRef.node.isActive)
+            return GenerationUtils.AdaptNodeOutput(this, slot.id, valueType);
+                else
+                    return slot.GetDefaultValue(generationMode);
         }
 
         public AbstractMaterialNode GetInputNodeFromSlot(int inputSlotId)
@@ -450,7 +452,7 @@ namespace UnityEditor.ShaderGraph
                 case 0:
                     return ConcreteSlotValueType.Vector1;
                 case 1:
-                    if (SlotValueHelper.AreCompatible(SlotValueType.DynamicVector, inputTypesDistinct.First()))
+                    if(SlotValueHelper.AreCompatible(SlotValueType.DynamicVector, inputTypesDistinct.First()))
                         return inputTypesDistinct.First();
                     break;
                 default:
@@ -496,7 +498,7 @@ namespace UnityEditor.ShaderGraph
             }
 
             // Get inputs
-            using (var tempSlots = PooledList<MaterialSlot>.Get())
+            using(var tempSlots = PooledList<MaterialSlot>.Get())
             {
                 GetInputSlots(tempSlots);
 
@@ -613,7 +615,7 @@ namespace UnityEditor.ShaderGraph
                 tempSlots.Clear();
                 GetInputSlots(tempSlots);
                 bool inputError = tempSlots.Any(x => x.hasError);
-                if (inputError)
+                if(inputError)
                 {
                     owner.AddConcretizationError(objectId, string.Format("Node {0} had input error", objectId));
                     hasError = true;
@@ -650,7 +652,7 @@ namespace UnityEditor.ShaderGraph
 
                 tempSlots.Clear();
                 GetOutputSlots(tempSlots);
-                if (tempSlots.Any(x => x.hasError))
+                if(tempSlots.Any(x => x.hasError))
                 {
                     owner.AddConcretizationError(objectId, string.Format("Node {0} had output error", objectId));
                     hasError = true;
@@ -675,6 +677,7 @@ namespace UnityEditor.ShaderGraph
 
         public virtual void ValidateNode()
         {
+
         }
 
         public virtual bool canCutNode => true;
@@ -741,7 +744,7 @@ namespace UnityEditor.ShaderGraph
 
         public MaterialSlot AddSlot(MaterialSlot slot, bool attemptToModifyExistingInstance = true)
         {
-            if (slot == null)
+            if(slot == null)
             {
                 throw new ArgumentException($"Trying to add null slot to node {this}");
             }
@@ -909,7 +912,7 @@ namespace UnityEditor.ShaderGraph
 
         protected void EnqueSlotsForSerialization()
         {
-            foreach (var slot in m_Slots)
+            foreach(var slot in m_Slots)
             {
                 slot.OnBeforeSerialize();
             }

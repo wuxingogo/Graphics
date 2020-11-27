@@ -138,8 +138,8 @@ namespace UnityEditor.Rendering.HighDefinition
             CED.Group(
                 Drawer_CameraWarnings,
                 Drawer_FieldRenderingPath
-            )
-        );
+                )
+            );
 
         public static readonly CED.IDrawer SectionPhysicalSettings = CED.FoldoutGroup(
             physicalSettingsHeaderContent,
@@ -147,8 +147,8 @@ namespace UnityEditor.Rendering.HighDefinition
             k_ExpandedState,
             CED.Group(
                 Drawer_PhysicalCamera
-            )
-        );
+                )
+            );
 
         public static readonly CED.IDrawer SectionOutputSettings = CED.FoldoutGroup(
             outputSettingsHeaderContent,
@@ -164,8 +164,8 @@ namespace UnityEditor.Rendering.HighDefinition
                 Drawer_FieldRenderTarget,
                 Drawer_FieldDepth,
                 Drawer_FieldNormalizedViewPort
-            )
-        );
+                )
+            );
 
         public static readonly CED.IDrawer SectionFrameSettings = CED.Conditional(
             (serialized, owner) => k_ExpandedState[Expandable.General],
@@ -182,7 +182,6 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             EditorGUILayout.PropertyField(p.volumeLayerMask, volumeLayerMaskContent);
         }
-
         static void Drawer_FieldVolumeAnchorOverride(SerializedHDCamera p, Editor owner)
         {
             EditorGUILayout.PropertyField(p.volumeAnchorOverride, volumeAnchorOverrideContent);
@@ -214,7 +213,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     cam.orthographic.boolValue = (projectionType == ProjectionType.Orthographic);
             }
             EditorGUI.EndProperty();
-
+            
             if (cam.orthographic.hasMultipleDifferentValues)
                 return;
 
@@ -323,7 +322,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 int oldFilmGateIndex = Array.IndexOf(k_ApertureFormatValues, new Vector2((float)Math.Round(cam.sensorSize.vector2Value.x, 3), (float)Math.Round(cam.sensorSize.vector2Value.y, 3)));
 
                 // If it is not one of the preset sizes, set it to custom
-                oldFilmGateIndex = (oldFilmGateIndex == -1) ? k_CustomPresetIndex : oldFilmGateIndex;
+                oldFilmGateIndex = (oldFilmGateIndex == -1) ? k_CustomPresetIndex: oldFilmGateIndex;
 
                 // Get the new user selection
                 int newFilmGateIndex = EditorGUILayout.Popup(cameraTypeContent, oldFilmGateIndex, k_ApertureFormatNames);
@@ -476,7 +475,7 @@ namespace UnityEditor.Rendering.HighDefinition
                         p.aperture.floatValue = Mathf.Clamp(float.Parse(newAperture), HDPhysicalCamera.kMinAperture, HDPhysicalCamera.kMaxAperture);
                     }
                     catch
-                    {}
+                    { }
                 }
 
                 EditorGUILayout.EndHorizontal();
@@ -536,7 +535,7 @@ namespace UnityEditor.Rendering.HighDefinition
             // if(p.clearColorMode.GetEnumValue<HDAdditionalCameraData.ClearColorMode>() == HDAdditionalCameraData.ClearColorMode.BackgroundColor) or no sky in scene
             EditorGUILayout.PropertyField(p.backgroundColorHDR, backgroundColorContent);
 
-            if (p.clearDepth.boolValue == false)
+            if(p.clearDepth.boolValue == false)
                 p.clearDepth.boolValue = true;
         }
 
@@ -556,7 +555,7 @@ namespace UnityEditor.Rendering.HighDefinition
             {
                 EditorGUILayout.PropertyField(p.SMAAQuality, SMAAQualityPresetContent);
             }
-            else if (p.antialiasing.intValue == (int)HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing)
+            else if(p.antialiasing.intValue == (int)HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing)
             {
                 EditorGUILayout.PropertyField(p.taaQualityLevel, TAAQualityLevelContent);
 
@@ -570,7 +569,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     EditorGUILayout.PropertyField(p.taaAntiFlicker, TAAAntiFlicker);
                 }
 
-                if (p.taaQualityLevel.intValue == (int)HDAdditionalCameraData.TAAQualityLevel.High)
+                if(p.taaQualityLevel.intValue == (int)HDAdditionalCameraData.TAAQualityLevel.High)
                 {
                     EditorGUILayout.PropertyField(p.taaMotionVectorRejection, TAAMotionVectorRejection);
                     EditorGUILayout.PropertyField(p.taaAntiRinging, TAAAntiRingingContent);

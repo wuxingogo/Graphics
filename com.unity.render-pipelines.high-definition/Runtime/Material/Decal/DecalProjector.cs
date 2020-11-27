@@ -58,7 +58,7 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         [SerializeField]
-        [Range(0, 1)]
+        [Range(0,1)]
         private float m_FadeScale = 0.9f;
         /// <summary>
         /// Percent of the distance from the camera at which this Decal start to fade off.
@@ -355,7 +355,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 DecalSystem.instance.UpdateCachedData(m_Handle, GetCachedDecalData());
             }
         }
-
 #endif
 
         void OnDisable()
@@ -423,7 +422,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 DecalSystem.instance.UpdateCachedData(m_Handle, GetCachedDecalData());
             }
         }
-
 #endif
 
         void LateUpdate()

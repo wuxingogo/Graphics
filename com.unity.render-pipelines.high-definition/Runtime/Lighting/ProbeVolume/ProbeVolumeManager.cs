@@ -45,7 +45,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             volumes.Add(volume);
         }
-
         internal void DeRegisterVolume(ProbeVolume volume)
         {
             if (!volumes.Contains(volume))
@@ -154,7 +153,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             UnityEditor.Lightmapping.BakeAsync();
         }
-
 #endif
     }
 }

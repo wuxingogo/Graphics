@@ -15,6 +15,8 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEditorInternal;
 
 
+
+
 namespace UnityEditor.Experimental.Rendering.Universal
 {
     static class Renderer2DMenus
@@ -56,6 +58,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
             }
         }
 
+
         // This is from GOCreationCommands
         internal static void Place(GameObject go, GameObject parent)
         {
@@ -92,7 +95,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
             Light2D light2D = go.GetComponent<Light2D>();
             light2D.lightType = type;
 
-            if (shapePath != null && shapePath.Length > 0)
+            if(shapePath != null && shapePath.Length > 0)
                 light2D.shapePath = shapePath;
 
             var parent = menuCommand.context as GameObject;

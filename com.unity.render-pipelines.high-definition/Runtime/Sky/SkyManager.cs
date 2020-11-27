@@ -321,6 +321,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
+
         public void Cleanup()
         {
             CoreUtils.Destroy(m_StandardSkyboxMaterial);
@@ -380,7 +381,7 @@ namespace UnityEngine.Rendering.HighDefinition
         Texture GetReflectionTexture(SkyUpdateContext skyContext)
         {
             if (skyContext.IsValid() && IsCachedContextValid(skyContext))
-            {
+        {
                 ref var context = ref m_CachedSkyContexts[skyContext.cachedSkyRenderingContextId];
                 return context.renderingContext.skyboxBSDFCubemapArray;
             }
@@ -428,6 +429,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return false;
+
         }
 
         internal void SetupAmbientProbe(HDCamera hdCamera)
@@ -549,6 +551,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 return hash;
             }
         }
+
 
         void AllocateNewRenderingContext(SkyUpdateContext skyContext, int slot, int newHash, bool supportConvolution, in SphericalHarmonicsL2 previousAmbientProbe, string name)
         {
@@ -689,16 +692,16 @@ namespace UnityEngine.Rendering.HighDefinition
             m_RequireWaitForAsyncReadBackRequest = true;
         }
 
-        public void UpdateEnvironment(HDCamera                hdCamera,
-            ScriptableRenderContext renderContext,
-            SkyUpdateContext        skyContext,
-            Light                   sunLight,
-            bool                    updateRequired,
-            bool                    updateAmbientProbe,
-            bool                    staticSky,
-            SkyAmbientMode          ambientMode,
-            int                     frameIndex,
-            CommandBuffer           cmd)
+        public void UpdateEnvironment(  HDCamera                hdCamera,
+                                        ScriptableRenderContext renderContext,
+                                        SkyUpdateContext        skyContext,
+                                        Light                   sunLight,
+                                        bool                    updateRequired,
+                                        bool                    updateAmbientProbe,
+                                        bool                    staticSky,
+                                        SkyAmbientMode          ambientMode,
+                                        int                     frameIndex,
+                                        CommandBuffer           cmd)
         {
             if (skyContext.IsValid())
             {
@@ -874,13 +877,13 @@ namespace UnityEngine.Rendering.HighDefinition
             if (skyContext.IsValid())
             {
                 UpdateBuiltinParameters(skyContext,
-                    hdCamera,
-                    sunLight,
-                    colorBuffer,
-                    depthBuffer,
-                    debugSettings,
-                    frameIndex,
-                    cmd);
+                                        hdCamera,
+                                        sunLight,
+                                        colorBuffer,
+                                        depthBuffer,
+                                        debugSettings,
+                                        frameIndex,
+                                        cmd);
 
                 SkyAmbientMode ambientMode = hdCamera.volumeStack.GetComponent<VisualEnvironment>().skyAmbientMode.value;
                 int skyHash = ComputeSkyHash(hdCamera, skyContext, sunLight, ambientMode);
@@ -906,13 +909,13 @@ namespace UnityEngine.Rendering.HighDefinition
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(HDProfileId.RenderSky)))
                 {
                     UpdateBuiltinParameters(skyContext,
-                        hdCamera,
-                        sunLight,
-                        colorBuffer,
-                        depthBuffer,
-                        debugSettings,
-                        frameIndex,
-                        cmd);
+                                         hdCamera,
+                                         sunLight,
+                                         colorBuffer,
+                                         depthBuffer,
+                                         debugSettings,
+                                         frameIndex,
+                                         cmd);
 
                     SkyAmbientMode ambientMode = hdCamera.volumeStack.GetComponent<VisualEnvironment>().skyAmbientMode.value;
                     int skyHash = ComputeSkyHash(hdCamera, skyContext, sunLight, ambientMode);
@@ -940,12 +943,12 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         public void RenderOpaqueAtmosphericScattering(CommandBuffer cmd, HDCamera hdCamera,
-            RTHandle colorBuffer,
-            RTHandle depthTexture,
-            RTHandle volumetricLighting,
-            RTHandle intermediateBuffer,
-            RTHandle depthBuffer,
-            Matrix4x4 pixelCoordToViewDirWS, bool isMSAA)
+                                                      RTHandle colorBuffer,
+                                                      RTHandle depthTexture,
+                                                      RTHandle volumetricLighting,
+                                                      RTHandle intermediateBuffer,
+                                                      RTHandle depthBuffer,
+                                                      Matrix4x4 pixelCoordToViewDirWS, bool isMSAA)
         {
             using (new ProfilingScope(m_BuiltinParameters.commandBuffer, ProfilingSampler.Get(HDProfileId.OpaqueAtmosphericScattering)))
             {
@@ -958,7 +961,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 if (Fog.IsPBRFogEnabled(hdCamera))
                 {
-                    m_OpaqueAtmScatteringBlock.SetTexture(isMSAA ? HDShaderIDs._ColorTextureMS : HDShaderIDs._ColorTexture, colorBuffer);
+                    m_OpaqueAtmScatteringBlock.SetTexture(isMSAA? HDShaderIDs._ColorTextureMS : HDShaderIDs._ColorTexture, colorBuffer);
 
                     // Color -> Intermediate.
                     HDUtils.DrawFullScreen(cmd, m_OpaqueAtmScatteringMaterial, intermediateBuffer, depthBuffer, m_OpaqueAtmScatteringBlock, isMSAA ? 3 : 2);
@@ -1090,7 +1093,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             DynamicGI.UpdateEnvironment();
         }
-
 #endif
     }
 }

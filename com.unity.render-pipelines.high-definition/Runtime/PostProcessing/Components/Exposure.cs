@@ -237,6 +237,8 @@ namespace UnityEngine.Rendering.HighDefinition
         /// Create a weight mask centered around the specified UV and with the desired parameters.
         /// </summary>
         ProceduralMask,
+
+
     }
 
     /// <summary>
@@ -327,7 +329,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// </summary>
         /// <param name="value">The initial value to store in the parameter.</param>
         /// <param name="overrideState">The initial override state for the parameter.</param>
-        public MeteringModeParameter(MeteringMode value, bool overrideState = false) : base(value, overrideState) {}
+        public MeteringModeParameter(MeteringMode value, bool overrideState = false) : base(value, overrideState) { }
     }
 
     /// <summary>
@@ -369,6 +371,6 @@ namespace UnityEngine.Rendering.HighDefinition
         /// </summary>
         /// <param name="value">The initial value to store in the parameter.</param>
         /// <param name="overrideState">The initial override state for the parameter.</param>
-        public TargetMidGrayParameter(TargetMidGray value, bool overrideState = false) : base(value, overrideState) {}
+        public TargetMidGrayParameter(TargetMidGray value, bool overrideState = false) : base(value, overrideState) { }
     }
 }

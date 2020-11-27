@@ -11,6 +11,7 @@ namespace UnityEditor.ShaderGraph
             name = "Simple Noise";
         }
 
+
         protected override MethodInfo GetFunctionToConvert()
         {
             return GetType().GetMethod("Unity_SimpleNoise", BindingFlags.Static | BindingFlags.NonPublic);
@@ -22,7 +23,7 @@ namespace UnityEditor.ShaderGraph
             [Slot(2, Binding.None)] out Vector1 Out)
         {
             return
-@"
+                @"
 {
     $precision t = 0.0;
 

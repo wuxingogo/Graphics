@@ -78,7 +78,6 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
             AddShadowCasterGroupToList(group, s_ShadowCasterGroups);
         }
-
         public static void RemoveGroup(ShadowCasterGroup2D group)
         {
             if (group != null && s_ShadowCasterGroups != null)

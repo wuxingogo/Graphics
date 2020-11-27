@@ -25,14 +25,15 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         public sealed override void UpdateNodeAfterDeserialization()
         {
             AddSlot(new Vector3MaterialSlot(
-                kOutputSlotId,
-                kOutputSlotName,
-                kOutputSlotName,
-                SlotType.Output,
-                Vector3.zero));
+                    kOutputSlotId,
+                    kOutputSlotName,
+                    kOutputSlotName,
+                    SlotType.Output,
+                    Vector3.zero));
             RemoveSlotsNameNotMatching(new[] { kOutputSlotId });
         }
 
@@ -50,7 +51,7 @@ namespace UnityEditor.ShaderGraph
         {
             base.OnAfterMultiDeserialize(json);
             //required update
-            if (sgVersion < 1)
+            if(sgVersion < 1)
             {
                 ChangeVersion(1);
             }

@@ -82,8 +82,7 @@ namespace UnityEditor.Rendering.HighDefinition
             // Output slot:kEmissionOutputSlotName
             AddSlot(new ColorRGBMaterialSlot(kEmissionOutputSlotId, kEmissionOutputSlotName, kEmissionOutputSlotName , SlotType.Output, Color.black, ColorMode.HDR));
 
-            RemoveSlotsNameNotMatching(new[]
-            {
+            RemoveSlotsNameNotMatching(new[] {
                 kEmissionOutputSlotId, kEmissionColorInputSlotId,
                 kEmissionIntensityInputSlotId, kEmissionExposureWeightInputSlotId
             });
@@ -122,26 +121,26 @@ namespace UnityEditor.Rendering.HighDefinition
         public void GenerateNodeFunction(FunctionRegistry registry, GenerationMode generationMode)
         {
             registry.ProvideFunction(GetFunctionName(), s =>
-            {
-                // We may need ConvertEvToLuminance() so we include CommonLighting.hlsl
-                s.AppendLine("#include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl\"");
-
-                s.AppendLine("$precision3 {0}($precision3 ldrColor, {1} luminanceIntensity, {1} exposureWeight, {1} inverseCurrentExposureMultiplier)",
-                    GetFunctionName(),
-                    intensitySlot.concreteValueType.ToShaderString());
-                using (s.BlockScope())
                 {
-                    if (normalizeColor.isOn)
+                    // We may need ConvertEvToLuminance() so we include CommonLighting.hlsl
+                    s.AppendLine("#include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl\"");
+
+                    s.AppendLine("$precision3 {0}($precision3 ldrColor, {1} luminanceIntensity, {1} exposureWeight, {1} inverseCurrentExposureMultiplier)",
+                        GetFunctionName(),
+                        intensitySlot.concreteValueType.ToShaderString());
+                    using (s.BlockScope())
                     {
-                        s.AppendLine("ldrColor = ldrColor * rcp(max(Luminance(ldrColor), 1e-6));");
+                        if (normalizeColor.isOn)
+                        {
+                            s.AppendLine("ldrColor = ldrColor * rcp(max(Luminance(ldrColor), 1e-6));");
+                        }
+                        s.AppendLine("$precision3 hdrColor = ldrColor * luminanceIntensity;");
+                        s.AppendNewLine();
+                        s.AppendLine("// Inverse pre-expose using _EmissiveExposureWeight weight");
+                        s.AppendLine("hdrColor = lerp(hdrColor * inverseCurrentExposureMultiplier, hdrColor, exposureWeight);");
+                        s.AppendLine("return hdrColor;");
                     }
-                    s.AppendLine("$precision3 hdrColor = ldrColor * luminanceIntensity;");
-                    s.AppendNewLine();
-                    s.AppendLine("// Inverse pre-expose using _EmissiveExposureWeight weight");
-                    s.AppendLine("hdrColor = lerp(hdrColor * inverseCurrentExposureMultiplier, hdrColor, exposureWeight);");
-                    s.AppendLine("return hdrColor;");
-                }
-            });
+                });
         }
 
         Vector3 GetHDREmissionColor(Vector3 ldrColor, float intensity)

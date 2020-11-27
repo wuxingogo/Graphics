@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEditor.Build.Reporting;
 
 namespace UnityEditor.ShaderAnalysis

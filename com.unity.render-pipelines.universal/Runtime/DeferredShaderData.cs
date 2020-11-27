@@ -153,6 +153,7 @@ namespace UnityEngine.Rendering.Universal
             {
                 for (int j = 0; j < buffers.GetLength(1); ++j)
                 {
+
                     if (buffers[i, j] != null)
                     {
                         buffers[i, j].Dispose();

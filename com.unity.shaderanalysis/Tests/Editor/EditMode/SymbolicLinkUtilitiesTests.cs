@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor.ShaderAnalysis.Internal;

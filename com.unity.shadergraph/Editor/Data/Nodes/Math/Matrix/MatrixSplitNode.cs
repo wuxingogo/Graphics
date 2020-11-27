@@ -35,6 +35,7 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         [SerializeField]
         MatrixAxis m_Axis;
 
@@ -238,7 +239,7 @@ namespace UnityEditor.ShaderGraph
 
                 tempSlots.Clear();
                 GetOutputSlots(tempSlots);
-                if (tempSlots.Any(x => x.hasError))
+                if(tempSlots.Any(x => x.hasError))
                 {
                     owner.AddConcretizationError(objectId, string.Format("Node {0} had output error", objectId));
                     hasError = true;

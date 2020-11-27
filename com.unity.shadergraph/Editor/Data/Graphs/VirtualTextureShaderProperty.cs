@@ -37,7 +37,6 @@ namespace UnityEditor.ShaderGraph
                 result.Add(value.layers[layer].layerRefName);
             }
         }
-
         internal override void GetPropertyDisplayNames(List<string> result)
         {
             result.Add(displayName);

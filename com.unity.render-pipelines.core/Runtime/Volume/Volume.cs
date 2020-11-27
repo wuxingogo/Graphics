@@ -197,7 +197,6 @@ namespace UnityEngine.Rendering
 
             colliders.Clear();
         }
-
 #endif
     }
 }

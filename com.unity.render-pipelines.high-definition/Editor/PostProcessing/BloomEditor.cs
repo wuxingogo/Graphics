@@ -69,7 +69,6 @@ namespace UnityEditor.Rendering.HighDefinition
                 PropertyField(m_Anamorphic);
             }
         }
-
         public override QualitySettingsBlob SaveCustomQualitySettingsAsObject(QualitySettingsBlob settings = null)
         {
             if (settings == null)

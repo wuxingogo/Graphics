@@ -35,7 +35,6 @@ namespace UnityEngine.VFX.Utility
         {
             m_VisualEffect = GetComponent<VisualEffect>();
         }
-
         static private void SafeDestroy(Object toDelete)
         {
             if (Application.isPlaying)

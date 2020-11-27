@@ -75,7 +75,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 return false;
             }
         }
-
 #endif
 
         /// <summary>
@@ -204,15 +203,15 @@ namespace UnityEngine.Rendering.HighDefinition
         /// </summary>
         IEnumerable<string> IDataProvider.supportedDebugModes
             => new[]
-        {
-            "Albedo",
-            "Normal",
-            "Smoothness",
-            "AmbientOcclusion",
-            "Metal",
-            "Specular",
-            "Alpha"
-        };
+            {
+                "Albedo",
+                "Normal",
+                "Smoothness",
+                "AmbientOcclusion",
+                "Metal",
+                "Specular",
+                "Alpha"
+            };
 
         /// <summary>
         /// This hook allows HDRP to update the debug mode used while requested in the LookDev.

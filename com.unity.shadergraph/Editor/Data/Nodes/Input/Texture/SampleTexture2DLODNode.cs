@@ -39,6 +39,7 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         [SerializeField]
         private TextureType m_TextureType = TextureType.Default;
 
@@ -117,11 +118,11 @@ namespace UnityEditor.ShaderGraph
             sb.AppendLine("#else");
             {
                 var result = string.Format("  $precision4 {0} = SAMPLE_TEXTURE2D_LOD({1}, {2}, {3}, {4});"
-                    , GetVariableNameForSlot(OutputSlotRGBAId)
-                    , id
-                    , edgesSampler.Any() ? GetSlotValue(SamplerInputId, generationMode) : "sampler" + id
-                    , uvName
-                    , lodSlot);
+                        , GetVariableNameForSlot(OutputSlotRGBAId)
+                        , id
+                        , edgesSampler.Any() ? GetSlotValue(SamplerInputId, generationMode) : "sampler" + id
+                        , uvName
+                        , lodSlot);
 
                 sb.AppendLine(result);
             }

@@ -62,7 +62,6 @@ namespace UnityEngine.Rendering.HighDefinition
             viewport.y      *= renderPass.renderTargetDesc.height;
             viewport.height *= renderPass.renderTargetDesc.height;
         }
-
 #endif
     }
 
@@ -182,7 +181,6 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             AddViewInternal(new XRView(xrSdkRenderPass, xrSdkRenderParameter));
         }
-
 #endif
 
         internal static void Release(XRPass xrPass)

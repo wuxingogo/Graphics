@@ -445,4 +445,5 @@ namespace UnityEngine.Experimental.Rendering.RenderGraphModule
             return hashCode;
         }
     }
+
 }

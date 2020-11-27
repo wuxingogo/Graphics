@@ -40,7 +40,6 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
             return false;
         }
-
         public LightStats GetLightStatsByLayer(int layer)
         {
             var returnStats = new LightStats();

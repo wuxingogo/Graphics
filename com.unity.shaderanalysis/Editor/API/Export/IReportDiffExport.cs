@@ -1,4 +1,4 @@
-namespace UnityEditor.ShaderAnalysis
+﻿namespace UnityEditor.ShaderAnalysis
 {
     public interface IReportDiffExport
     {

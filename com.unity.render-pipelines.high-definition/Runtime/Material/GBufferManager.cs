@@ -11,7 +11,7 @@ namespace UnityEngine.Rendering.HighDefinition
         LightLayers,
         ShadowMask
         #if ENABLE_VIRTUALTEXTURES
-        , VTFeedback
+            ,VTFeedback
         #endif
     }
 
@@ -157,7 +157,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             return null;
         }
-
 #if ENABLE_VIRTUALTEXTURES
         public RTHandle GetVTFeedbackBuffer()
         {
@@ -165,9 +164,8 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 return m_RTs[m_VTFeedbackIndex];
             }
-            return null;
+           return null;
         }
-
 #endif
     }
 }

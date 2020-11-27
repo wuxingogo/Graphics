@@ -194,7 +194,6 @@ namespace UnityEngine.Experimental.Rendering.RenderGraphModule
         {
             Dispose(true);
         }
-
         #endregion
 
         #region Internal Interface
@@ -242,7 +241,6 @@ namespace UnityEngine.Experimental.Rendering.RenderGraphModule
         {
             m_RenderPass.GenerateDebugData(value);
         }
-
         #endregion
     }
 }

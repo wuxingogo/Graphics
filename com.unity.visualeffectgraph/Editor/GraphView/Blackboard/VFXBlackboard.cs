@@ -117,11 +117,13 @@ namespace  UnityEditor.VFX.UI
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
         }
 
+
         void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction("Select All", (a) => SelectAll(), DropdownMenuAction.AlwaysEnabled);
             evt.menu.AppendAction("Select Unused", (a) => SelectUnused(), DropdownMenuAction.AlwaysEnabled);
         }
+
 
         void SelectAll()
         {
@@ -134,7 +136,7 @@ namespace  UnityEditor.VFX.UI
             m_View.ClearSelection();
 
             var unused = unusedParameters.ToList();
-            this.Query<BlackboardField>().Where(t => unused.Contains(t.GetFirstAncestorOfType<VFXBlackboardRow>().controller.model)).ForEach(t => m_View.AddToSelection(t));
+            this.Query<BlackboardField>().Where(t=> unused.Contains(t.GetFirstAncestorOfType<VFXBlackboardRow>().controller.model) ).ForEach(t => m_View.AddToSelection(t));
         }
 
         IEnumerable<VFXParameter> unusedParameters
@@ -443,7 +445,7 @@ namespace  UnityEditor.VFX.UI
             string newCategoryName = EditorGUIUtility.TrTextContent("new category").text;
             int cpt = 1;
 
-            if (controller.graph.UIInfos.categories != null)
+            if(controller.graph.UIInfos.categories != null)
             {
                 while (controller.graph.UIInfos.categories.Any(t => t.name == newCategoryName))
                 {

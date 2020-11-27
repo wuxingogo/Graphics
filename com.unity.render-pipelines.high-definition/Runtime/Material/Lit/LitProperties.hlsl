@@ -494,3 +494,4 @@ UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
 
 #endif
 #endif
+

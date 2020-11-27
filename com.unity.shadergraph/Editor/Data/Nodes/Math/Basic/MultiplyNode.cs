@@ -17,6 +17,7 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         const int Input1SlotId = 0;
         const int Input2SlotId = 1;
         const int OutputSlotId = 2;
@@ -68,25 +69,25 @@ namespace UnityEditor.ShaderGraph
         public void GenerateNodeFunction(FunctionRegistry registry, GenerationMode generationMode)
         {
             registry.ProvideFunction(GetFunctionName(), s =>
-            {
-                s.AppendLine("void {0}({1} A, {2} B, out {3} Out)",
-                    GetFunctionHeader(),
-                    FindInputSlot<MaterialSlot>(Input1SlotId).concreteValueType.ToShaderString(),
-                    FindInputSlot<MaterialSlot>(Input2SlotId).concreteValueType.ToShaderString(),
-                    FindOutputSlot<MaterialSlot>(OutputSlotId).concreteValueType.ToShaderString());
-                using (s.BlockScope())
                 {
-                    switch (m_MultiplyType)
+                    s.AppendLine("void {0}({1} A, {2} B, out {3} Out)",
+                        GetFunctionHeader(),
+                        FindInputSlot<MaterialSlot>(Input1SlotId).concreteValueType.ToShaderString(),
+                        FindInputSlot<MaterialSlot>(Input2SlotId).concreteValueType.ToShaderString(),
+                        FindOutputSlot<MaterialSlot>(OutputSlotId).concreteValueType.ToShaderString());
+                    using (s.BlockScope())
                     {
-                        case MultiplyType.Vector:
-                            s.AppendLine("Out = A * B;");
-                            break;
-                        default:
-                            s.AppendLine("Out = mul(A, B);");
-                            break;
+                        switch (m_MultiplyType)
+                        {
+                            case MultiplyType.Vector:
+                                s.AppendLine("Out = A * B;");
+                                break;
+                            default:
+                                s.AppendLine("Out = mul(A, B);");
+                                break;
+                        }
                     }
-                }
-            });
+                });
         }
 
         // Internal validation
@@ -94,6 +95,7 @@ namespace UnityEditor.ShaderGraph
 
         public override void EvaluateDynamicMaterialSlots()
         {
+
             var dynamicInputSlotsToCompare = DictionaryPool<DynamicValueMaterialSlot, ConcreteSlotValueType>.Get();
             var skippedDynamicSlots = ListPool<DynamicValueMaterialSlot>.Get();
 
@@ -239,7 +241,7 @@ namespace UnityEditor.ShaderGraph
 
                 tempSlots.Clear();
                 GetOutputSlots(tempSlots);
-                if (tempSlots.Any(x => x.hasError))
+                if(tempSlots.Any(x => x.hasError))
                 {
                     owner.AddConcretizationError(objectId, string.Format("Node {0} had output error", objectId));
                     hasError = true;

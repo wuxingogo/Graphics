@@ -1,4 +1,4 @@
-namespace UnityEditor.ShaderGraph
+﻿namespace UnityEditor.ShaderGraph
 {
     [GenerationAPI]
     internal class FieldDescriptor
@@ -23,7 +23,7 @@ namespace UnityEditor.ShaderGraph
         }
 
         public FieldDescriptor(string tag, string name, string define, ShaderValueType type,
-                               string semantic = "", string preprocessor = "", StructFieldOptions subscriptOptions = StructFieldOptions.Static)
+                string semantic = "", string preprocessor = "", StructFieldOptions subscriptOptions = StructFieldOptions.Static)
         {
             this.tag = tag;
             this.name = name;
@@ -36,7 +36,7 @@ namespace UnityEditor.ShaderGraph
         }
 
         public FieldDescriptor(string tag, string name, string define, string type,
-                               string semantic = "", string preprocessor = "", StructFieldOptions subscriptOptions = StructFieldOptions.Static)
+                string semantic = "", string preprocessor = "", StructFieldOptions subscriptOptions = StructFieldOptions.Static)
         {
             this.tag = tag;
             this.name = name;

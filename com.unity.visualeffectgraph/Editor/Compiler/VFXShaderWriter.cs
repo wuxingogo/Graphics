@@ -216,6 +216,7 @@ namespace UnityEditor.VFX
             return padding;
         }
 
+
         public void WriteBuffer(VFXUniformMapper mapper)
         {
             foreach (var buffer in mapper.buffers)

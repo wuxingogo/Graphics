@@ -9,6 +9,7 @@ using UnityEngine.Experimental.Rendering.Universal;
 
 namespace UnityEditor.Experimental.Rendering.Universal
 {
+
     internal class ShadowCasterPath : ScriptablePath
     {
         internal Bounds GetBounds()
@@ -49,7 +50,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
     internal class ShadowCaster2DEditor : PathComponentEditor<ShadowCasterPath>
     {
         [EditorTool("Edit Shadow Caster Shape", typeof(ShadowCaster2D))]
-        class ShadowCaster2DShadowCasterShapeTool : ShadowCaster2DShapeTool {};
+        class ShadowCaster2DShadowCasterShapeTool : ShadowCaster2DShapeTool { };
 
         private static class Styles
         {
@@ -102,6 +103,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
             DoSnappingInspector<T>();
         }
 
+
         public void OnSceneGUI()
         {
             if (m_CastsShadows.boolValue)
@@ -110,9 +112,9 @@ namespace UnityEditor.Experimental.Rendering.Universal
 
         public bool HasRenderer()
         {
-            if (targets != null)
+            if(targets != null)
             {
-                for (int i = 0; i < targets.Length; i++)
+                for(int i=0;i<targets.Length;i++)
                 {
                     ShadowCaster2D shadowCaster = (ShadowCaster2D)targets[i];
                     Renderer renderer = shadowCaster.GetComponent<Renderer>();
@@ -130,7 +132,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
 
             using (new EditorGUI.DisabledScope(!HasRenderer()))  // Done to support multiedit
             {
-                EditorGUILayout.PropertyField(m_UseRendererSilhouette, Styles.shadowMode);
+                EditorGUILayout.PropertyField(m_UseRendererSilhouette, Styles.shadowMode);  
             }
 
             EditorGUILayout.PropertyField(m_CastsShadows, Styles.castsShadows);

@@ -25,7 +25,7 @@ namespace UnityEditor.VFX
 
         static void LoadUserResourcesIfNeeded()
         {
-            if (s_Instance == null && (!m_Searched || !object.ReferenceEquals(s_Instance, null)))
+            if (s_Instance == null && (!m_Searched || !object.ReferenceEquals(s_Instance,null)))
             // if instance is null and either it has never been searched or it was found but it has been destroyed since last time
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:VFXResources"))
@@ -183,7 +183,6 @@ namespace UnityEditor.VFX
             }
             return asset;
         }
-
         private static void Initialize()
         {
             s_Values = new Values();
@@ -227,10 +226,8 @@ namespace UnityEditor.VFX
                 new GradientAlphaKey(1.0f, 1.0f),
             };
         }
-
         static Texture2D m_DefaultParticleTexture;
-        public static Texture2D defaultParticleTexture
-        {
+        public static Texture2D defaultParticleTexture {
             get
             {
                 if (m_DefaultParticleTexture == null)
@@ -240,8 +237,7 @@ namespace UnityEditor.VFX
         }
 
         static Texture2D m_DefaultNoiseTexture;
-        public static Texture2D defaultNoiseTexture
-        {
+        public static Texture2D defaultNoiseTexture {
             get
             {
                 if (m_DefaultNoiseTexture == null)
@@ -251,19 +247,17 @@ namespace UnityEditor.VFX
         }
 
         static Texture3D m_DefaultVectorField;
-        public static Texture3D defaultVectorField
-        {
+        public static Texture3D defaultVectorField {
             get
             {
-                if (m_DefaultVectorField == null)
+                if( m_DefaultVectorField == null)
                     m_DefaultVectorField = SafeLoadAssetAtPath<Texture3D>(defaultPath + "Textures/vectorfield.asset");
                 return m_DefaultVectorField;
             }
         }
         static Texture3D m_DefaultSignedDistanceField;
 
-        public static Texture3D defaultSignedDistanceField
-        {
+        public static Texture3D defaultSignedDistanceField {
             get
             {
                 if (m_DefaultSignedDistanceField == null)
@@ -273,11 +267,10 @@ namespace UnityEditor.VFX
         }
 
         static Mesh m_DefaultMesh;
-        static public Mesh defaultMesh
-        {
+        static public Mesh defaultMesh {
             get
             {
-                if (m_DefaultMesh == null)
+                if(m_DefaultMesh == null)
                     m_DefaultMesh = Resources.GetBuiltinResource<Mesh>("New-Capsule.fbx");
                 return m_DefaultMesh;
             }
@@ -320,7 +313,7 @@ namespace UnityEditor.VFX
 
         public void SetDefaults()
         {
-            if (s_Values == null)
+            if( s_Values == null)
                 Initialize();
             animationCurve = defaultAnimationCurve;
             gradient = defaultGradient;

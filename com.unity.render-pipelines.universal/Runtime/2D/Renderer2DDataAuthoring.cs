@@ -77,7 +77,6 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 m_LightBlendStyles[i].blendMode = Light2DBlendStyle.BlendMode.Multiply;
             }
         }
-
 #endif
     }
 }
