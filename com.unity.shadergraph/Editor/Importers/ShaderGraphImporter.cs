@@ -201,7 +201,7 @@ Shader ""Hidden/GraphErrorShader2""
             }
 #endif
 
-            Texture2D texture = Resources.Load<Texture2D>("Icons/sg_graph_icon");
+            Texture2D texture = Resources.Load<Texture2D>("Icons/sg_graph_icon@64");
             ctx.AddObjectToAsset("MainAsset", mainObject, texture);
             ctx.SetMainObject(mainObject);
 

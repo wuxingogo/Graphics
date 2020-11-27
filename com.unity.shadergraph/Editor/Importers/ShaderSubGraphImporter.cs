@@ -95,7 +95,7 @@ namespace UnityEditor.ShaderGraph
                 messageManager.ClearAll();
             }
 
-            Texture2D texture = Resources.Load<Texture2D>("Icons/sg_subgraph_icon");
+            Texture2D texture = Resources.Load<Texture2D>("Icons/sg_subgraph_icon@64");
             ctx.AddObjectToAsset("MainAsset", graphAsset, texture);
             ctx.SetMainObject(graphAsset);
 
