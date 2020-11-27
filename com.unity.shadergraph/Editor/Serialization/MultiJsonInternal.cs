@@ -363,7 +363,7 @@ namespace UnityEditor.ShaderGraph.Serialization
                 SetOverrideActiveState(ActiveState.ExplicitInactive, false);
                 SetActive(false, false);
             }
-            public UnknownNodeType(string jsonData)
+            public UnknownNodeType(string jsonData) 
             {
                 this.jsonData = jsonData;
                 isValid = false;
@@ -667,14 +667,11 @@ namespace UnityEditor.ShaderGraph.Serialization
                     // We sort everything else by ID to consistently maintain positions in the output
                     x.Item1.CompareTo(y.Item1));
 
-
-                const string k_NewLineString = "\n";
                 var sb = new StringBuilder();
                 foreach (var (id, json) in idJsonList)
                 {
-                    sb.Append(json);
-                    sb.Append(k_NewLineString);
-                    sb.Append(k_NewLineString);
+                    sb.AppendLine(json);
+                    sb.AppendLine();
                 }
 
                 return sb.ToString();

@@ -31,7 +31,6 @@ namespace UnityEditor.ShaderGraph
         List<ShaderStringMapping> m_Mappings;
 
         const string k_IndentationString = "    ";
-        const string k_NewLineString = "\n";
 
         internal AbstractMaterialNode currentNode
         {
@@ -68,7 +67,7 @@ namespace UnityEditor.ShaderGraph
 
         public void AppendNewLine()
         {
-            m_StringBuilder.Append(k_NewLineString);
+            m_StringBuilder.AppendLine();
         }
 
         public void AppendLine(string value)
@@ -178,7 +177,7 @@ namespace UnityEditor.ShaderGraph
         {
             if(m_ScopeStack.Count == 0)
                 return;
-
+            
             switch (m_ScopeStack.Pop())
             {
                 case ScopeType.Indent:
