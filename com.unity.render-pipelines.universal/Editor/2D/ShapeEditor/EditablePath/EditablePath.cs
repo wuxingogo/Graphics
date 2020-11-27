@@ -143,9 +143,5 @@ namespace UnityEditor.Experimental.Rendering.Universal.Path2D
 
             return changed;
         }
-
-        public virtual void SetDefaultShape()
-        {
-        }
     }
 }

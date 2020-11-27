@@ -12,7 +12,6 @@ namespace UnityEngine.Experimental.Rendering.Universal
         public int totalNormalMapUsage;
         public int totalVolumetricUsage;
         public uint blendStylesUsed;
-        public uint blendStylesWithLights;
     }
 
     internal interface ILight2DCullResult
@@ -49,14 +48,12 @@ namespace UnityEngine.Experimental.Rendering.Universal
                     continue;
 
                 returnStats.totalLights++;
-                if (light.normalMapQuality != Light2D.NormalMapQuality.Disabled)
+                if (light.useNormalMap)
                     returnStats.totalNormalMapUsage++;
-                if (light.volumeIntensity > 0)
+                if (light.volumeOpacity > 0)
                     returnStats.totalVolumetricUsage++;
 
                 returnStats.blendStylesUsed |= (uint)(1 << light.blendStyleIndex);
-                if (light.lightType != Light2D.LightType.Global)
-                    returnStats.blendStylesWithLights |= (uint)(1 << light.blendStyleIndex);
             }
 
             return returnStats;

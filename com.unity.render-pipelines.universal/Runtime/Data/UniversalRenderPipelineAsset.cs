@@ -217,7 +217,7 @@ namespace UnityEngine.Rendering.Universal
                 "UniversalRenderPipelineAsset.asset", null, null);
         }
 
-        internal static ScriptableRendererData CreateRendererAsset(string path, RendererType type, bool relativePath = true)
+        static ScriptableRendererData CreateRendererAsset(string path, RendererType type, bool relativePath = true)
         {
             ScriptableRendererData data = CreateRendererData(type);
             string dataPath;

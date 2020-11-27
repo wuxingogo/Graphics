@@ -111,7 +111,6 @@ namespace UnityEditor.Experimental.Rendering.Universal
                 }
             }
 
-
             return rendererData;
         }
 

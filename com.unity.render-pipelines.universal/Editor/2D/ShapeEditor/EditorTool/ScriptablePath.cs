@@ -114,10 +114,5 @@ namespace UnityEditor.Experimental.Rendering.Universal.Path2D
             Undo.RegisterCompleteObjectUndo(this, name);
             m_Modified = true;
         }
-
-        public virtual void SetDefaultShape()
-        {
-            m_Modified = true;
-        }
     }
 }
