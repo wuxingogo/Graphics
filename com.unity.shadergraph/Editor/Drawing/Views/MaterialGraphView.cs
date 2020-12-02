@@ -1219,12 +1219,21 @@ namespace UnityEditor.ShaderGraph.Drawing
             // Make new inputs from the copied graph
             foreach (ShaderInput input in copyGraph.inputs)
             {
-                ShaderInput copiedInput;
+                // [SKY_BEGIN] - plu - Cherry picking https://github.com/Unity-Technologies/Graphics/pull/1932/files# to
+                // resolve an issue where copying a property node from a shader graph to another converts it to
+                // inline
+                // DELETE_BEGIN
+                // ShaderInput copiedInput;
+                // DELETE_END
 
                 switch(input)
                 {
                     case AbstractShaderProperty property:
-                        copiedInput = DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_PropertySectionIndex]);
+                        // DELETE_BEGIN
+                        //copiedInput = DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_PropertySectionIndex]);
+                        // DELETE_END
+                        var copiedProperty = (AbstractShaderProperty) DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_PropertySectionIndex]);
+                        graphView.graph.SanitizeGraphInputReferenceName(copiedProperty, input.referenceName);
 
                         // Increment for next within the same section
                         if (indicies[BlackboardProvider.k_PropertySectionIndex] >= 0)
@@ -1235,7 +1244,10 @@ namespace UnityEditor.ShaderGraph.Drawing
                         foreach (var node in dependentPropertyNodes)
                         {
                             node.owner = graphView.graph;
-                            node.property = property;
+                            // DELETE_BEGIN
+                            // node.property = property;
+                            // DELETE_END
+                            node.property = copiedProperty;
                         }
                         break;
 
@@ -1244,7 +1256,9 @@ namespace UnityEditor.ShaderGraph.Drawing
                         if ((input as ShaderKeyword).isBuiltIn && graphView.graph.keywords.Where(p => p.referenceName == input.referenceName).Any())
                             continue;
 
-                        copiedInput = DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_KeywordSectionIndex]);
+                        // copiedInput = DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_KeywordSectionIndex]);
+                        var copiedKeyword = (ShaderKeyword)DuplicateShaderInputs(input, graphView.graph, indicies[BlackboardProvider.k_KeywordSectionIndex]);
+                        graphView.graph.SanitizeGraphInputReferenceName(copiedKeyword, input.referenceName);
 
                         // Increment for next within the same section
                         if (indicies[BlackboardProvider.k_KeywordSectionIndex] >= 0)
@@ -1255,7 +1269,10 @@ namespace UnityEditor.ShaderGraph.Drawing
                         foreach (var node in dependentKeywordNodes)
                         {
                             node.owner = graphView.graph;
-                            node.keyword = shaderKeyword;
+                            // DELETE_BEGIN
+                            // node.keyword = shaderKeyword;
+                            // DELETE_END
+                            node.keyword = copiedKeyword;
                         }
 
                         // Pasting a new Keyword so need to test against variant limit
@@ -1265,6 +1282,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+                // [SKY_END]
             }
 
             // Pasting a Sub Graph node that contains Keywords so need to test against variant limit
