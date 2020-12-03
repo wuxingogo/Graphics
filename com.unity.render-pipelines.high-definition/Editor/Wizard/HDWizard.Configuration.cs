@@ -76,22 +76,22 @@ namespace UnityEditor.Rendering.HighDefinition
                 new[] { qualityVariable },
                 Expression.Assign(qualityVariable, Expression.Call(getLightmapEncodingQualityForPlatformGroupInfo, buildTargetGroupParameter)),
                 Expression.Convert(qualityVariable, typeof(LightmapEncodingQualityCopy))
-                );
+            );
             var setLightmapEncodingQualityForPlatformGroupBlock = Expression.Block(
                 new[] { qualityVariable },
                 Expression.Assign(qualityVariable, Expression.Convert(qualityParameter, lightEncodingQualityType)),
                 Expression.Call(setLightmapEncodingQualityForPlatformGroupInfo, buildTargetGroupParameter, qualityVariable)
-                );
+            );
             var getStaticBatchingBlock = Expression.Block(
                 new[] { staticBatchingVariable, dynamicBatchingVariable },
                 Expression.Call(getStaticBatchingInfo, buildTargetParameter, staticBatchingVariable, dynamicBatchingVariable),
                 Expression.Equal(staticBatchingVariable, Expression.Constant(1))
-                );
+            );
             var setStaticBatchingBlock = Expression.Block(
                 new[] { staticBatchingVariable, dynamicBatchingVariable },
                 Expression.Call(getStaticBatchingInfo, buildTargetParameter, staticBatchingVariable, dynamicBatchingVariable),
                 Expression.Call(setStaticBatchingInfo, buildTargetParameter, Expression.Convert(staticBatchingParameter, typeof(int)), dynamicBatchingVariable)
-                );
+            );
             var getLightmapEncodingQualityForPlatformGroupLambda = Expression.Lambda<Func<BuildTargetGroup, LightmapEncodingQualityCopy>>(getLightmapEncodingQualityForPlatformGroupBlock, buildTargetGroupParameter);
             var setLightmapEncodingQualityForPlatformGroupLambda = Expression.Lambda<Action<BuildTargetGroup, LightmapEncodingQualityCopy>>(setLightmapEncodingQualityForPlatformGroupBlock, buildTargetGroupParameter, qualityParameter);
             var calculateSelectedBuildTargetLambda = Expression.Lambda<Func<BuildTarget>>(Expression.Call(null, calculateSelectedBuildTargetInfo));
@@ -295,7 +295,6 @@ namespace UnityEditor.Rendering.HighDefinition
                 HDProjectSettings.wizardNeedToRunFixAllAgainAfterDomainReload = true;
         }
 
-
         void CheckPersistentFixAll()
         {
             if (HDProjectSettings.wizardNeedToRunFixAllAgainAfterDomainReload)
@@ -344,6 +343,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 && GetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Lumin) == LightmapEncodingQualityCopy.High
                 && GetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.WSA) == LightmapEncodingQualityCopy.High;
         }
+
         void FixLightmap(bool fromAsyncUnused)
         {
             SetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Standalone, LightmapEncodingQualityCopy.High);
@@ -366,7 +366,7 @@ namespace UnityEditor.Rendering.HighDefinition
         }
 
         bool IsShadowmaskCorrect()
-            //QualitySettings.SetQualityLevel.set quality is too costy to be use at frame
+        //QualitySettings.SetQualityLevel.set quality is too costy to be use at frame
             => QualitySettings.shadowmaskMode == ShadowmaskMode.DistanceShadowmask;
         void FixShadowmask(bool fromAsyncUnused)
         {
@@ -388,13 +388,13 @@ namespace UnityEditor.Rendering.HighDefinition
                 return;
             CreateOrLoad<HDRenderPipelineAsset>(fromAsync
                 ? () => m_Fixer.Stop()
-            : (Action)null,
+                : (Action)null,
                 asset => QualitySettings.renderPipeline = asset);
         }
 
         bool IsHdrpAssetRuntimeResourcesCorrect()
             => IsHdrpAssetUsedCorrect()
-            && HDDefaultSettings.instance? HDDefaultSettings.instance.AreResourcesCreated(): false;
+            && HDDefaultSettings.instance ? HDDefaultSettings.instance.AreResourcesCreated() : false;
         void FixHdrpAssetRuntimeResources(bool fromAsyncUnused)
         {
             if (!IsHdrpAssetUsedCorrect())
@@ -405,14 +405,14 @@ namespace UnityEditor.Rendering.HighDefinition
 
         bool IsHdrpAssetEditorResourcesCorrect()
             => IsHdrpAssetUsedCorrect()
-            && HDDefaultSettings.instance ? HDDefaultSettings.instance.AreEditorResourcesCreated(): false;
+            && HDDefaultSettings.instance ? HDDefaultSettings.instance.AreEditorResourcesCreated() : false;
 
         void FixHdrpAssetEditorResources(bool fromAsyncUnused)
         {
             if (!IsHdrpAssetUsedCorrect())
                 FixHdrpAssetUsed(fromAsync: false);
 
-            HDDefaultSettings.instance.EnsureEditorResources(forceReload:true);
+            HDDefaultSettings.instance.EnsureEditorResources(forceReload: true);
         }
 
         bool IsSRPBatcherCorrect()
@@ -435,6 +435,7 @@ namespace UnityEditor.Rendering.HighDefinition
             var profileList = HDDefaultSettings.instance.renderPipelineEditorResources.defaultDiffusionProfileSettingsList;
             return IsHdrpAssetUsedCorrect() && profileList.Length != 0 && profileList.Any(p => p != null);
         }
+
         void FixHdrpAssetDiffusionProfile(bool fromAsyncUnused)
         {
             if (!IsHdrpAssetUsedCorrect())
@@ -466,6 +467,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             return HDDefaultSettings.instance.IsVolumeProfileFromResources();
         }
+
         void FixDefaultVolumeProfileAssigned(bool fromAsyncUnused)
         {
             if (!IsHdrpAssetUsedCorrect())
@@ -498,10 +500,11 @@ namespace UnityEditor.Rendering.HighDefinition
         bool IsVRXRManagementPackageInstalledCorrect()
         {
             m_UsedPackageRetriever.ProcessAsync(
-                   k_XRanagementPackageName,
-                   (installed, info) => vrXRManagementInstalledCheck = installed);
+                k_XRanagementPackageName,
+                (installed, info) => vrXRManagementInstalledCheck = installed);
             return vrXRManagementInstalledCheck;
         }
+
         void FixVRXRManagementPackageInstalled(bool fromAsync)
         {
             if (fromAsync)
@@ -513,10 +516,11 @@ namespace UnityEditor.Rendering.HighDefinition
         bool IsVRLegacyHelpersCorrect()
         {
             m_UsedPackageRetriever.ProcessAsync(
-                   k_LegacyInputHelpersPackageName,
-                   (installed, info) => vrLegacyHelpersInstalledCheck = installed);
+                k_LegacyInputHelpersPackageName,
+                (installed, info) => vrLegacyHelpersInstalledCheck = installed);
             return vrLegacyHelpersInstalledCheck;
         }
+
         void FixVRLegacyHelpers(bool fromAsync)
         {
             if (fromAsync)
@@ -552,8 +556,8 @@ namespace UnityEditor.Rendering.HighDefinition
                         buidTarget,
                         new[] { GraphicsDeviceType.Direct3D12 }
                             .Concat(
-                                PlayerSettings.GetGraphicsAPIs(buidTarget)
-                                    .Where(x => x != GraphicsDeviceType.Direct3D12))
+                            PlayerSettings.GetGraphicsAPIs(buidTarget)
+                                .Where(x => x != GraphicsDeviceType.Direct3D12))
                             .ToArray());
                 }
                 else
@@ -651,10 +655,10 @@ namespace UnityEditor.Rendering.HighDefinition
 
         bool IsArchitecture64Bits()
             => EditorUserBuildSettings.activeBuildTarget == BuildTarget.StandaloneWindows64;
-		void FixArchitecture64Bits(bool fromAsyncUnused)
-		{
-			EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
-		}
+        void FixArchitecture64Bits(bool fromAsyncUnused)
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
+        }
 
         bool IsDXRStaticBatchingCorrect()
             => !GetStaticBatching(CalculateSelectedBuildTarget());

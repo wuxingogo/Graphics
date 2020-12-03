@@ -32,8 +32,8 @@ namespace UnityEditor.Rendering.HighDefinition
                 return val == null
                     ? (LitShaderMode?)null
                     : val.Value == true
-                        ? LitShaderMode.Deferred
-                        : LitShaderMode.Forward;
+                    ? LitShaderMode.Deferred
+                    : LitShaderMode.Forward;
             }
             set => SetEnabled(FrameSettingsField.LitShaderMode, value == LitShaderMode.Deferred);
         }
@@ -79,7 +79,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 return (obj as HDAdditionalCameraData).renderingPathCustomFrameSettingsOverrideMask;
             if (obj is HDProbe)
                 return (obj as HDProbe).frameSettingsOverrideMask;
-            if(obj is HDDefaultSettings)
+            if (obj is HDDefaultSettings)
                 return null;
             throw new System.ArgumentException("Unknown kind of object");
         }

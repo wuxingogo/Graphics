@@ -81,7 +81,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 supportSubsurfaceScattering = true,
                 sssSampleBudget = new IntScalableSetting(new[] { (int)DefaultSssSampleBudgetForQualityLevel.Low,
                                                                  (int)DefaultSssSampleBudgetForQualityLevel.Medium,
-                                                                 (int)DefaultSssSampleBudgetForQualityLevel.High },ScalableSettingSchemaId.With3Levels),
+                                                                 (int)DefaultSssSampleBudgetForQualityLevel.High }, ScalableSettingSchemaId.With3Levels),
                 supportVolumetrics = true,
                 supportDistortion = true,
                 supportTransparentBackface = true,
@@ -100,9 +100,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 supportDitheringCrossFade = true,
                 supportTerrainHole = false,
                 planarReflectionResolution = new PlanarReflectionAtlasResolutionScalableSetting(new[] { PlanarReflectionAtlasResolution.Resolution256,
-                                                                                PlanarReflectionAtlasResolution.Resolution1024,
-                                                                                PlanarReflectionAtlasResolution.Resolution2048 },
-                ScalableSettingSchemaId.With3Levels),
+                                                                                                        PlanarReflectionAtlasResolution.Resolution1024,
+                                                                                                        PlanarReflectionAtlasResolution.Resolution2048 },
+                    ScalableSettingSchemaId.With3Levels),
                 lightLoopSettings = GlobalLightLoopSettings.NewDefault(),
                 hdShadowInitParams = HDShadowInitParameters.NewDefault(),
                 decalSettings = GlobalDecalSettings.NewDefault(),
@@ -116,8 +116,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 supportRayTracing = false,
                 supportedRayTracingMode = SupportedRayTracingMode.Both,
-                lodBias = new FloatScalableSetting(new[] { 1.0f,1,1 },ScalableSettingSchemaId.With3Levels),
-                maximumLODLevel = new IntScalableSetting(new[] { 0,0,0 },ScalableSettingSchemaId.With3Levels),
+                lodBias = new FloatScalableSetting(new[] { 1.0f, 1, 1 }, ScalableSettingSchemaId.With3Levels),
+                maximumLODLevel = new IntScalableSetting(new[] { 0, 0, 0 }, ScalableSettingSchemaId.With3Levels),
                 supportProbeVolume = false,
                 probeVolumeSettings = GlobalProbeVolumeSettings.@default,
             };
@@ -137,7 +137,6 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 useContactShadow = new BoolScalableSetting(new[] { false, false, true }, ScalableSettingSchemaId.With3Levels)
             };
-
         }
 
 
@@ -153,7 +152,7 @@ namespace UnityEngine.Rendering.HighDefinition
             /// <param name="values">The values of the settings</param>
             /// <param name="schemaId">The schema of the setting.</param>
             public PlanarReflectionAtlasResolutionScalableSetting(PlanarReflectionAtlasResolution[] values, ScalableSettingSchemaId schemaId)
-            : base(values, schemaId)
+                : base(values, schemaId)
             {
             }
         }
@@ -258,7 +257,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public string decalLayerName1
         {
             get { return HDDefaultSettings.instance.decalLayerName1; }
-    set { HDDefaultSettings.instance.decalLayerName1 = value; }
+            set { HDDefaultSettings.instance.decalLayerName1 = value; }
         }
         /// <summary>Name for decal layer 2.</summary>
         public string decalLayerName2
@@ -324,7 +323,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         /// <summary>Global Probe Volume settings.</summary>
         [SerializeField] internal GlobalProbeVolumeSettings probeVolumeSettings;
-		/// <summary>Global light loop settings.</summary>
+        /// <summary>Global light loop settings.</summary>
         public GlobalLightLoopSettings lightLoopSettings;
         /// <summary>Global shadows settings.</summary>
         public HDShadowInitParameters hdShadowInitParams;

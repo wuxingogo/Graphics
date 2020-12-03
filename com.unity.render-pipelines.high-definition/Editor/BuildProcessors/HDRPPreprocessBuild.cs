@@ -35,8 +35,9 @@ namespace UnityEditor.Rendering.HighDefinition
             {
                 if (!Application.isBatchMode)
                 {
+// TODOJENNY
                     if (!EditorUtility.DisplayDialog("Build Player",
-                                                    "There is no HDRP Asset provided in the selected Quality Level.\nAre you sure you want to continue?\n Build time can be extremely long without it.", "Ok", "Cancel"))
+                        "There is no HDRP Asset provided in GraphicsSettings.\nAre you sure you want to continue?\n Build time can be extremely long without it.", "Ok", "Cancel"))
                     {
                         throw new BuildFailedException("Stop build on request.");
                     }
@@ -50,7 +51,7 @@ namespace UnityEditor.Rendering.HighDefinition
             }
 
             // Don't execute the preprocess if we are not HDRenderPipeline
-            if(RenderPipelineManager.currentPipeline is HDRenderPipeline)
+            if (RenderPipelineManager.currentPipeline is HDRenderPipeline)
                 return;
 
             // If platform is not supported, throw an exception to stop the build

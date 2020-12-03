@@ -14,7 +14,7 @@ namespace UnityEditor.Rendering.HighDefinition
             if (ShaderConfig.s_EnableProbeVolumes == 1)
             {
                 if (!(HDRenderPipeline.currentAsset)
-                        ?.currentPlatformRenderPipelineSettings.supportProbeVolume ?? false)
+                    ?.currentPlatformRenderPipelineSettings.supportProbeVolume ?? false)
                 {
                     EditorGUILayout.Space();
                     EditorGUILayout.HelpBox("The current HDRP Asset does not support Probe Volume Global Illumination.", MessageType.Error, wide: true);

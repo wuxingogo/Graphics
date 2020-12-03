@@ -52,7 +52,7 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 int res  = (int)FGDTexture.Resolution;
 
-                switch(index)
+                switch (index)
                 {
                     case FGDIndex.FGD_GGXAndDisneyDiffuse:
                         m_PreIntegratedFGDMaterial[(int)index] = CoreUtils.CreateEngineMaterial(HDDefaultSettings.instance.renderPipelineResources.shaders.preIntegratedFGD_GGXDisneyDiffusePS);

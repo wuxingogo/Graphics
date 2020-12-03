@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.unity.burst": {
-      "version": "1.4.1-pre.2",
+      "version": "1.4.1",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -10,7 +10,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ext.nunit": {
-      "version": "1.0.0",
+      "version": "1.0.5",
       "depth": 1,
       "source": "registry",
       "dependencies": {},
@@ -127,7 +127,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.testframework.graphics": {
-      "version": "7.6.0-preview",
+      "version": "7.7.1-preview",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -142,12 +142,12 @@
       "depth": 0,
       "source": "local",
       "dependencies": {
-        "com.unity.testframework.graphics": "7.5.0-preview",
+        "com.unity.testframework.graphics": "7.7.1-preview",
         "com.unity.render-pipelines.high-definition": "file:./com.unity.render-pipelines.high-definition"
       }
     },
     "com.unity.timeline": {
-      "version": "1.4.4",
+      "version": "1.5.1-pre.3",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -176,7 +176,7 @@
       }
     },
     "com.unity.xr.legacyinputhelpers": {
-      "version": "2.1.4",
+      "version": "2.1.6",
       "depth": 2,
       "source": "registry",
       "dependencies": {},

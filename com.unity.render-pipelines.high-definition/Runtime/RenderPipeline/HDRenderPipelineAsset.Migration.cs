@@ -31,18 +31,18 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         static readonly MigrationDescription<Version, HDRenderPipelineAsset> k_Migration = MigrationDescription.New(
-            MigrationStep.New(Version.UpgradeFrameSettingsToStruct,(HDRenderPipelineAsset data) =>
+            MigrationStep.New(Version.UpgradeFrameSettingsToStruct, (HDRenderPipelineAsset data) =>
             {
 #pragma warning disable 618 // Type or member is obsolete
                 FrameSettingsOverrideMask unusedMaskForDefault = new FrameSettingsOverrideMask();
-                if(data.m_ObsoleteFrameSettings != null)
-                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteFrameSettings,ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings,ref unusedMaskForDefault);
-                if(data.m_ObsoleteBakedOrCustomReflectionFrameSettings != null)
-                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettings,ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings,ref unusedMaskForDefault);
-                if(data.m_ObsoleteRealtimeReflectionFrameSettings != null)
-                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteRealtimeReflectionFrameSettings,ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings,ref unusedMaskForDefault);
+                if (data.m_ObsoleteFrameSettings != null)
+                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteFrameSettings, ref data.m_ObsoleteFrameSettingsMovedToDefaultSettings, ref unusedMaskForDefault);
+                if (data.m_ObsoleteBakedOrCustomReflectionFrameSettings != null)
+                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteBakedOrCustomReflectionFrameSettings, ref data.m_ObsoleteBakedOrCustomReflectionFrameSettingsMovedToDefaultSettings, ref unusedMaskForDefault);
+                if (data.m_ObsoleteRealtimeReflectionFrameSettings != null)
+                    FrameSettings.MigrateFromClassVersion(ref data.m_ObsoleteRealtimeReflectionFrameSettings, ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings, ref unusedMaskForDefault);
 #pragma warning restore 618
-            }), 
+            }),
             MigrationStep.New(Version.AddAfterPostProcessFrameSetting, (HDRenderPipelineAsset data) =>
             {
 #pragma warning disable 618 // Type or member is obsolete
@@ -157,12 +157,12 @@ namespace UnityEngine.Rendering.HighDefinition
                 FrameSettings.MigrateVirtualTexturing(ref data.m_ObsoleteRealtimeReflectionFrameSettingsMovedToDefaultSettings);
 #pragma warning restore 618
             }) ,
-            MigrationStep.New(Version.DefaultSettingsAsAnAsset,(HDRenderPipelineAsset data) =>
+            MigrationStep.New(Version.DefaultSettingsAsAnAsset, (HDRenderPipelineAsset data) =>
             {
 #if UNITY_EDITOR
                 // 2/ it acted as the definition of the Default Settings - now migrated to its own asset
 #pragma warning disable 618 // Type or member is obsolete
-                if(data == GraphicsSettings.defaultRenderPipeline)
+                if (data == GraphicsSettings.defaultRenderPipeline)
 #pragma warning restore 618
                 {
                     HDDefaultSettings defaultSettings = HDDefaultSettings.MigrateFromHDRPAsset(data, true);
@@ -181,7 +181,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 #pragma warning disable 618 // Type or member is obsolete
         [SerializeField]
-        [FormerlySerializedAs("serializedFrameSettings"), FormerlySerializedAs("m_FrameSettings"),Obsolete("For data migration")]
+        [FormerlySerializedAs("serializedFrameSettings"), FormerlySerializedAs("m_FrameSettings"), Obsolete("For data migration")]
         ObsoleteFrameSettings m_ObsoleteFrameSettings;
         [SerializeField]
         [FormerlySerializedAs("m_BakedOrCustomReflectionFrameSettings"), Obsolete("For data migration")]
@@ -233,6 +233,5 @@ namespace UnityEngine.Rendering.HighDefinition
         #endregion
 
 #pragma warning restore 618
-
     }
 }

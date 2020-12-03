@@ -31,11 +31,10 @@ namespace UnityEngine.Rendering.HighDefinition
 
         HDRenderPipelineAsset()
         {
-
         }
 
         void Reset() => OnValidate();
-        
+
         /// <summary>
         /// CreatePipeline implementation.
         /// </summary>
@@ -52,14 +51,13 @@ namespace UnityEngine.Rendering.HighDefinition
         protected override void OnValidate()
         {
             isInOnValidateCall = true;
-
+#if UNITY_EDITOR
+            HDDefaultSettings.Ensure();
+#endif
             //Do not reconstruct the pipeline if we modify other assets.
             //OnValidate is called once at first selection of the asset.
             if (HDRenderPipeline.currentAsset == this)
                 base.OnValidate();
-#if UNITY_EDITOR
-            HDDefaultSettings.Ensure();
-#endif
             UpdateRenderingLayerNames();
 
             isInOnValidateCall = false;
@@ -247,7 +245,7 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR
         /// <summary>HDRP default material.</summary>
         public override Material defaultMaterial
-            => defaultSettings.renderPipelineEditorResources.materials.defaultDiffuseMat;
+            => defaultSettings.renderPipelineEditorResources?.materials.defaultDiffuseMat;
 
         // call to GetAutodeskInteractiveShaderXXX are only from within editor
         /// <summary>HDRP default autodesk interactive shader.</summary>
@@ -352,6 +350,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 return false;
             }
         }
+
 #endif
 
         /// <summary>

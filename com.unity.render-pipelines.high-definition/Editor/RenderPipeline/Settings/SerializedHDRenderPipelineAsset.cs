@@ -6,18 +6,17 @@ namespace UnityEditor.Rendering.HighDefinition
     class SerializedHDRenderPipelineAsset
     {
         public SerializedObject serializedObject;
-        
+
         public SerializedProperty defaultMaterialQualityLevel;
         public SerializedProperty availableMaterialQualityLevels;
         public SerializedProperty diffusionProfileSettingsList;
         public SerializedProperty allowShaderVariantStripping;
         public SerializedProperty enableSRPBatcher;
         public SerializedProperty lensAttenuation;
-        public SerializedProperty useRenderGraph;
         public SerializedRenderPipelineSettings renderPipelineSettings;
         public SerializedVirtualTexturingSettings virtualTexturingSettings;
 
-       
+
         public SerializedHDRenderPipelineAsset(SerializedObject serializedObject)
         {
             this.serializedObject = serializedObject;
@@ -28,7 +27,6 @@ namespace UnityEditor.Rendering.HighDefinition
             allowShaderVariantStripping = serializedObject.Find((HDRenderPipelineAsset s) => s.allowShaderVariantStripping);
             enableSRPBatcher = serializedObject.Find((HDRenderPipelineAsset s) => s.enableSRPBatcher);
             lensAttenuation = serializedObject.FindProperty("m_LensAttenuation");
-            useRenderGraph = serializedObject.FindProperty("m_UseRenderGraph");
 
             renderPipelineSettings = new SerializedRenderPipelineSettings(serializedObject.FindProperty("m_RenderPipelineSettings"));
 

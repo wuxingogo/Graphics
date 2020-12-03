@@ -20,14 +20,14 @@ namespace UnityEngine.Rendering.HighDefinition
     /// - Frame Settings
     /// - Various resources for runtime, editor-only, and raytracing
     /// </summary>
-    public partial class HDDefaultSettings:RenderPipelineDefaultSettings
+    public partial class HDDefaultSettings : RenderPipelineDefaultSettings
     {
         private static HDDefaultSettings cachedInstance = null;
         public static HDDefaultSettings instance
         {
             get
             {
-                if(cachedInstance == null)
+                if (cachedInstance == null)
                     cachedInstance = GraphicsSettings.GetSettingsForRenderPipeline<HDRenderPipeline>() as HDDefaultSettings;
                 return cachedInstance;
             }
@@ -35,7 +35,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         static public void UpdateGraphicsSettings(HDDefaultSettings newSettings)
         {
-            if(newSettings == null || newSettings == cachedInstance)
+            if (newSettings == null || newSettings == cachedInstance)
                 return;
             GraphicsSettings.RegisterRenderPipelineSettings<HDRenderPipeline>(newSettings as RenderPipelineDefaultSettings);
             cachedInstance = newSettings;
@@ -45,17 +45,17 @@ namespace UnityEngine.Rendering.HighDefinition
         //Making sure there is at least one HDDefaultSettings instance in the project
         static public HDDefaultSettings Ensure()
         {
-            if(HDDefaultSettings.instance)
+            if (HDDefaultSettings.instance)
                 return HDDefaultSettings.instance;
 
             HDDefaultSettings assetCreated = null;
             string path = "Assets/HDRPDefaultResources/HDGraphicsSettings.asset";
             assetCreated = AssetDatabase.LoadAssetAtPath<HDDefaultSettings>(path);
-            if(assetCreated == null)
+            if (assetCreated == null)
             {
                 var guidHDDefaultAssets = AssetDatabase.FindAssets("t:HDDefaultSettings");
                 //If we could not find the asset at the default path, find the first one
-                if(guidHDDefaultAssets.Length > 0)
+                if (guidHDDefaultAssets.Length > 0)
                 {
                     var curGUID = guidHDDefaultAssets[0];
                     path = AssetDatabase.GUIDToAssetPath(curGUID);
@@ -63,24 +63,25 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
                 else // or create one altogether
                 {
-                    if(!AssetDatabase.IsValidFolder("Assets/HDRPDefaultResources/"))
-                        AssetDatabase.CreateFolder("Assets","HDRPDefaultResources");
+                    if (!AssetDatabase.IsValidFolder("Assets/HDRPDefaultResources/"))
+                        AssetDatabase.CreateFolder("Assets", "HDRPDefaultResources");
                     assetCreated = ScriptableObject.CreateInstance<HDDefaultSettings>();
-                    AssetDatabase.CreateAsset(assetCreated,path);
+                    AssetDatabase.CreateAsset(assetCreated, path);
                     assetCreated.Init();
                     AssetDatabase.SaveAssets();
                     AssetDatabase.Refresh();
                 }
             }
-            Debug.Assert(assetCreated,"Could not create HD Default Settings - HDRP may not work correctly - Open the Graphics Window for additional help.");
+            Debug.Assert(assetCreated, "Could not create HD Default Settings - HDRP may not work correctly - Open the Graphics Window for additional help.");
             UpdateGraphicsSettings(assetCreated);
             return HDDefaultSettings.instance;
         }
+
 #endif
-        
+
         void Init()
         {
-            if(beforeTransparentCustomPostProcesses == null)
+            if (beforeTransparentCustomPostProcesses == null)
             {
                 beforeTransparentCustomPostProcesses = new List<string>();
                 beforePostProcessCustomPostProcesses = new List<string>();
@@ -117,21 +118,21 @@ namespace UnityEngine.Rendering.HighDefinition
         internal static HDDefaultSettings MigrateFromHDRPAsset(HDRenderPipelineAsset oldAsset, bool bClearObsoleteFields = true)
         {
             string path = "Assets/HDRPDefaultResources/HDGraphicsSettings.asset";
-            return MigrateFromHDRPAsset(oldAsset,path,bClearObsoleteFields);
+            return MigrateFromHDRPAsset(oldAsset, path, bClearObsoleteFields);
         }
-        
-        internal static HDDefaultSettings MigrateFromHDRPAsset(HDRenderPipelineAsset oldAsset,string path,bool bClearObsoleteFields = true)
+
+        internal static HDDefaultSettings MigrateFromHDRPAsset(HDRenderPipelineAsset oldAsset, string path, bool bClearObsoleteFields = true)
         {
             HDDefaultSettings assetCreated = null;
 
             // 1. Load or Create the HDAsset and save it on disk
             assetCreated = AssetDatabase.LoadAssetAtPath<HDDefaultSettings>(path);
-            if(assetCreated == null)
+            if (assetCreated == null)
             {
-                if(!AssetDatabase.IsValidFolder("Assets/HDRPDefaultResources/"))
-                    AssetDatabase.CreateFolder("Assets","HDRPDefaultResources");
+                if (!AssetDatabase.IsValidFolder("Assets/HDRPDefaultResources/"))
+                    AssetDatabase.CreateFolder("Assets", "HDRPDefaultResources");
                 assetCreated = ScriptableObject.CreateInstance<HDDefaultSettings>();
-                AssetDatabase.CreateAsset(assetCreated,path);
+                AssetDatabase.CreateAsset(assetCreated, path);
                 assetCreated.Init();
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
@@ -175,7 +176,7 @@ namespace UnityEngine.Rendering.HighDefinition
             assetCreated.shaderVariantLogLevel = oldAsset.m_ObsoleteShaderVariantLogLevel;
 
             //3. Clear obsolete fields
-            if(bClearObsoleteFields)
+            if (bClearObsoleteFields)
             {
                 oldAsset.m_ObsoleteDefaultVolumeProfile = null;
                 oldAsset.m_ObsoleteDefaultLookDevProfile = null;
@@ -212,31 +213,31 @@ namespace UnityEngine.Rendering.HighDefinition
 
             return assetCreated;
         }
-        
+
         internal static HDDefaultSettings Create(string path, HDDefaultSettings src = null)
         {
             HDDefaultSettings assetCreated = null;
 
             // make sure the asset does not already exists
             assetCreated = AssetDatabase.LoadAssetAtPath<HDDefaultSettings>(path);
-            if(assetCreated == null)
+            if (assetCreated == null)
             {
                 assetCreated = ScriptableObject.CreateInstance<HDDefaultSettings>();
-                AssetDatabase.CreateAsset(assetCreated,path);
+                AssetDatabase.CreateAsset(assetCreated, path);
                 assetCreated.Init();
-                if(assetCreated != null)
+                if (assetCreated != null)
                 {
                     assetCreated.name = Path.GetFileName(path);
                 }
             }
 
-            if(assetCreated)
+            if (assetCreated)
             {
-                if(src != null)
+                if (src != null)
                 {
                     assetCreated.renderPipelineResources = src.renderPipelineResources;
                     assetCreated.renderPipelineRayTracingResources = src.renderPipelineRayTracingResources;
-                    
+
                     assetCreated.volumeProfile = src.volumeProfile;
                     assetCreated.volumeProfileLookDev = src.volumeProfileLookDev;
 
@@ -282,6 +283,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             return assetCreated;
         }
+
         #endif // UNITY_EDITOR
 
         #region Volume
@@ -299,10 +301,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 s_DefaultVolume.priority = float.MinValue;
                 s_DefaultVolume.sharedProfile = GetOrCreateDefaultVolumeProfile();
 #if UNITY_EDITOR
-            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += () =>
-                             {
-                                 DestroyDefaultVolume();
-                             };
+                UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += () =>
+                {
+                    DestroyDefaultVolume();
+                };
 #endif
             }
 
@@ -323,7 +325,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 s_DefaultVolume.sharedProfile = volumeProfile;
             }
 
-            if(s_DefaultVolume == null)
+            if (s_DefaultVolume == null)
             {
                 Debug.LogError("[HDRP] Cannot Create Default Volume.");
             }
@@ -340,8 +342,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 s_DefaultVolume = null;
             }
         }
+
 #endif
-        
+
         #endregion
 
         #region VolumeProfile
@@ -368,8 +371,9 @@ namespace UnityEngine.Rendering.HighDefinition
     #if UNITY_EDITOR
         internal bool IsVolumeProfileFromResources()
         {
-            return volumeProfile != null && renderPipelineEditorResources!=null && volumeProfile.Equals(renderPipelineEditorResources.defaultSettingsVolumeProfile);
+            return volumeProfile != null && renderPipelineEditorResources != null && volumeProfile.Equals(renderPipelineEditorResources.defaultSettingsVolumeProfile);
         }
+
     #endif
 
         #endregion
@@ -378,7 +382,8 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR
         [SerializeField] private VolumeProfile m_VolumeProfileLookDev;
 
-       internal VolumeProfile volumeProfileLookDev {
+        internal VolumeProfile volumeProfileLookDev
+        {
             get => m_VolumeProfileLookDev;
             set => m_VolumeProfileLookDev = value;
         }
@@ -387,12 +392,13 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR
         internal VolumeProfile GetOrAssignLookDevVolumeProfile()
         {
-            if(volumeProfileLookDev == null || volumeProfileLookDev.Equals(null))
+            if (volumeProfileLookDev == null || volumeProfileLookDev.Equals(null))
             {
                 volumeProfileLookDev = renderPipelineEditorResources.lookDev.defaultLookDevVolumeProfile;
             }
             return volumeProfileLookDev;
         }
+
 #endif
         #endregion
 
@@ -422,6 +428,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     throw new System.ArgumentException("Unknown FrameSettingsRenderType");
             }
         }
+
         #endregion
 
         #region Runtime Resources
@@ -431,11 +438,13 @@ namespace UnityEngine.Rendering.HighDefinition
 
         internal RenderPipelineResources renderPipelineResources
         {
-            get {
+            get
+            {
 #if UNITY_EDITOR
-                EnsureResources(forceReload:false);  
+                EnsureResources(forceReload: false);
 #endif
-                return m_RenderPipelineResources; }
+                return m_RenderPipelineResources;
+            }
             set { m_RenderPipelineResources = value; }
         }
 
@@ -452,10 +461,11 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
                 ResourceReloader.TryReloadAllNullIn(m_RenderPipelineResources, HDUtils.GetHDRenderPipelinePath());
 #else
-                ResourceReloader.ReloadAllNullIn(m_RenderPipelineResources,HDUtils.GetHDRenderPipelinePath());
+                ResourceReloader.ReloadAllNullIn(m_RenderPipelineResources, HDUtils.GetHDRenderPipelinePath());
 #endif
             }
         }
+
 #endif
 
         internal bool AreResourcesCreated()
@@ -477,14 +487,15 @@ namespace UnityEngine.Rendering.HighDefinition
                     {
                         // Will be catched by the try in HDRenderPipelineAsset.CreatePipeline()
                         throw new System.Exception(System.String.Format(
-"Compute Shader compilation error on platform {0} in file {1}:{2}: {3}{4}\n" +
-"HDRP will not run until the error is fixed.\n",
-message.platform, message.file, message.line, message.message, message.messageDetails
-));
+                            "Compute Shader compilation error on platform {0} in file {1}:{2}: {3}{4}\n" +
+                            "HDRP will not run until the error is fixed.\n",
+                            message.platform, message.file, message.line, message.message, message.messageDetails
+                        ));
                     }
                 }
             }
         }
+
 #endif //UNITY_EDITOR
         #endregion // Runtime Resources
 
@@ -500,7 +511,7 @@ message.platform, message.file, message.line, message.message, message.messageDe
                 // - constructor only called at asset creation
                 // - cannot rely on OnEnable
                 //thus fallback with lazy init for them
-                EnsureEditorResources(forceReload:false);
+                EnsureEditorResources(forceReload: false);
                 return m_RenderPipelineEditorResources;
             }
         }
@@ -513,12 +524,12 @@ message.platform, message.file, message.line, message.message, message.messageDe
             var editorResourcesPath = HDUtils.GetHDRenderPipelinePath() + "Editor/RenderPipelineResources/HDRenderPipelineEditorResources.asset";
             var objs = InternalEditorUtility.LoadSerializedFileAndForget(editorResourcesPath);
             m_RenderPipelineEditorResources = (objs != null && objs.Length > 0) ? objs[0] as HDRenderPipelineEditorResources : null;
-            if(forceReload)
+            if (forceReload)
             {
-                if (ResourceReloader.ReloadAllNullIn(m_RenderPipelineEditorResources,HDUtils.GetHDRenderPipelinePath()))
+                if (ResourceReloader.ReloadAllNullIn(m_RenderPipelineEditorResources, HDUtils.GetHDRenderPipelinePath()))
                 {
                     InternalEditorUtility.SaveToSerializedFileAndForget(
-                        new Object[]{ m_RenderPipelineEditorResources },
+                        new Object[] { m_RenderPipelineEditorResources },
                         editorResourcesPath,
                         true);
                 }
@@ -533,6 +544,7 @@ message.platform, message.file, message.line, message.message, message.messageDe
         {
             return (m_RenderPipelineEditorResources != null && !m_RenderPipelineEditorResources.Equals(null));
         }
+
 #endif
 
         #endregion //Editor Resources
@@ -559,14 +571,14 @@ message.platform, message.file, message.line, message.message, message.messageDe
 #if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
                 ResourceReloader.TryReloadAllNullIn(m_RenderPipelineRayTracingResources, HDUtils.GetHDRenderPipelinePath());
 #else
-                ResourceReloader.ReloadAllNullIn(m_RenderPipelineRayTracingResources,HDUtils.GetHDRenderPipelinePath());
+                ResourceReloader.ReloadAllNullIn(m_RenderPipelineRayTracingResources, HDUtils.GetHDRenderPipelinePath());
 #endif
             }
             /*
             TODOJENNY - find where to put that code
             // IMPORTANT: We display the error only if we are D3D12 as the supportsRayTracing always return false in any other device even if OS/HW supports DXR.
-            // The D3D12 is a separate check in the wizard, so it is fine not to display an error in case we are not D3D12. 
-            if (!SystemInfo.supportsRayTracing && IsDXRDirect3D12Correct()) 
+            // The D3D12 is a separate check in the wizard, so it is fine not to display an error in case we are not D3D12.
+            if (!SystemInfo.supportsRayTracing && IsDXRDirect3D12Correct())
                 Debug.LogError("Your hardware and/or OS don't support DXR!");
             if (!HDProjectSettings.wizardNeedRestartAfterChangingToDX12 && PlayerSettings.GetGraphicsAPIs(CalculateSelectedBuildTarget()).FirstOrDefault() != GraphicsDeviceType.Direct3D12)
             {
@@ -574,10 +586,16 @@ message.platform, message.file, message.line, message.message, message.messageDe
             }*/
         }
 
+        internal void ClearRayTracingResources()
+        {
+            m_RenderPipelineRayTracingResources = null;
+        }
+
         internal bool AreRayTracingResourcesCreated()
         {
             return (m_RenderPipelineRayTracingResources != null && !m_RenderPipelineRayTracingResources.Equals(null));
         }
+
 #endif
 
         #endregion //Ray Tracing Resources
