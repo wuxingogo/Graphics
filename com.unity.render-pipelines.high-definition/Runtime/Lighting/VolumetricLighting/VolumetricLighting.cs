@@ -325,6 +325,7 @@ namespace UnityEngine.Rendering.HighDefinition
             bool fog  = Fog.IsVolumetricFogEnabled(hdCamera);
             bool init = hdCamera.vBufferParams != null;
 
+            Debug.Log("ReinitializeVolumetricBufferParams");
             if (fog ^ init)
             {
                 if (init)
@@ -354,6 +355,7 @@ namespace UnityEngine.Rendering.HighDefinition
             Debug.Assert(hdCamera.vBufferParams != null);
             Debug.Assert(hdCamera.vBufferParams.Length == 2);
 
+            Debug.Log("UpdateVolumetricBufferParams");
             var currentParams = ComputeVolumetricBufferParameters(hdCamera);
 
             var currIdx = (frameIndex + 0) & 1;
