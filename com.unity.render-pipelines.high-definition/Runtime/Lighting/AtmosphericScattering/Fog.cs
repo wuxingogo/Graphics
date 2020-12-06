@@ -105,15 +105,12 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             get
             {
-                return 0.25f;
-                /*
                 if (!UsesQualitySettings())
                     return m_VolumetricFogBudget.value;
                 else
                     return GetLightingQualitySettings().Fog_Budget[(int)quality.value];
-                    */
             }
-            set { m_VolumetricFogBudget.value = 0.25f; /*  value; */}
+            set { m_VolumetricFogBudget.value = value; }
         }
         [SerializeField, FormerlySerializedAs("volumetricFogBudget")]
         [Tooltip("Defines the performance to quality ratio of the volumetric fog. A value of 0 being the least resource-intensive and a value of 1 being the highest quality.")]
@@ -125,14 +122,12 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             get
             {
-                return 0.5f;
-                /*
                 if (!UsesQualitySettings())
                     return m_ResolutionDepthRatio.value;
                 else
-                    return GetLightingQualitySettings().Fog_DepthRatio[(int)quality.value];*/
+                    return GetLightingQualitySettings().Fog_DepthRatio[(int)quality.value];
             }
-            set { m_ResolutionDepthRatio.value = 0.5f; /* value; */}
+            set { m_ResolutionDepthRatio.value = value; }
         }
         [SerializeField, FormerlySerializedAs("resolutionDepthRatio")]
         [Tooltip("Controls how Unity shares resources between Screen (XY) and Depth (Z) resolutions.")]
