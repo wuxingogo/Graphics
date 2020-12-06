@@ -277,7 +277,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 voxelSize = 1.0f / screenFraction;
 
 
-                sliceCount = 96;
+                sliceCount = 113;
                 voxelSize = 8.0f;
             }
             else
