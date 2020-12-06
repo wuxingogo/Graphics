@@ -825,5 +825,5 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
 
     ApplyCameraRelativeXR(ray.originWS);
 
- //   FillVolumetricLightingBuffer(context, featureFlags, posInput, tileIndex, groupIndex, ray);
+    FillVolumetricLightingBuffer(context, featureFlags, posInput, tileIndex, groupIndex, ray);
 }
