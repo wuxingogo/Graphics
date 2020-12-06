@@ -616,6 +616,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     float tileSize = 0;
                     Vector3Int viewportSize = ComputeVolumetricViewportSize(hdCamera, ref tileSize);
+                    Debug.Log("VolumeVoxelizationPass viewportSize " + viewportSize.x + " " + viewportSize.y + " " + viewportSize.z + " " + hdCamera.camera.name);
 
                     passData.densityBuffer = builder.WriteTexture(renderGraph.ImportTexture(m_DensityBuffer));
 
@@ -710,6 +711,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     float tileSize = 0;
                     Vector3Int viewportSize = ComputeVolumetricViewportSize(hdCamera, ref tileSize);
+                    Debug.Log("VolumetricLightingPass viewportSize " + viewportSize.x + " " + viewportSize.y + " " + viewportSize.z + " " + hdCamera.camera.name);
 
                     // TODO RENDERGRAPH: Auto-scale of 3D RTs is not supported yet so we need to find a better solution for this. Or keep it as is?
                     passData.lightingBuffer = builder.WriteTexture(renderGraph.ImportTexture(m_LightingBuffer));

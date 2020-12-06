@@ -295,6 +295,8 @@ namespace UnityEngine.Rendering.HighDefinition
             int h = Mathf.RoundToInt(viewportHeight * screenFraction);
             int d = sliceCount;
 
+            Debug.Log("ComputeVolumetricViewportSize viewportSize " + screenFraction + " " + sliceCount + " " + voxelSize + " " + hdCamera.camera.name);
+
             return new Vector3Int(w, h, d);
         }
 
@@ -305,6 +307,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             float voxelSize = 0;
             Vector3Int viewportSize = ComputeVolumetricViewportSize(hdCamera, ref voxelSize);
+            Debug.Log("ComputeVolumetricBufferParameters viewportSize " + viewportSize.x + " " + viewportSize.y + " " + viewportSize.z + " " + hdCamera.camera.name);
 
             return new VBufferParameters(viewportSize, controller.depthExtent.value,
                                          hdCamera.camera.nearClipPlane,
