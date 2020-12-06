@@ -189,7 +189,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
             uint volumeIndex = FetchIndex(volumeStart, volumeOffset);
         #endif
 
-            const OrientedBBox obb = _VolumeBounds[volumeIndex];
+            const OrientedBBox obb = _VolumeBounds[0];
 
             const float3x3 obbFrame   = float3x3(obb.right, obb.up, cross(obb.up, obb.right));
             const float3   obbExtents = float3(obb.extentX, obb.extentY, obb.extentZ);
