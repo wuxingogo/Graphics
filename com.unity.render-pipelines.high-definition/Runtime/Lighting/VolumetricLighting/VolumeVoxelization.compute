@@ -130,7 +130,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
 
         for (; offset < volumeCount; offset++)
         {
-            uint objectIndex = g_vBigTileLightList[volumeStart + offset];
+            uint objectIndex = FetchIndex(volumeStart, offset);
 
             if (objectIndex >= _DensityVolumeIndexShift)
             {
