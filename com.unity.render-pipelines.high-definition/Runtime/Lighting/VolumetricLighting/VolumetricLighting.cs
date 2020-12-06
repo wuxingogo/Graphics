@@ -647,14 +647,14 @@ namespace UnityEngine.Rendering.HighDefinition
             var prevIdx = (frameIndex + 1) & 1;
 
             var currentParams = hdCamera.vBufferParams[currIdx];
-            /*
+
             ResizeVolumetricBuffer(ref m_DensityBuffer, "VBufferDensity", currentParams.viewportSize.x,
                                                                             currentParams.viewportSize.y,
                                                                             currentParams.viewportSize.z);
             ResizeVolumetricBuffer(ref m_LightingBuffer, "VBufferLighting", currentParams.viewportSize.x,
                                                                             currentParams.viewportSize.y,
                                                                             currentParams.viewportSize.z);
-*/
+
             // TODO RENDERGRAPH: For now those texture are not handled by render graph.
             // When they are we won't have the m_DensityBuffer handy for getting the current size in UpdateShaderVariablesGlobalVolumetrics
             // So we store the size here and in time we'll fill this vector differently.
