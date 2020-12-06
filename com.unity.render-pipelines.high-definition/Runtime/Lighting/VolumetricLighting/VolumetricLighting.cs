@@ -933,6 +933,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
         void VolumeVoxelizationPass(HDCamera hdCamera, CommandBuffer cmd, int frameIndex)
         {
+            return false;
+
+            /*
             if (!Fog.IsVolumetricFogEnabled(hdCamera))
                 return;
 
@@ -941,6 +944,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 var parameters = PrepareVolumeVoxelizationParameters(hdCamera, frameIndex);
                 VolumeVoxelizationPass(parameters, m_DensityBuffer, m_VisibleVolumeBoundsBuffer, m_VisibleVolumeDataBuffer, m_TileAndClusterData.bigTileLightList, cmd);
             }
+            */
         }
 
         // Ref: https://en.wikipedia.org/wiki/Close-packing_of_equal_spheres
