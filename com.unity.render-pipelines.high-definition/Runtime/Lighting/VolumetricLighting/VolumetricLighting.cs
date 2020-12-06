@@ -277,8 +277,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 voxelSize = 1.0f / screenFraction;
 
 
-                sliceCount = 64;
-                voxelSize = 8.53f;
+               // sliceCount = 64;
+               // voxelSize = 8.53f;
             }
             else
             {
@@ -307,7 +307,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             float voxelSize = 0;
             Vector3Int viewportSize = ComputeVolumetricViewportSize(hdCamera, ref voxelSize);
-            Debug.Log("ComputeVolumetricBufferParameters viewportSize " + viewportSize.x + " " + viewportSize.y + " " + viewportSize.z + " " + hdCamera.camera.name);
+            Debug.Log("ComputeVolumetricBufferParameters viewportSize " + viewportSize.x + " " + viewportSize.y + " " + viewportSize.z + " " + voxelSize + " " + hdCamera.camera.name);
 
             return new VBufferParameters(viewportSize, controller.depthExtent.value,
                                          hdCamera.camera.nearClipPlane,
@@ -325,9 +325,10 @@ namespace UnityEngine.Rendering.HighDefinition
             bool fog  = Fog.IsVolumetricFogEnabled(hdCamera);
             bool init = hdCamera.vBufferParams != null;
 
-            Debug.Log("ReinitializeVolumetricBufferParams");
             if (fog ^ init)
             {
+                Debug.Log("ReinitializeVolumetricBufferParams");
+
                 if (init)
                 {
                     // Deinitialize.
