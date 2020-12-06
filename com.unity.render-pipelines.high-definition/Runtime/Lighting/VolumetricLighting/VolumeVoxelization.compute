@@ -120,6 +120,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
     // list of object indices. Note that while objects are already sorted by type, we don't know the
     // number of each type of objects (e.g. lights), so we should remember to break out of the loop.
     volumeCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
+	volumeCount = min(MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE, volumeCount);
     volumeStart = MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex + 1;
 
     // For now, iterate through all the objects to determine the correct range.
@@ -129,22 +130,13 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
 
         for (; offset < volumeCount; offset++)
         {
-            uint objectIndex = FetchIndex(volumeStart, offset);
+            uint objectIndex = g_vBigTileLightList[volumeStart + offset];
 
             if (objectIndex >= _DensityVolumeIndexShift)
             {
                 // We have found the first density volume.
                 break;
             }
-
-#if defined(SHADER_API_METAL)
-            // TEMP: For unkown reasonsit seems that sometime on Metal we are stock in an infitite loop here
-            // We are doing this extra safety as a workaround until we find a proper fix.
-            if (offset >= UINT_MAX)
-            {
-                break;
-            };
-#endif
         }
 
         volumeStart += offset;
