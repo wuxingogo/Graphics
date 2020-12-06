@@ -787,7 +787,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         bool HasLightToCull()
         {
-            return m_lightList.lights.Count > 0;
+            return m_TotalLightCount > 0;
         }
 
         static int GetNumTileBigTileX(HDCamera hdCamera)
