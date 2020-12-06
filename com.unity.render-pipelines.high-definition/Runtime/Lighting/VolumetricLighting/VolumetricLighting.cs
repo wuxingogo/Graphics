@@ -275,6 +275,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 // Evaluate the voxel size
                 voxelSize = 1.0f / screenFraction;
+
+                voxelSize = 9.0f;
             }
             else
             {
