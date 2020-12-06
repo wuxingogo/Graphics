@@ -119,7 +119,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
     // The "big tile" list contains the number of objects contained within the tile followed by the
     // list of object indices. Note that while objects are already sorted by type, we don't know the
     // number of each type of objects (e.g. lights), so we should remember to break out of the loop.
-	volumeCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
+    volumeCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
     volumeStart = MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex + 1;
 
     // For now, iterate through all the objects to determine the correct range.
@@ -129,7 +129,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
 
         for (; offset < volumeCount; offset++)
         {
-            uint objectIndex = FetchIndex(volumeStart, 0);
+            uint objectIndex = FetchIndex(volumeStart, offset);
 
             if (objectIndex >= _DensityVolumeIndexShift)
             {
