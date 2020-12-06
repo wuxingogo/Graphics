@@ -140,7 +140,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
 #if defined(SHADER_API_METAL)
             // TEMP: For unkown reasonsit seems that sometime on Metal we are stock in an infitite loop here
             // We are doing this extra safety as a workaround until we find a proper fix.
-            if (offset >= UINT_MAX)
+            if (offset >= 1)
             {
                 break;
             };
@@ -189,7 +189,7 @@ void FillVolumetricDensityBuffer(PositionInputs posInput, uint tileIndex, Jitter
             uint volumeIndex = FetchIndex(volumeStart, volumeOffset);
         #endif
 
-            const OrientedBBox obb = _VolumeBounds[0];
+            const OrientedBBox obb = _VolumeBounds[volumeIndex];
 
             const float3x3 obbFrame   = float3x3(obb.right, obb.up, cross(obb.up, obb.right));
             const float3   obbExtents = float3(obb.extentX, obb.extentY, obb.extentZ);
