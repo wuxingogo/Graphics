@@ -822,7 +822,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 for (int j = 0; j < 16; ++j)
                     cb._VBufferCoordToViewDirWS[i * 16 + j] = m_PixelCoordToViewDirWS[i][j];
             cb._VBufferUnitDepthTexelSpacing = HDUtils.ComputZPlaneTexelSpacing(1.0f, vFoV, resolution.y);
-            cb._NumVisibleDensityVolumes = (uint)m_TotalLightCount; // (uint)m_VisibleVolumeBounds.Count;
+            cb._NumVisibleDensityVolumes = (uint)m_VisibleVolumeBounds.Count;
             cb._CornetteShanksConstant = CornetteShanksPhasePartConstant(fog.anisotropy.value);
             cb._VBufferHistoryIsValid = hdCamera.volumetricHistoryIsValid ? 1u : 0u;
 
