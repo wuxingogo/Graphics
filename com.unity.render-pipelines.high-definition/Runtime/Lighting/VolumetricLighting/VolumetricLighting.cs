@@ -933,7 +933,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         void VolumeVoxelizationPass(HDCamera hdCamera, CommandBuffer cmd, int frameIndex)
         {
-            return false;
+            return  ;
 
             /*
             if (!Fog.IsVolumetricFogEnabled(hdCamera))
