@@ -886,7 +886,7 @@ namespace UnityEngine.Rendering.HighDefinition
             var currParams = hdCamera.vBufferParams[currIdx];
 
             parameters.viewCount = hdCamera.viewCount;
-            parameters.tiledLighting = false; // HasLightToCull() && hdCamera.frameSettings.IsEnabled(FrameSettingsField.BigTilePrepass);
+            parameters.tiledLighting = HasLightToCull() && hdCamera.frameSettings.IsEnabled(FrameSettingsField.BigTilePrepass);
             bool optimal = currParams.voxelSize == 8;
 
             parameters.voxelizationCS = m_VolumeVoxelizationCS;
