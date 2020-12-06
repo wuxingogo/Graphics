@@ -602,7 +602,7 @@ namespace UnityEngine.Rendering.HighDefinition
                                                 ComputeBufferHandle bigTileLightList,
                                                 int                 frameIndex)
         {
-            if (Fog.IsVolumetricFogEnabled(hdCamera))
+            if (Fog.IsVolumetricFogEnabled(hdCamera) && m_VisibleVolumeBounds.Count > 0)
             {
                 using (var builder = renderGraph.AddRenderPass<VolumeVoxelizationPassData>("Volume Voxelization", out var passData))
                 {
