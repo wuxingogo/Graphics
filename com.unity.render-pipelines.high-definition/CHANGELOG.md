@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Transparent materials created by the Model Importer are set to not cast shadows. ( case 1295747)
 - Change some light unit slider value ranges to better reflect the lighting scenario.
 - Change the tooltip for color shadows and semi-transparent shadows (case 1307704).
+- Removed the superior clamping value for the ray tracing light cluster size.
 
 ## [10.2.1] - 2020-11-30
 
