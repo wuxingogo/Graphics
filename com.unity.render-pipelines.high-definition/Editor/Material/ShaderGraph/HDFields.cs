@@ -35,11 +35,7 @@ namespace UnityEditor.Rendering.HighDefinition
         public static FieldDescriptor DoubleSidedMirror =       new FieldDescriptor(kDoubleSided, "Mirror", "");
 
         // Distortion
-        public static FieldDescriptor DistortionDepthTest =     new FieldDescriptor(kDistortion, "DepthTest", "");
-        public static FieldDescriptor DistortionAdd =           new FieldDescriptor(kDistortion, "Add", "");
-        public static FieldDescriptor DistortionMultiply =      new FieldDescriptor(kDistortion, "Multiply", "");
-        public static FieldDescriptor DistortionReplace =       new FieldDescriptor(kDistortion, "Replace", "");
-        public static FieldDescriptor TransparentDistortion =    new FieldDescriptor(kDistortion, "TransparentDistortion", "");
+        public static FieldDescriptor Distortion =              new FieldDescriptor(kDistortion, "Distortion", "");
 
         // Specular Occlusion
         public static FieldDescriptor SpecularOcclusion =       new FieldDescriptor(string.Empty, "SpecularOcclusion", "_ENABLESPECULAROCCLUSION");

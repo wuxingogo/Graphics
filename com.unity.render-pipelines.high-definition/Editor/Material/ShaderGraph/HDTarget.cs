@@ -552,12 +552,19 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
             public static readonly string dstBlend = "[_DstBlend]";
             public static readonly string alphaSrcBlend = "[_AlphaSrcBlend]";
             public static readonly string alphaDstBlend = "[_AlphaDstBlend]";
+            public static readonly string distortionSrcBlend = "[_DistortionSrcBlend]";
+            public static readonly string distortionDstBlend = "[_DistortionDstBlend]";
+            public static readonly string distortionBlurSrcBlend = "[_DistortionBlurSrcBlend]";
+            public static readonly string distortionBlurDstBlend = "[_DistortionBlurDstBlend]";
+            public static readonly string distortionBlurBlendOp = "[_DistortionBlurBlendOp]";
+            public static readonly string add = "Add";
             public static readonly string alphaToMask = "[_AlphaToMask]";
             public static readonly string cullMode = "[_CullMode]";
             public static readonly string cullModeForward = "[_CullModeForward]";
             public static readonly string zTestDepthEqualForOpaque = "[_ZTestDepthEqualForOpaque]";
             public static readonly string zTestTransparent = "[_ZTestTransparent]";
             public static readonly string zTestGBuffer = "[_ZTestGBuffer]";
+            public static readonly string zTestModeDistortion = "[_ZTestModeDistortion]";
             public static readonly string zWrite = "[_ZWrite]";
             public static readonly string zClip = "[_ZClip]";
             public static readonly string stencilWriteMaskDepth = "[_StencilWriteMaskDepth]";
@@ -628,6 +635,21 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
             {
                 WriteMask = Uniforms.stencilWriteMaskMV,
                 Ref = Uniforms.stencilRefMV,
+                Comp = "Always",
+                Pass = "Replace",
+            }) },
+        };
+
+        public static RenderStateCollection DistortionVectors = new RenderStateCollection
+        {
+            { RenderState.Blend(Uniforms.distortionSrcBlend, Uniforms.distortionDstBlend, Uniforms.distortionBlurSrcBlend, Uniforms.distortionBlurDstBlend) },
+            { RenderState.BlendOp(Uniforms.add, Uniforms.distortionBlurBlendOp) },
+            { RenderState.Cull(CoreRenderStates.Uniforms.cullMode) },
+            { RenderState.ZWrite(ZWrite.Off) },
+            { RenderState.ZTest(Uniforms.zTestModeDistortion)},
+            { RenderState.Stencil(new StencilDescriptor() {
+                WriteMask = CoreRenderStates.Uniforms.stencilWriteMaskDistortionVec,
+                Ref = CoreRenderStates.Uniforms.stencilRefDistortionVec,
                 Comp = "Always",
                 Pass = "Replace",
             }) },

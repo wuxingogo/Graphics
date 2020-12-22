@@ -104,7 +104,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 }
 
                 if (supportDistortion)
-                    passes.Add(HDShaderPasses.GenerateDistortionPass(supportLighting), new FieldCondition(HDFields.TransparentDistortion, true));
+                    passes.Add(HDShaderPasses.GenerateDistortionPass(supportLighting), new FieldCondition(HDFields.Distortion, true));
 
                 passes.Add(HDShaderPasses.GenerateFullScreenDebug());
 
@@ -226,12 +226,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
 
         protected void AddDistortionFields(ref TargetFieldContext context)
         {
-            // Distortion
-            context.AddField(HDFields.DistortionDepthTest,                  builtinData.distortionDepthTest);
-            context.AddField(HDFields.DistortionAdd,                        builtinData.distortionMode == DistortionMode.Add);
-            context.AddField(HDFields.DistortionMultiply,                   builtinData.distortionMode == DistortionMode.Multiply);
-            context.AddField(HDFields.DistortionReplace,                    builtinData.distortionMode == DistortionMode.Replace);
-            context.AddField(HDFields.TransparentDistortion,                systemData.surfaceType != SurfaceType.Opaque && builtinData.distortion);
+            context.AddField(HDFields.Distortion, builtinData.distortion);
         }
 
         public override void GetActiveBlocks(ref TargetActiveBlockContext context)
@@ -330,6 +325,8 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
             HDSubShaderUtilities.AddAlphaCutoffShaderProperties(collector, systemData.alphaTest, builtinData.alphaTestShadow);
             HDSubShaderUtilities.AddDoubleSidedProperty(collector, systemData.doubleSidedMode);
             HDSubShaderUtilities.AddPrePostPassProperties(collector, builtinData.transparentDepthPrepass, builtinData.transparentDepthPostpass);
+            if (builtinData.distortion)
+                HDSubShaderUtilities.AddDistortionProperties(collector, builtinData.distortion, builtinData.distortionMode, builtinData.distortionDepthTest);
 
             // Add all shader properties required by the inspector
             HDSubShaderUtilities.AddBlendingStatesShaderProperties(

@@ -1,7 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEditor.Graphing;
 using UnityEngine;              // Vector3,4
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Internal;
@@ -9,7 +7,6 @@ using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering.HighDefinition.ShaderGraph;
 using UnityEditor.ShaderGraph.Legacy;
-using ShaderPass = UnityEditor.ShaderGraph.PassDescriptor;
 
 // Include material common properties names
 using static UnityEngine.Rendering.HighDefinition.HDMaterialProperties;
@@ -229,6 +226,29 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             collector.AddToggleProperty(kTransparentDepthPrepassEnable, prepass);
             collector.AddToggleProperty(kTransparentDepthPostpassEnable, postpass);
+        }
+
+        public static void AddDistortionProperties(PropertyCollector collector, bool distortionEnable, DistortionMode mode, bool distortionDepthTestEnable)
+        {
+            // All these properties values will be patched with the material update
+            collector.AddToggleProperty("_DistortionEnable", distortionEnable);
+            collector.AddToggleProperty("_DistortionDepthTest", distortionDepthTestEnable);
+            collector.AddShaderProperty(new Vector1ShaderProperty
+            {
+                overrideReferenceName = "_DistortionBlendMode",
+                floatType = FloatType.Enum,
+                value = (int)mode,
+                enumNames = new List<string>(Enum.GetNames(typeof(DistortionMode))),
+                enumValues = { (int)DistortionMode.Add, (int)DistortionMode.Multiply, (int)DistortionMode.Replace },
+                hidden = true,
+                overrideHLSLDeclaration = true,
+                hlslDeclarationOverride = HLSLDeclaration.DoNotDeclare,
+            });
+            collector.AddIntProperty("_DistortionSrcBlend", 0);
+            collector.AddIntProperty("_DistortionDstBlend", 0);
+            collector.AddIntProperty("_DistortionBlurSrcBlend", 0);
+            collector.AddIntProperty("_DistortionBlurDstBlend", 0);
+            collector.AddIntProperty("_DistortionBlurBlendMode", 0);
         }
 
         public static string RenderQueueName(HDRenderQueue.RenderQueueType value)

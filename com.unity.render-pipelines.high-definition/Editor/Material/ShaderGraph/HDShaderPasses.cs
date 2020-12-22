@@ -23,32 +23,11 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 useInPreview = true,
 
                 // Collections
-                renderStates = GenerateRenderState(),
+                renderStates = CoreRenderStates.DistortionVectors,
                 pragmas = CorePragmas.DotsInstancedInV1AndV2,
                 defines = CoreDefines.ShaderGraphRaytracingDefault,
                 includes = GenerateIncludes(),
             };
-
-            RenderStateCollection GenerateRenderState()
-            {
-                return new RenderStateCollection
-                {
-                    { RenderState.Blend(Blend.One, Blend.One, Blend.One, Blend.One), new FieldCondition(HDFields.DistortionAdd, true) },
-                    { RenderState.Blend(Blend.DstColor, Blend.Zero, Blend.DstAlpha, Blend.Zero), new FieldCondition(HDFields.DistortionMultiply, true) },
-                    { RenderState.Blend(Blend.One, Blend.Zero, Blend.One, Blend.Zero), new FieldCondition(HDFields.DistortionReplace, true) },
-                    { RenderState.BlendOp(BlendOp.Add, BlendOp.Add) },
-                    { RenderState.Cull(CoreRenderStates.Uniforms.cullMode) },
-                    { RenderState.ZWrite(ZWrite.Off) },
-                    { RenderState.ZTest(ZTest.Always), new FieldCondition(HDFields.DistortionDepthTest, false) },
-                    { RenderState.ZTest(ZTest.LEqual), new FieldCondition(HDFields.DistortionDepthTest, true) },
-                    { RenderState.Stencil(new StencilDescriptor() {
-                        WriteMask = CoreRenderStates.Uniforms.stencilWriteMaskDistortionVec,
-                        Ref = CoreRenderStates.Uniforms.stencilRefDistortionVec,
-                        Comp = "Always",
-                        Pass = "Replace",
-                    }) }
-                };
-            }
 
             IncludeCollection GenerateIncludes()
             {
