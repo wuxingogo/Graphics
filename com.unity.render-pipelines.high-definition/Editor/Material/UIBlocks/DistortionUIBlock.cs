@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEditor.ShaderGraph;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -82,23 +80,27 @@ namespace UnityEditor.Rendering.HighDefinition
                         materialEditor.ShaderProperty(distortionOnly, Styles.distortionOnlyText);
                     materialEditor.ShaderProperty(distortionDepthTest, Styles.distortionDepthTestText);
 
-                    EditorGUI.indentLevel++;
-                    materialEditor.TexturePropertySingleLine(Styles.distortionVectorMapText, distortionVectorMap, distortionVectorScale, distortionVectorBias);
-                    EditorGUI.indentLevel++;
-                    materialEditor.ShaderProperty(distortionScale, Styles.distortionScaleText);
-                    materialEditor.ShaderProperty(distortionBlurScale, Styles.distortionBlurScaleText);
-                    float remapMin = distortionBlurRemapMin.floatValue;
-                    float remapMax = distortionBlurRemapMax.floatValue;
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.MinMaxSlider(Styles.distortionBlurRemappingText, ref remapMin, ref remapMax, 0.0f, 1.0f);
-                    if (EditorGUI.EndChangeCheck())
+                    var shader = materials[0].shader;
+                    if (!shader.IsShaderGraph())
                     {
-                        distortionBlurRemapMin.floatValue = remapMin;
-                        distortionBlurRemapMax.floatValue = remapMax;
-                    }
-                    EditorGUI.indentLevel--;
+                        EditorGUI.indentLevel++;
+                        materialEditor.TexturePropertySingleLine(Styles.distortionVectorMapText, distortionVectorMap, distortionVectorScale, distortionVectorBias);
+                        EditorGUI.indentLevel++;
+                        materialEditor.ShaderProperty(distortionScale, Styles.distortionScaleText);
+                        materialEditor.ShaderProperty(distortionBlurScale, Styles.distortionBlurScaleText);
+                        float remapMin = distortionBlurRemapMin.floatValue;
+                        float remapMax = distortionBlurRemapMax.floatValue;
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.MinMaxSlider(Styles.distortionBlurRemappingText, ref remapMin, ref remapMax, 0.0f, 1.0f);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            distortionBlurRemapMin.floatValue = remapMin;
+                            distortionBlurRemapMax.floatValue = remapMax;
+                        }
+                        EditorGUI.indentLevel--;
 
-                    EditorGUI.indentLevel--;
+                        EditorGUI.indentLevel--;
+                    }
 
                     EditorGUI.indentLevel--;
                 }

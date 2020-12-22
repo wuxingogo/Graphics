@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 using System.Linq;
+using UnityEditor.ShaderGraph;
 
 // Include material common properties names
 using static UnityEngine.Rendering.HighDefinition.HDMaterialProperties;
@@ -79,6 +77,15 @@ namespace UnityEditor.Rendering.HighDefinition
         /// </summary>
         public override void OnGUI()
         {
+            // If refraction model is not enabled in SG, we don't show the section
+            var shader = materials[0].shader;
+            if (shader.IsShaderGraph())
+            {
+                var defaultRefractionModel = shader.GetPropertyDefaultFloatValue(shader.FindPropertyIndex(kRefractionModel));
+                if (defaultRefractionModel == 0)
+                    return;
+            }
+
             if (refractionModel != null)
             {
                 materialEditor.ShaderProperty(refractionModel, Styles.refractionModelText);
