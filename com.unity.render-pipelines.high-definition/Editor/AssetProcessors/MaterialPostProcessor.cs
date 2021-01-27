@@ -157,6 +157,9 @@ namespace UnityEditor.Rendering.HighDefinition
                         //due to FB 1175514, this not work. It is being fixed though.
                         //delayed call of the following work in some case and cause infinite loop in other cases.
                         AssetDatabase.AddObjectToAsset(assetVersion, asset);
+
+                        // Init material in case it's used before an inspector window is opened
+                        HDShaderUtils.ResetMaterialKeywords(material);
                     }
                     else
                     {
@@ -648,7 +651,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             // Force Forward emissive for deferred pass is only setup for Lit shader
             if (id == HDShaderUtils.ShaderID.SG_Lit || id == HDShaderUtils.ShaderID.Lit || id == HDShaderUtils.ShaderID.LitTesselation
-             || id == HDShaderUtils.ShaderID.LayeredLit || id == HDShaderUtils.ShaderID.LayeredLitTesselation)
+                || id == HDShaderUtils.ShaderID.LayeredLit || id == HDShaderUtils.ShaderID.LayeredLitTesselation)
             {
                 HDShaderUtils.ResetMaterialKeywords(material);
             }
