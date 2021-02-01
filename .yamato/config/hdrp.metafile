@@ -32,7 +32,7 @@ test_platforms:
     utr_flags:
       - [OSX_Metal]: --timeout=2400
   - type: Standalone
-    name: Standalone_cache_XR
+    name: Standalone_XR_cache
     utr_flags:
     - [all]: --extra-editor-arg="-xr-reuse-tests"
     - [all]: --extra-editor-arg="-adb2"
@@ -111,7 +111,7 @@ platforms:
     apis:
       - name: Vulkan
         exclude_test_platforms:
-          - name: Standalone_cache_XR
+          - name: Standalone_XR_cache
           - name: playmode_XR
           - name: playmode_XR_cache
     build_configs:
@@ -127,7 +127,7 @@ pr:
       test_platforms:
         - Standalone_cache
         - playmode_cache
-        - Standalone_cache_XR
+        - Standalone_XR_cache
         - playmode_XR_cache
         - editmode
     - platform: Win
@@ -142,6 +142,8 @@ pr:
       color_space: Linear
       test_platforms:
         - playmode_cache
+      exclude_test_platforms:
+        - name: Standalone_XR_cache
     - platform: OSX
       api: Metal
       build_config: mono
@@ -180,7 +182,7 @@ nightly:
       color_space: Linear
       test_platforms:
         - Standalone_cache
-        - Standalone_cache_XR
+        - Standalone_XR_cache
         - playmode_XR_cache
     - platform: Win
       api: Vulkan
@@ -188,7 +190,7 @@ nightly:
       color_space: Linear
       test_platforms:
         - Standalone_cache
-        - Standalone_cache_XR
+        - Standalone_XR_cache
         - playmode_XR_cache
     - platform: Linux
       api: Vulkan

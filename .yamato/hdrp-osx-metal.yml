@@ -152,8 +152,8 @@ HDRP_OSX_Metal_Standalone_mono_Linear_trunk:
             paths:
               -  "**/test-results/**"
               -  "TestProjects/HDRP_RuntimeTests/Logs/*.log"
-HDRP_OSX_Metal_Standalone_cache_XR_mono_Linear_trunk:
-    name: HDRP on OSX_Metal_Standalone_cache_XR_mono_Linear on version trunk
+HDRP_OSX_Metal_Standalone_XR_cache_mono_Linear_trunk:
+    name: HDRP on OSX_Metal_Standalone_XR_cache_mono_Linear on version trunk
     agent:
         type: Unity::metal::macmini
         image: slough-ops/macos-10.14-xcode:stable
@@ -375,8 +375,8 @@ HDRP_OSX_Metal_Standalone_mono_Linear_CUSTOM-REVISION:
     dependencies:
       -  path: .yamato/_editor_priming.yml#editor:priming:CUSTOM-REVISION:macos
          rerun: always
-HDRP_OSX_Metal_Standalone_cache_XR_mono_Linear_CUSTOM-REVISION:
-    name: HDRP on OSX_Metal_Standalone_cache_XR_mono_Linear on version CUSTOM-REVISION
+HDRP_OSX_Metal_Standalone_XR_cache_mono_Linear_CUSTOM-REVISION:
+    name: HDRP on OSX_Metal_Standalone_XR_cache_mono_Linear on version CUSTOM-REVISION
     agent:
         type: Unity::metal::macmini
         image: slough-ops/macos-10.14-xcode:stable
