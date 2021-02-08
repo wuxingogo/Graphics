@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - Fixed an exception when opening the color picker in the material UI (case 1307143).
+- Fix screen being over-exposed when changing very different skies.
 - Fixed lights shadow frustum near and far planes.
 - Fixed various issues with non-temporal SSAO and rendergraph.
 - Fixed white flashes on camera cuts on volumetric fog.
