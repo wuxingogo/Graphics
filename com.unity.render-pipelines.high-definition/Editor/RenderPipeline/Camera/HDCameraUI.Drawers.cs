@@ -568,7 +568,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
             if (doGlobalIndent)
                 EditorGUI.indentLevel++;
-
             Rect antiAliasingRect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(antiAliasingRect, Styles.antialiasingContent, p.antialiasing);
             {
