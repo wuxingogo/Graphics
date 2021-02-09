@@ -550,21 +550,23 @@ namespace UnityEditor.Rendering.HighDefinition
             bool doGlobalIndent = false;
             bool showAntialiasContentAsFallback = false;
 
+#if ENABLE_NVIDIA_MODULE
             if (p.allowDynamicResolution.boolValue)
             {
-                bool isPrepostUpscalerEnabled = HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler;
-                doGlobalIndent = isPrepostUpscalerEnabled;
-                if (isPrepostUpscalerEnabled)
+                bool isDLSSEnabled = HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
+                doGlobalIndent = isDLSSEnabled;
+                if (isDLSSEnabled)
                 {
                     showAntialiasContentAsFallback = true;
-                    bool featureDetected = HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected);
+                    bool featureDetected = HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.DLSSDetected);
 
-                    //write here support string for prepost upscaler
+                    //write here support string for dlss upscaler
                     EditorGUILayout.HelpBox(
-                        featureDetected ? Styles.prepostUpscalerFeatureDetectedMsg : Styles.prepostUpscalerFeaturNotDetected,
+                        featureDetected ? Styles.DLSSFeatureDetectedMsg : Styles.DLSSFeatureNotDetectedMsg,
                         featureDetected ? MessageType.Info : MessageType.Warning);
                 }
             }
+#endif
 
             if (doGlobalIndent)
                 EditorGUI.indentLevel++;

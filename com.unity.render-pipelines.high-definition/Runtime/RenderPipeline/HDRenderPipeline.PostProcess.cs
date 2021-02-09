@@ -139,7 +139,7 @@ namespace UnityEngine.Rendering.HighDefinition
         bool m_TonemappingFS;
         bool m_FilmGrainFS;
         bool m_DitheringFS;
-        bool m_PrepostUpscalerFS;
+        bool m_DLSSFS;
         bool m_AntialiasingFS;
 
         // Debug Exposure compensation (Drive by debug menu) to add to all exposure processed value
@@ -170,6 +170,8 @@ namespace UnityEngine.Rendering.HighDefinition
         System.Random m_Random;
 
         bool m_IsDoFHisotoryValid = false;
+
+        DLSSPass m_DLSSPass = null;
 
         void InitializePostProcess()
         {
@@ -227,6 +229,8 @@ namespace UnityEngine.Rendering.HighDefinition
             SetExposureTextureToEmpty(m_EmptyExposureTexture);
 
             resGroup = ResolutionGroup.BeforeDynamicResUpscale;
+
+            m_DLSSPass = DLSSPass.Create();
         }
 
         void CleanupPostProcess()
@@ -315,11 +319,14 @@ namespace UnityEngine.Rendering.HighDefinition
             m_TonemappingFS = frameSettings.IsEnabled(FrameSettingsField.Tonemapping);
             m_FilmGrainFS = frameSettings.IsEnabled(FrameSettingsField.FilmGrain);
             m_DitheringFS = frameSettings.IsEnabled(FrameSettingsField.Dithering);
-            m_PrepostUpscalerFS     = frameSettings.IsEnabled(FrameSettingsField.PrepostUpscaler);
+            m_DLSSFS                = frameSettings.IsEnabled(FrameSettingsField.DLSS);
             m_AntialiasingFS = frameSettings.IsEnabled(FrameSettingsField.Antialiasing);
 
             // Override full screen anti-aliasing when doing path tracing (which is naturally anti-aliased already)
             m_AntialiasingFS &= !m_PathTracing.enable.value;
+
+            // Sanity check, cant run dlss unless the pass is not null
+            m_DLSSFS &= m_DLSSPass != null;
 
             m_DebugExposureCompensation = m_CurrentDebugDisplaySettings.data.lightingDebugSettings.debugExposure;
 
@@ -355,6 +362,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.SetGlobalTexture(HDShaderIDs._ExposureTexture, currentExposureTexture);
                 cmd.SetGlobalTexture(HDShaderIDs._PrevExposureTexture, GetPreviousExposureTexture(camera));
             }
+
+            if (m_DLSSPass != null)
+                m_DLSSPass.BeginFrame(camera);
         }
 
         static void ValidateComputeBuffer(ref ComputeBuffer cb, int size, int stride, ComputeBufferType type = ComputeBufferType.Default)
@@ -434,7 +444,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 source = DynamicExposurePass(renderGraph, hdCamera, source);
 
-                if (m_PrepostUpscalerFS && DynamicResolutionHandler.instance.upsamplerSchedule == DynamicResolutionHandler.UpsamplerScheduleType.BeforePost)
+                if (m_DLSSFS && DynamicResolutionHandler.instance.upsamplerSchedule == DynamicResolutionHandler.UpsamplerScheduleType.BeforePost)
                 {
                     var upsamplignSceneResults = SceneUpsamplePass(renderGraph, hdCamera, source, depthBuffer, motionVectors);
                     source = upsamplignSceneResults.color;
@@ -555,6 +565,46 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
+        #endregion
+
+        #region DLSS
+        class DLSSData
+        {
+            public DLSSPass.Parameters parameters;
+            public TextureHandle source;
+            public TextureHandle depthBuffer;
+            public TextureHandle motionVectors;
+            public TextureHandle output;
+        }
+
+        TextureHandle DoDLSSPass(
+            RenderGraph renderGraph, HDCamera hdCamera,
+            TextureHandle source, TextureHandle depthBuffer, TextureHandle motionVectors)
+        {
+            using (var builder = renderGraph.AddRenderPass<DLSSData>("Deep Learning Super Sampling", out var passData, ProfilingSampler.Get(HDProfileId.DeepLearningSuperSampling)))
+            {
+                passData.parameters = new DLSSPass.Parameters() {
+                    hdCamera = hdCamera,
+                    sharpness = HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.DLSSSharpness
+                };
+                passData.source = builder.ReadTexture(source);
+                passData.depthBuffer = builder.ReadTexture(depthBuffer);
+                passData.motionVectors = builder.ReadTexture(motionVectors);
+                passData.output = builder.WriteTexture(GetPostprocessUpsampledOutputHandle(renderGraph, "DLSS destination"));
+                source = passData.output;
+
+                builder.SetRenderFunc(
+                    (DLSSData data, RenderGraphContext ctx) =>
+                    {
+                        var sourceTexture = (RenderTexture)data.source;
+                        var depthBufferTexture = (RenderTexture)data.depthBuffer;
+                        var motionVectorTexture = (RenderTexture)data.motionVectors;
+                        var outputTexture = (RenderTexture)data.output;
+                        m_DLSSPass.Render(data.parameters, sourceTexture, depthBufferTexture, motionVectorTexture, outputTexture, ctx.cmd);
+                    });
+            }
+            return source;
+        }
         #endregion
 
         #region Copy Alpha
@@ -3020,6 +3070,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 public TextureHandle motionVectors;
             }
             public UpsampleSceneParameters parameters;
+            public bool upsampleColor;
             public Textures inputTextures = new Textures();
             public Textures outputTextures = new Textures();
         }
@@ -3076,20 +3127,42 @@ namespace UnityEngine.Rendering.HighDefinition
         SceneUpsamplingData.Textures SceneUpsamplePass(RenderGraph renderGraph, HDCamera hdCamera, TextureHandle inputColor, TextureHandle inputDepth, TextureHandle inputMotionVectors)
         {
             SceneUpsamplingData.Textures outTextures;
+
+            TextureHandle upsampledColor = TextureHandle.nullHandle;
+            bool upsampleColorInScenePass = true;
+            if (m_DLSSFS)
+            {
+                upsampledColor = DoDLSSPass(renderGraph, hdCamera, inputColor, inputDepth, inputMotionVectors);
+                upsampleColorInScenePass = false;
+            }
+
             using (var builder = renderGraph.AddRenderPass<SceneUpsamplingData>("Scene Upsampling", out var passData, ProfilingSampler.Get(HDProfileId.SceneUpsampling)))
             {
                 passData.parameters = PrepareUpsampleSceneParameters(hdCamera);
-                passData.inputTextures.color = builder.ReadTexture(inputColor);
+                passData.upsampleColor = upsampleColorInScenePass;
+
+                if (passData.upsampleColor)
+                    passData.inputTextures.color = builder.ReadTexture(inputColor);
+
                 passData.inputTextures.depthBuffer = builder.ReadTexture(inputDepth);
                 passData.inputTextures.motionVectors = builder.ReadTexture(inputMotionVectors);
-                passData.outputTextures.color = renderGraph.CreateTexture(new TextureDesc(Vector2.one, false, true)
+
+                if (passData.upsampleColor)
                 {
-                    name = "Resolved Color Buffer",
-                    colorFormat = renderGraph.GetTextureDesc(inputColor).colorFormat,
-                    useMipMap = false,
-                    enableRandomWrite = true
-                });
-                passData.outputTextures.color = builder.WriteTexture(passData.outputTextures.color);
+                    passData.outputTextures.color = renderGraph.CreateTexture(new TextureDesc(Vector2.one, false, true)
+                    {
+                        name = "Resolved Color Buffer",
+                        colorFormat = renderGraph.GetTextureDesc(inputColor).colorFormat,
+                        useMipMap = false,
+                        enableRandomWrite = true
+                    });
+
+                    passData.outputTextures.color = builder.WriteTexture(passData.outputTextures.color);
+                }
+                else
+                {
+                    passData.outputTextures.color = upsampledColor;
+                }
 
                 passData.outputTextures.depthBuffer = renderGraph.CreateTexture(new TextureDesc(Vector2.one, false, true)
                 {
@@ -3114,7 +3187,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     {
                         DoUpsampleScene(
                             data.parameters, ctx.cmd,
-                            data.inputTextures.color,
+                            data.upsampleColor ? (RTHandle)data.inputTextures.color : null,
                             data.inputTextures.depthBuffer,
                             data.inputTextures.motionVectors,
                             data.outputTextures.color,

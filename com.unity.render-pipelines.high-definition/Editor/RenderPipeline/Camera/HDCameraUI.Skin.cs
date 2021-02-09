@@ -17,8 +17,8 @@ namespace UnityEditor.Rendering.HighDefinition
             public const string msaaWarningMessage = "Manual MSAA target set with deferred rendering. This will lead to undefined behavior.";
 
             public const string prepostUpscalerName = "Using PrePostProcess Upscaler (Detected)";
-            public const string prepostUpscalerFeaturNotDetected = "Using PrePostProcess Upscaler (Not Detected, Using Fallback)";
-            public const string prepostUpscalerFeatureDetectedMsg = "**PrepostUpscaler detected**\n The fallback Anti-aliasing filter is ignored in the current session.";
+            public const string DLSSFeatureDetectedMsg = "Unity detected NVIDIA Deep Learning Super Sampling and will ignore the Fallback Anti Aliasing Method.";
+            public const string DLSSFeatureNotDetectedMsg = "Unity cannot detect NVIDIA Deep Learning Super Sampling and will use the Fallback Anti Aliasing Method instead.";
 
             public static readonly GUIContent clearModeContent = EditorGUIUtility.TrTextContent("Background Type", "Specifies the type of background the Camera applies when it clears the screen before rendering a frame. Be aware that when setting this to None, the background is never cleared and since HDRP shares render texture between cameras, you may end up with garbage from previous rendering.");
             public static readonly GUIContent backgroundColorContent = EditorGUIUtility.TrTextContent("Background Color", "The Background Color used to clear the screen when selecting Background Color before rendering.");
@@ -69,7 +69,6 @@ namespace UnityEditor.Rendering.HighDefinition
             public static readonly GUIContent stopNaNsContent = EditorGUIUtility.TrTextContent("Stop NaNs", "Automatically replaces NaN/Inf in shaders by a black pixel to avoid breaking some effects. This will slightly affect performances and should only be used if you experience NaN issues that you can't fix.");
 
             public static readonly GUIContent allowDynResContent = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Whether to support dynamic resolution.");
-            public static readonly GUIContent enablePrePostUpscaler = EditorGUIUtility.TrTextContent("Enable Prepost Upscaler", "Use a fancy prepostupscaler.");
 
             public static readonly GUIContent viewportContent = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen HDRP draws this Camera view. Measured in Viewport Coordinates (values in the range of [0, 1]).");
             public static readonly GUIContent depthContent = EditorGUIUtility.TrTextContent("Depth");

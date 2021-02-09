@@ -183,6 +183,7 @@ namespace UnityEngine.Rendering.HighDefinition
         DynamicExposure,
         ApplyExposure,
         TemporalAntialiasing,
+        DeepLearningSuperSampling,
         DepthOfField,
         DepthOfFieldKernel,
         DepthOfFieldCoC,

@@ -653,9 +653,11 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 #endif
 
-            //TODO: must check hardware to support this feature.
-            HDDynamicResolutionPlatformCapabilities.SetFeatureFlag(
-                HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected, true);
+            if (DLSSPass.SetupFeature())
+            {
+                HDDynamicResolutionPlatformCapabilities.SetFeatureFlag(
+                    HDDynamicResolutionPlatformCapabilities.Flag.DLSSDetected, true);
+            }
         }
 
         bool CheckAPIValidity()
@@ -1160,6 +1162,9 @@ namespace UnityEngine.Rendering.HighDefinition
             var dynResHandler = DynamicResolutionHandler.instance;
             dynResHandler.Update(m_Asset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings);
 
+#if ENABLE_NVIDIA_MODULE
+            NVIDIA.DebugView.instance.Update();
+#endif
 
             // This syntax is awful and hostile to debugging, please don't use it...
             using (ListPool<RenderRequest>.Get(out List<RenderRequest> renderRequests))
@@ -2093,12 +2098,12 @@ namespace UnityEngine.Rendering.HighDefinition
             // With the Frame Settings now properly set up, we can resolve the sample budget.
             currentFrameSettings.sssResolvedSampleBudget = currentFrameSettings.GetResolvedSssSampleBudget(m_Asset);
 
-            bool prepostUpscalerEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
-                && HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected)
-                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler;
+            bool DLSSEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
+                && HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.DLSSDetected)
+                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
 
-            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !prepostUpscalerEnabled);
-            currentFrameSettings.SetEnabled(FrameSettingsField.PrepostUpscaler, prepostUpscalerEnabled);
+            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !DLSSEnabled);
+            currentFrameSettings.SetEnabled(FrameSettingsField.DLSS, DLSSEnabled);
 
             // Specific pass to simply display the content of the camera buffer if users have fill it themselves (like video player)
             if (additionalCameraData.fullscreenPassthrough)

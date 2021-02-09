@@ -6,7 +6,7 @@ namespace UnityEngine.Rendering.HighDefinition
     {
         public enum Flag
         {
-            PrepostUpscalerDetected
+            DLSSDetected
         }
 
         public static bool GetFlag(Flag flag)

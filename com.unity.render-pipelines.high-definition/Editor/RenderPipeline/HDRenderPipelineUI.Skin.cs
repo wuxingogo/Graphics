@@ -252,9 +252,20 @@ namespace UnityEditor.Rendering.HighDefinition
             public static readonly GUIContent filteringQuality = EditorGUIUtility.TrTextContent("Filtering Quality", "Specifies the quality of shadows. See the documentation for details on the algorithm HDRP uses for each preset. (Unsupported in Deferred Only)");
 
             public static readonly GUIContent enabled = EditorGUIUtility.TrTextContent("Enable", "When enabled, HDRP dynamically lowers the resolution of render targets to reduce the workload on the GPU.");
-            public static readonly GUIContent enablePrepostUpscaler = EditorGUIUtility.TrTextContent("Enable Prepost Upscaler", "Enables Prepost Upscaler.");
-            public const  string prepostUpscalerFeatureDetectedMsg = "**PrepostUpscaler detected**\n The fallback upscale filter is ignored in the current session.";
-            public const  string prepostUpscalerFeatureNotDetectedMsg = "**PrepostUpscaler not detected**\n The fallback upscale filter is being utilized in the current session.";
+            public static readonly GUIContent enableDLSS = EditorGUIUtility.TrTextContent("Enable NVIDIA Deep Learning Super Sampling", "Enables NVIDIA Deep Learning Super Sampling.");
+            public static readonly GUIContent DLSSQualitySettingContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Performance Quality Setting.", "Selects a performance quality setting for NVIDIA Deep Learning Super Sampling.");
+            public static readonly GUIContent DLSSSharpnessContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Sharpness", "NVIDIA Deep Learning Super Sampling pixel sharpness of upsampler.");
+            public static readonly GUIContent[] DLSSPerfQualityNames =
+            {
+                new GUIContent("Maximum Performance"),
+                new GUIContent("Balanced"),
+                new GUIContent("Maximum Quality"),
+                new GUIContent("Ultra Performance"),
+                new GUIContent("Ultra Quality")
+            };
+
+            public const  string   DLSSFeatureDetectedMsg = "Unity detected NVIDIA Deep Learning Super Sampling and will ignore the Fallback Upscale Filter.";
+            public const  string   DLSSFeatureNotDetectedMsg = "Unity cannot detect NVIDIA Deep Learning Super Sampling and will use the Fallback Upscale Filter instead.";
             public static readonly GUIContent maxPercentage = EditorGUIUtility.TrTextContent("Maximum Screen Percentage", "Sets the maximum screen percentage that dynamic resolution can reach.");
             public static readonly GUIContent minPercentage = EditorGUIUtility.TrTextContent("Minimum Screen Percentage", "Sets the minimum screen percentage that dynamic resolution can reach.");
             public static readonly GUIContent dynResType = EditorGUIUtility.TrTextContent("Dynamic Resolution Type", "Specifies the type of dynamic resolution that HDRP uses.");

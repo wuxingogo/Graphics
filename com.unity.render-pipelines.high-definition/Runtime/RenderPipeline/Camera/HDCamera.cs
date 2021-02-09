@@ -478,6 +478,16 @@ namespace UnityEngine.Rendering.HighDefinition
             return antialiasing == AntialiasingMode.TemporalAntialiasing;
         }
 
+        internal bool IsDLSSEnabled()
+        {
+            return frameSettings.IsEnabled(FrameSettingsField.DLSS);
+        }
+
+        internal bool RequiresCameraJitter()
+        {
+            return antialiasing == AntialiasingMode.TemporalAntialiasing || IsDLSSEnabled();
+        }
+
         internal bool IsSSREnabled(bool transparent = false)
         {
             var ssr = volumeStack.GetComponent<ScreenSpaceReflection>();
@@ -652,7 +662,7 @@ namespace UnityEngine.Rendering.HighDefinition
             isFirstFrame = false;
             cameraFrameCount++;
 
-            DynamicResolutionHandler.instance.upsamplerSchedule = currentFrameSettings.IsEnabled(FrameSettingsField.PrepostUpscaler) ?
+            DynamicResolutionHandler.instance.upsamplerSchedule = IsDLSSEnabled() ?
                 DynamicResolutionHandler.UpsamplerScheduleType.BeforePost :
                 DynamicResolutionHandler.UpsamplerScheduleType.AfterPost;
 
@@ -1099,7 +1109,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     antialiasing = AntialiasingMode.None;
             }
 
-            if (antialiasing != AntialiasingMode.TemporalAntialiasing)
+            if (!RequiresCameraJitter())
             {
                 taaFrameIndex = 0;
                 taaJitter = Vector4.zero;
@@ -1131,7 +1141,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 isFirstFrame = true;
             }
 
-            UpdateAllViewConstants(IsTAAEnabled(), true);
+            UpdateAllViewConstants(RequiresCameraJitter(), true);
         }
 
         void UpdateAllViewConstants(bool jitterProjectionMatrix, bool updatePreviousFrameConstants)

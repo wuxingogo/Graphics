@@ -221,7 +221,7 @@ namespace UnityEngine.Rendering.HighDefinition
             /// <summary>Temporal anti-aliasing.</summary>
             TemporalAntialiasing,
             /// <summary>SMAA.</summary>
-            SubpixelMorphologicalAntiAliasing
+            SubpixelMorphologicalAntiAliasing,
         }
 
         /// <summary>
