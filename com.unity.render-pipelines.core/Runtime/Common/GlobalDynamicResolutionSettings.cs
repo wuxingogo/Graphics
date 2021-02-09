@@ -59,6 +59,9 @@ namespace UnityEngine.Rendering
         /// <summary>Select whether the dynamic resolution is enabled or not.</summary>
         public bool enabled;
 
+        /// <summary>Allow or Disallow Prepost Upscaler.</summary>
+        public bool enablePrepostUpscaler;
+
         /// <summary>The maximum resolution percentage that dynamic resolution can reach.</summary>
         public float maxPercentage;
         /// <summary>The minimum resolution percentage that dynamic resolution can reach.</summary>

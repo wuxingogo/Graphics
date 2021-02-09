@@ -8,6 +8,7 @@ namespace UnityEditor.Rendering.HighDefinition
         public SerializedProperty root;
 
         public SerializedProperty enabled;
+        public SerializedProperty enablePrepostUpscaler;
         public SerializedProperty maxPercentage;
         public SerializedProperty minPercentage;
         public SerializedProperty dynamicResType;
@@ -20,6 +21,7 @@ namespace UnityEditor.Rendering.HighDefinition
             this.root = root;
 
             enabled                  = root.Find((GlobalDynamicResolutionSettings s) => s.enabled);
+            enablePrepostUpscaler    = root.Find((GlobalDynamicResolutionSettings s) => s.enablePrepostUpscaler);
             maxPercentage            = root.Find((GlobalDynamicResolutionSettings s) => s.maxPercentage);
             minPercentage            = root.Find((GlobalDynamicResolutionSettings s) => s.minPercentage);
             dynamicResType           = root.Find((GlobalDynamicResolutionSettings s) => s.dynResType);

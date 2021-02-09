@@ -585,6 +585,20 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.enabled, Styles.enabled);
 
+            bool useDrsAfterPostAsFallback = false;
+            if (serialized.renderPipelineSettings.dynamicResolutionSettings.enabled.boolValue)
+            {
+                EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler, Styles.enablePrepostUpscaler);
+                useDrsAfterPostAsFallback = serialized.renderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler.boolValue;
+                bool featureDetected = HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected);
+                if (serialized.renderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler.boolValue)
+                {
+                    EditorGUILayout.HelpBox(
+                        featureDetected ? Styles.prepostUpscalerFeatureDetectedMsg : Styles.prepostUpscalerFeatureNotDetectedMsg,
+                        featureDetected ? MessageType.Info : MessageType.Warning);
+                }
+            }
+
             ++EditorGUI.indentLevel;
             using (new EditorGUI.DisabledScope(!serialized.renderPipelineSettings.dynamicResolutionSettings.enabled.boolValue))
             {
@@ -595,7 +609,7 @@ namespace UnityEditor.Rendering.HighDefinition
                         EditorGUILayout.LabelField(Styles.multipleDifferenteValueMessage);
                 }
                 else
-                    EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.softwareUpsamplingFilter, Styles.upsampleFilter);
+                    EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.softwareUpsamplingFilter, useDrsAfterPostAsFallback ? Styles.fallbackUpsampleFilter : Styles.upsampleFilter);
 
                 if (!serialized.renderPipelineSettings.dynamicResolutionSettings.forcePercentage.hasMultipleDifferentValues
                     && !serialized.renderPipelineSettings.dynamicResolutionSettings.forcePercentage.boolValue)

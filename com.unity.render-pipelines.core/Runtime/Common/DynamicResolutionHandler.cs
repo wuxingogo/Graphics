@@ -66,6 +66,31 @@ namespace UnityEngine.Rendering
         private static DynamicResolutionHandler s_Instance = new DynamicResolutionHandler();
 
         /// <summary>
+        /// The scheduling mechanism to apply upscaling.
+        /// </summary>
+        public enum UpsamplerScheduleType
+        {
+            /// <summary>
+            /// Indicates that upscaling must happen before post processing.
+            /// </summary>
+            BeforePost,
+
+            /// <summary>
+            /// Indicates that upscaling must happen after post processing.
+            /// </summary>
+            AfterPost
+        }
+
+        private UpsamplerScheduleType m_UpsamplerSchedule = UpsamplerScheduleType.AfterPost;
+
+        /// <summary>
+        /// Property that sets / gets the state of the upscaling schedule.
+        /// This must be set at the beginning of the frame, once per camera.
+        /// </summary>
+        public UpsamplerScheduleType upsamplerSchedule { set { m_UpsamplerSchedule = value; } get { return m_UpsamplerSchedule; } }
+
+
+        /// <summary>
         /// Get the instance of the global dynamic resolution handler.
         /// </summary>
         public static DynamicResolutionHandler instance { get { return s_Instance; } }
@@ -271,15 +296,15 @@ namespace UnityEngine.Rendering
         }
 
         /// <summary>
-        /// Applies to the passed size the scale imposed by the dynamic resolution system.
+        /// Applies to the passed size a user specified scale.
         /// Note: this function is pure (has no side effects), this function does not cache the pre-scale size
         /// </summary>
         /// <param name="size">The size to apply the scaling</param>
+        /// <param name="scale">The scale to apply</param>
         /// <returns>The parameter size scaled by the dynamic resolution system.</returns>
-        public Vector2Int ApplyScalesOnSize(Vector2Int size)
+        internal Vector2Int ApplyScalesOnSize(Vector2Int size, Vector2 scales)
         {
-            Vector2 resolvedScales = GetResolvedScale();
-            Vector2Int scaledSize = new Vector2Int(Mathf.CeilToInt(size.x * resolvedScales.x), Mathf.CeilToInt(size.y * resolvedScales.y));
+            Vector2Int scaledSize = new Vector2Int(Mathf.CeilToInt(size.x * scales.x), Mathf.CeilToInt(size.y * scales.y));
             if (m_ForceSoftwareFallback || type != DynamicResolutionType.Hardware)
             {
                 scaledSize.x += (1 & scaledSize.x);
@@ -287,6 +312,18 @@ namespace UnityEngine.Rendering
             }
 
             return scaledSize;
+        }
+
+        /// <summary>
+        /// Applies to the passed size the scale imposed by the dynamic resolution system.
+        /// This function uses the internal resolved scale from the DRS system.
+        /// Note: this function is pure (has no side effects), this function does not cache the pre-scale size
+        /// </summary>
+        /// <param name="size">The size to apply the scaling</param>
+        /// <returns>The parameter size scaled by the dynamic resolution system.</returns>
+        public Vector2Int ApplyScalesOnSize(Vector2Int size)
+        {
+            return ApplyScalesOnSize(size, GetResolvedScale());
         }
 
         /// <summary>

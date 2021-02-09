@@ -1642,6 +1642,34 @@ namespace UnityEngine.Rendering.HighDefinition
             return executed;
         }
 
+        private class UpdatePostProcessScreenSizePassData
+        {
+            public int postProcessWidth;
+            public int postProcessHeight;
+            public HDCamera hdCamera;
+            public ShaderVariablesGlobal shaderVariablesGlobal;
+        }
+
+        internal void UpdatePostProcessScreenSize(RenderGraph renderGraph, HDCamera hdCamera, int postProcessWidth, int postProcessHeight)
+        {
+            using (var builder = renderGraph.AddRenderPass("Update RT Handle Scales CB", out UpdatePostProcessScreenSizePassData passData))
+            {
+                passData.hdCamera = hdCamera;
+                hdCamera.SetPostProcessScreenSize(postProcessWidth, postProcessHeight);
+                passData.shaderVariablesGlobal = m_ShaderVariablesGlobalCB;
+                passData.postProcessWidth  = postProcessWidth;
+                passData.postProcessHeight = postProcessHeight;
+
+                builder.SetRenderFunc(
+                    (UpdatePostProcessScreenSizePassData data, RenderGraphContext ctx) =>
+                    {
+                        hdCamera.SetPostProcessScreenSize(data.postProcessWidth, data.postProcessHeight);
+                        hdCamera.UpdateScalesAndScreenSizesCB(ref data.shaderVariablesGlobal);
+                        ConstantBuffer.PushGlobal(ctx.cmd, data.shaderVariablesGlobal, HDShaderIDs._ShaderVariablesGlobal);
+                    });
+            }
+        }
+
         class ResetCameraSizeForAfterPostProcessPassData
         {
             public HDCamera hdCamera;

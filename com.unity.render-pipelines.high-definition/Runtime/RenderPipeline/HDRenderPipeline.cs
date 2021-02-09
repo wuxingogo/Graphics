@@ -652,6 +652,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 Debug.LogError("High Definition Render Pipeline doesn't support Gamma mode, change to Linear mode (HDRP isn't set up properly. Go to Windows > RenderPipeline > HDRP Wizard to fix your settings).");
             }
 #endif
+
+            //TODO: must check hardware to support this feature.
+            HDDynamicResolutionPlatformCapabilities.SetFeatureFlag(
+                HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected, true);
         }
 
         bool CheckAPIValidity()
@@ -2088,6 +2092,13 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // With the Frame Settings now properly set up, we can resolve the sample budget.
             currentFrameSettings.sssResolvedSampleBudget = currentFrameSettings.GetResolvedSssSampleBudget(m_Asset);
+
+            bool prepostUpscalerEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
+                && HDDynamicResolutionPlatformCapabilities.GetFlag(HDDynamicResolutionPlatformCapabilities.Flag.PrepostUpscalerDetected)
+                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enablePrepostUpscaler;
+
+            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !prepostUpscalerEnabled);
+            currentFrameSettings.SetEnabled(FrameSettingsField.PrepostUpscaler, prepostUpscalerEnabled);
 
             // Specific pass to simply display the content of the camera buffer if users have fill it themselves (like video player)
             if (additionalCameraData.fullscreenPassthrough)
