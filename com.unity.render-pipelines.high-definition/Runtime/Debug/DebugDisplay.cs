@@ -274,6 +274,7 @@ namespace UnityEngine.Rendering.HighDefinition
             internal int debugCameraToFreezeEnumIndex;
             internal int volumeComponentEnumIndex;
             internal int volumeCameraEnumIndex;
+            internal int filterModeOverrideIndex;
 
             // When settings mutually exclusives enum values, we need to reset the other ones.
             internal void ResetExclusiveEnumIndices()
@@ -287,6 +288,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 gBufferEnumIndex = 0;
                 lightingFulscreenDebugModeEnumIndex = 0;
                 renderingFulscreenDebugModeEnumIndex = 0;
+                filterModeOverrideIndex = 0;
             }
         }
         DebugData m_Data;
@@ -1284,6 +1286,46 @@ namespace UnityEngine.Rendering.HighDefinition
                         children =
                         {
                             new DebugUI.ColorField { displayName = "Emissive Color", getter = () => data.lightingDebugSettings.overrideEmissiveColorValue, setter = value => data.lightingDebugSettings.overrideEmissiveColorValue = value, showAlpha = false, hdr = true }
+                        }
+                    });
+                }
+
+                material.children.Add(
+                    new DebugUI.BoolField { displayName = "Override Material Texture Mip Bias",
+                    getter = ()      => HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias),
+                    setter = (value) => HDRenderPipeline.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.MipBias, value),
+                    onValueChanged = RefreshLightingDebug });
+                if (HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias))
+                {
+                    material.children.Add(new DebugUI.Container
+                    {
+                        children =
+                        {
+                            new DebugUI.FloatField {
+                                displayName = "Debug Override Material Mip Bias",
+                                getter = () => HDRenderPipeline.GetMaterialDebugSamplerOverride().mipBias,
+                                setter = value => HDRenderPipeline.GetMaterialDebugSamplerOverride().mipBias = value } ,
+                        }
+                    });
+                }
+
+                material.children.Add(
+                    new DebugUI.BoolField { displayName = "Override Material Texture Filter",
+                    getter = ()      => HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode),
+                    setter = (value) => HDRenderPipeline.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.FilterMode, value),
+                    onValueChanged = RefreshLightingDebug });
+                if (HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode))
+                {
+                    material.children.Add(new DebugUI.Container
+                    {
+                        children =
+                        {
+                            new DebugUI.EnumField {
+                            displayName = "Debug Override Material Filter Mode",
+                            getter = () => (int)HDRenderPipeline.GetMaterialDebugSamplerOverride().filterMode,
+                            setter = value => HDRenderPipeline.GetMaterialDebugSamplerOverride().filterMode = (FilterMode)value,
+                            autoEnum = typeof(FilterMode),
+                            getIndex = () => data.filterModeOverrideIndex, setIndex = value => { data.ResetExclusiveEnumIndices(); data.filterModeOverrideIndex = value; } }
                         }
                     });
                 }

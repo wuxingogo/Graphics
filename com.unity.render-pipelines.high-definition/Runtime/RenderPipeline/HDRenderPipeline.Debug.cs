@@ -30,6 +30,12 @@ namespace UnityEngine.Rendering.HighDefinition
 
         DebugDisplaySettings m_DebugDisplaySettings = new DebugDisplaySettings();
 
+        private static MaterialSamplerOverride s_MaterialDebugSamplerOverride = new MaterialSamplerOverride() { mipBias = 0.0f };
+        public static ref MaterialSamplerOverride GetMaterialDebugSamplerOverride() 
+        {
+            return ref s_MaterialDebugSamplerOverride;
+        }
+
         /// <summary>
         /// Debug display settings.
         /// </summary>

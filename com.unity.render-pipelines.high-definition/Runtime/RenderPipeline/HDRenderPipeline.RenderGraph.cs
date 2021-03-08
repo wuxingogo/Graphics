@@ -8,6 +8,8 @@ namespace UnityEngine.Rendering.HighDefinition
 {
     public partial class HDRenderPipeline
     {
+        private bool m_DebugMaterialSamplerOverrideActive = false;
+
         // Needed only because of custom pass. See comment at ResolveMSAAColor.
         TextureHandle m_NonMSAAColorBuffer;
 
@@ -37,6 +39,17 @@ namespace UnityEngine.Rendering.HighDefinition
             };
 
             m_RenderGraph.Begin(renderGraphParams);
+
+#if UNITY_EDITOR
+            {
+                ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
+                if (((materialSamplerOverrideState.flags != 0) != m_DebugMaterialSamplerOverrideActive) || m_DebugMaterialSamplerOverrideActive)
+                {
+                    ApplyMaterialSamplerOverride(m_RenderGraph, materialSamplerOverrideState);
+                    m_DebugMaterialSamplerOverrideActive = materialSamplerOverrideState.flags != 0;
+                }
+            }
+#endif
 
             // We need to initalize the MipChainInfo here, so it will be available to any render graph pass that wants to use it during setup
             // Be careful, ComputePackedMipChainInfo needs the render texture size and not the viewport size. Otherwise it would compute the wrong size.
@@ -80,6 +93,17 @@ namespace UnityEngine.Rendering.HighDefinition
             lightingBuffers.sssBuffer = CreateSSSBuffer(m_RenderGraph, msaa);
 
             var prepassOutput = RenderPrepass(m_RenderGraph, colorBuffer, lightingBuffers.sssBuffer, vtFeedbackBuffer, cullingResults, customPassCullingResults, hdCamera, aovRequest, aovBuffers);
+
+#if UNITY_EDITOR
+            {
+                ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
+                if ((materialSamplerOverrideState.flags != 0))
+                {
+                    var disabledOverride = new MaterialSamplerOverride() { flags = SamplerOverrideFlags.None };
+                    ApplyMaterialSamplerOverride(m_RenderGraph, disabledOverride);
+                }
+            }
+#endif
 
             // Need this during debug render at the end outside of the main loop scope.
             // Once render graph move is implemented, we can probably remove the branch and this.
@@ -321,6 +345,24 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     aovRequest.Execute(commandBuffer, aovBuffers, aovCustomPassBuffers, RenderOutputProperties.From(hdCamera));
                 }
+            }
+        }
+
+        class ApplyMaterialSamplerOverridePassData
+        {
+            public MaterialSamplerOverride overrideData;
+        }
+
+        void ApplyMaterialSamplerOverride(RenderGraph renderGraph, in MaterialSamplerOverride overrideData)
+        {
+            using (var builder = renderGraph.AddRenderPass<ApplyMaterialSamplerOverridePassData>("ApplyMaterialSamplerOverrideData", out var passData))
+            {
+                passData.overrideData = overrideData;
+                builder.SetRenderFunc(
+                    (ApplyMaterialSamplerOverridePassData data, RenderGraphContext context) =>
+                    {
+                        context.cmd.SetMaterialSamplerOverride(data.overrideData);
+                    });
             }
         }
 
