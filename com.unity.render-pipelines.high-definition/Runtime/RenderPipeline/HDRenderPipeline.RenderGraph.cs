@@ -40,7 +40,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             m_RenderGraph.Begin(renderGraphParams);
 
-#if UNITY_EDITOR
             {
                 ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
                 if (((materialSamplerOverrideState.flags != 0) != m_DebugMaterialSamplerOverrideActive) || m_DebugMaterialSamplerOverrideActive)
@@ -49,7 +48,6 @@ namespace UnityEngine.Rendering.HighDefinition
                     m_DebugMaterialSamplerOverrideActive = materialSamplerOverrideState.flags != 0;
                 }
             }
-#endif
 
             // We need to initalize the MipChainInfo here, so it will be available to any render graph pass that wants to use it during setup
             // Be careful, ComputePackedMipChainInfo needs the render texture size and not the viewport size. Otherwise it would compute the wrong size.
@@ -94,7 +92,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
             var prepassOutput = RenderPrepass(m_RenderGraph, colorBuffer, lightingBuffers.sssBuffer, vtFeedbackBuffer, cullingResults, customPassCullingResults, hdCamera, aovRequest, aovBuffers);
 
-#if UNITY_EDITOR
             {
                 ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
                 if ((materialSamplerOverrideState.flags != 0))
@@ -103,7 +100,6 @@ namespace UnityEngine.Rendering.HighDefinition
                     ApplyMaterialSamplerOverride(m_RenderGraph, disabledOverride);
                 }
             }
-#endif
 
             // Need this during debug render at the end outside of the main loop scope.
             // Once render graph move is implemented, we can probably remove the branch and this.
