@@ -40,6 +40,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             m_RenderGraph.Begin(renderGraphParams);
 
+            if (allowDebugMaterialSamplerOverride)
             {
                 ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
                 if (((materialSamplerOverrideState.flags != 0) != m_DebugMaterialSamplerOverrideActive) || m_DebugMaterialSamplerOverrideActive)
@@ -92,6 +93,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             var prepassOutput = RenderPrepass(m_RenderGraph, colorBuffer, lightingBuffers.sssBuffer, vtFeedbackBuffer, cullingResults, customPassCullingResults, hdCamera, aovRequest, aovBuffers);
 
+            if (allowDebugMaterialSamplerOverride)
             {
                 ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
                 if ((materialSamplerOverrideState.flags != 0))
