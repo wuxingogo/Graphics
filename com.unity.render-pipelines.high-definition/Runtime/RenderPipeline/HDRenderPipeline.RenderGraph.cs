@@ -42,7 +42,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (DebugDisplaySettings.allowDebugMaterialSamplerOverride)
             {
-                ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
+                ref var materialSamplerOverrideState = ref m_CurrentDebugDisplaySettings.data.GetMaterialDebugSamplerOverride();
                 if (((materialSamplerOverrideState.flags != 0) != m_DebugMaterialSamplerOverrideActive) || m_DebugMaterialSamplerOverrideActive)
                 {
                     ApplyMaterialSamplerOverride(m_RenderGraph, materialSamplerOverrideState);
@@ -95,7 +95,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (DebugDisplaySettings.allowDebugMaterialSamplerOverride)
             {
-                ref var materialSamplerOverrideState = ref GetMaterialDebugSamplerOverride();
+                ref var materialSamplerOverrideState = ref m_CurrentDebugDisplaySettings.data.GetMaterialDebugSamplerOverride();
                 if ((materialSamplerOverrideState.flags != 0))
                 {
                     var disabledOverride = new MaterialSamplerOverride() { flags = SamplerOverrideFlags.None };

@@ -278,6 +278,12 @@ namespace UnityEngine.Rendering.HighDefinition
             internal int volumeCameraEnumIndex;
             internal int filterModeOverrideIndex;
 
+            private MaterialSamplerOverride m_MaterialDebugSamplerOverride = new MaterialSamplerOverride() { mipBias = 0.0f };
+            public ref MaterialSamplerOverride GetMaterialDebugSamplerOverride()
+            {
+                return ref m_MaterialDebugSamplerOverride;
+            }
+
             // When settings mutually exclusives enum values, we need to reset the other ones.
             internal void ResetExclusiveEnumIndices()
             {
@@ -1003,11 +1009,11 @@ namespace UnityEngine.Rendering.HighDefinition
                     new DebugUI.BoolField
                     {
                         displayName = "Override Material Texture Mip Bias",
-                        getter = ()      => HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias),
-                        setter = (value) => HDRenderPipeline.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.MipBias, value),
+                        getter = ()      => data.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias),
+                        setter = (value) => data.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.MipBias, value),
                         onValueChanged = RefreshMaterialDebug
                     });
-                if (HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias))
+                if (data.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.MipBias))
                 {
                     list.Add(new DebugUI.Container
                     {
@@ -1016,8 +1022,8 @@ namespace UnityEngine.Rendering.HighDefinition
                             new DebugUI.FloatField
                             {
                                 displayName = "Debug Override Material Mip Bias",
-                                getter = () => HDRenderPipeline.GetMaterialDebugSamplerOverride().mipBias,
-                                setter = value => HDRenderPipeline.GetMaterialDebugSamplerOverride().mipBias = value
+                                getter = () => data.GetMaterialDebugSamplerOverride().mipBias,
+                                setter = value => data.GetMaterialDebugSamplerOverride().mipBias = value
                             } ,
                         }
                     });
@@ -1027,11 +1033,11 @@ namespace UnityEngine.Rendering.HighDefinition
                     new DebugUI.BoolField
                     {
                         displayName = "Override Material Texture Filter",
-                        getter = ()      => HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode),
-                        setter = (value) => HDRenderPipeline.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.FilterMode, value),
+                        getter = ()      => data.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode),
+                        setter = (value) => data.GetMaterialDebugSamplerOverride().SetFlag(SamplerOverrideFlags.FilterMode, value),
                         onValueChanged = RefreshMaterialDebug
                     });
-                if (HDRenderPipeline.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode))
+                if (data.GetMaterialDebugSamplerOverride().GetFlag(SamplerOverrideFlags.FilterMode))
                 {
                     list.Add(new DebugUI.Container
                     {
@@ -1040,8 +1046,8 @@ namespace UnityEngine.Rendering.HighDefinition
                             new DebugUI.EnumField
                             {
                                 displayName = "Debug Override Material Filter Mode",
-                                getter = () => (int)HDRenderPipeline.GetMaterialDebugSamplerOverride().filterMode,
-                                setter = value => HDRenderPipeline.GetMaterialDebugSamplerOverride().filterMode = (FilterMode)value,
+                                getter = () => (int)data.GetMaterialDebugSamplerOverride().filterMode,
+                                setter = value => data.GetMaterialDebugSamplerOverride().filterMode = (FilterMode)value,
                                 autoEnum = typeof(FilterMode),
                                 getIndex = () => data.filterModeOverrideIndex, setIndex = value => { data.ResetExclusiveEnumIndices(); data.filterModeOverrideIndex = value; } }
                         }
