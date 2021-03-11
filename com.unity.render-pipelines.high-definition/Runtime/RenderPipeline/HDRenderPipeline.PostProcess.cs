@@ -605,6 +605,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             return source;
         }
+
         #endregion
 
         #region Copy Alpha

@@ -23,6 +23,7 @@ namespace UnityEngine.Rendering.HighDefinition
             if (device == null)
                 return false;
 
+            NVIDIA.DebugView.instance.Reset();
             return device.IsFeatureAvailable(NVIDIA.Device.Feature.DLSS);
 #else
             return false;

@@ -35,6 +35,11 @@ namespace NVIDIA
 
         public Data data = new Data();
 
+        public void Reset()
+        {
+            m_DebugViewId = InvalidId;
+        }
+
         public void Update()
         {
             Device device = NVIDIA.Device.GetDevice();
