@@ -13,7 +13,7 @@ namespace UnityEngine.Rendering.HighDefinition
             public float sharpness;
         }
 
-        public static bool SetupFeature()
+        public static bool SetupFeature(bool resetDeviceIfCreated = true)
         {
 #if ENABLE_NVIDIA_MODULE
             if (!NVIDIA.Plugins.IsPluginLoaded(NVIDIA.Plugins.Plugin.NVUnityPlugin))
@@ -23,7 +23,9 @@ namespace UnityEngine.Rendering.HighDefinition
             if (device == null)
                 return false;
 
-            NVIDIA.DebugView.instance.Reset();
+            if (resetDeviceIfCreated)
+                NVIDIA.DebugView.instance.Reset();
+
             return device.IsFeatureAvailable(NVIDIA.Device.Feature.DLSS);
 #else
             return false;
@@ -35,7 +37,7 @@ namespace UnityEngine.Rendering.HighDefinition
             DLSSPass dlssPass = null;
 
 #if ENABLE_NVIDIA_MODULE
-            if (!SetupFeature())
+            if (!SetupFeature(false))
                 return null;
 
             dlssPass = new DLSSPass(NVIDIA.Device.GetDevice());
@@ -174,16 +176,15 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     var settings = new NVIDIA.InitDLSSCmdData();
                     settings.RTX_Value = 0;
-                    settings.Flags = (uint)
-                        (NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.IsHDR
-                            | NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.MVLowRes
-                            | NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.DepthInverted
-                            | NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.DoSharpening);
-                    settings.InputRTWidth = inputRes.Width;
-                    settings.InputRTHeight = inputRes.Height;
-                    settings.OutputRTWidth = m_OutputRes.Width;
+                    settings.SetFlag(NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.IsHDR,         true);
+                    settings.SetFlag(NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.MVLowRes,      true);
+                    settings.SetFlag(NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.DepthInverted, true);
+                    settings.SetFlag(NVIDIA.NVSDK_NGX_DLSS_Feature_Flags.DoSharpening,  true);
+                    settings.InputRTWidth   = inputRes.Width;
+                    settings.InputRTHeight  = inputRes.Height;
+                    settings.OutputRTWidth  = m_OutputRes.Width;
                     settings.OutputRTHeight = m_OutputRes.Height;
-                    settings.Quality = m_PerfQuality;
+                    settings.Quality        = m_PerfQuality;
                     m_DlssCommand = m_Device.CreateFeature(cmdBuffer, settings);
                 }
 
@@ -212,11 +213,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (m_DlssCommand == null)
                     return;
 
-                m_DlssCommand.ExecuteData.ColorInput = source.GetNativeTexturePtr();
-                m_DlssCommand.ExecuteData.Depth = depth.GetNativeDepthBufferPtr();
-                m_DlssCommand.ExecuteData.ColorOutput = output.GetNativeTexturePtr();
-                m_DlssCommand.ExecuteData.MotionVectors = motionVectors.GetNativeTexturePtr();
-
+                m_Device.SetTexture(cmdBuffer, m_DlssCommand, NVIDIA.ExecuteDLSSCmdData.Textures.ColorInput, source);
+                m_Device.SetTexture(cmdBuffer, m_DlssCommand, NVIDIA.ExecuteDLSSCmdData.Textures.ColorOutput, output);
+                m_Device.SetTexture(cmdBuffer, m_DlssCommand, NVIDIA.ExecuteDLSSCmdData.Textures.Depth, depth);
+                m_Device.SetTexture(cmdBuffer, m_DlssCommand, NVIDIA.ExecuteDLSSCmdData.Textures.MotionVectors, motionVectors);
                 m_Device.ExecuteCommand(cmdBuffer, m_DlssCommand);
             }
 
