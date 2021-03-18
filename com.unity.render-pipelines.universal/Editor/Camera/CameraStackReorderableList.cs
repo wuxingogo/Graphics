@@ -44,21 +44,15 @@ namespace UnityEditor.Rendering.Universal
             if (isValid())
             {
                 if (cameraList.Contains(cam))
-                {
                     cameraList.Remove(cam);
-                }
 
                 return true;
             }
-            else
-            {
-                if (!cameraList.Contains(cam))
-                {
-                    cameraList.Add(cam);
-                }
 
-                return false;
-            }
+            if (!cameraList.Contains(cam))
+                cameraList.Add(cam);
+
+            return false;
         }
 
         #endregion
@@ -102,8 +96,10 @@ namespace UnityEditor.Rendering.Universal
 
         void SelectElement(ReorderableList list)
         {
-            var element = serializedCamera.cameras.GetArrayElementAtIndex(list.index);
-            var cam = element.objectReferenceValue as Camera;
+            var cam = serializedCamera[list.index];
+            if (cam == null)
+                return;
+
             if (Event.current.clickCount == 2)
             {
                 Selection.activeObject = cam;
@@ -123,7 +119,7 @@ namespace UnityEditor.Rendering.Universal
             if (cam != null)
             {
                 bool outputWarning = !Validate(cam, () => !IsStackCameraOutputDirty(cam), outputWarningCameras);
-                
+
                 GUIContent nameContent =
                     outputWarning ?
                     EditorGUIUtility.TrTextContent(cam.name, "Output properties do not match base camera", CoreEditorStyles.warningIcon) :

@@ -27,7 +27,9 @@ namespace UnityEditor.Rendering
         /// <summary><see cref="Texture2D"/> 1x1 pixel with blue color</summary>
         public static readonly Texture2D blueTexture;
 
+        /// <summary><see cref="Texture2D"/> with console error icon</summary>
         public static readonly Texture2D errorIcon;
+        /// <summary><see cref="Texture2D"/> with console warning icon</summary>
         public static readonly Texture2D warningIcon;
 
         /// <summary> PaneOption icon </summary>
