@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering
         /// <summary>
         /// Contrast Adaptive Sharpening upscaling filter.
         /// </summary>
-        ContrastAdaptiveSharpen,
+        ContrastAdaptiveSharpen
     }
 
     /// <summary>User-facing settings for dynamic resolution.</summary>
@@ -58,6 +58,15 @@ namespace UnityEngine.Rendering
 
         /// <summary>Select whether the dynamic resolution is enabled or not.</summary>
         public bool enabled;
+
+        /// <summary>Allow or Disallow NVIDIA Deep Learning Super Sampling.</summary>
+        public bool enableDLSS;
+
+        /// <summary>Opaque quality setting of NVIDIA Deep Learning Super Sampling.</summary>
+        public uint DLSSPerfQualitySetting;
+
+        /// <summary>Shaprness of NVIDIA Deep Leraning Super Sampling Upsampler.</summary>
+        public float DLSSSharpness;
 
         /// <summary>The maximum resolution percentage that dynamic resolution can reach.</summary>
         public float maxPercentage;

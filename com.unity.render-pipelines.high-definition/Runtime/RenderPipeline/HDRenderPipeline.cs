@@ -537,6 +537,11 @@ namespace UnityEngine.Rendering.HighDefinition
                 Debug.LogError("High Definition Render Pipeline doesn't support Gamma mode, change to Linear mode (HDRP isn't set up properly. Go to Windows > RenderPipeline > HDRP Wizard to fix your settings).");
             }
 #endif
+
+            if (DLSSPass.SetupFeature())
+            {
+                HDDynamicResolutionPlatformCapabilities.ActivateDLSS();
+            }
         }
 
         bool CheckAPIValidity()
@@ -1048,6 +1053,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 HDCamera.CleanUnused();
             }
 
+#if ENABLE_NVIDIA_MODULE
+            Unity.External.NVIDIA.DebugView.instance.Update();
+#endif
+
             // This syntax is awful and hostile to debugging, please don't use it...
             using (ListPool<RenderRequest>.Get(out List<RenderRequest> renderRequests))
             using (ListPool<int>.Get(out List<int> rootRenderRequestIndices))
@@ -1116,6 +1125,11 @@ namespace UnityEngine.Rendering.HighDefinition
                     }
 
                     dynResHandler.SetCurrentCameraRequest(cameraRequestedDynamicRes);
+                    DynamicResolutionHandler.instance.allowDynamicResolutionOnAllPercentages = cameraRequestedDynamicRes
+                        && HDDynamicResolutionPlatformCapabilities.DLSSEnabled
+                        && m_Asset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS
+                        && m_Asset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enabled;
+
                     RTHandles.SetHardwareDynamicResolutionState(dynResHandler.HardwareDynamicResIsEnabled());
 
                     VFXManager.PrepareCamera(camera);
@@ -2006,6 +2020,13 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // With the Frame Settings now properly set up, we can resolve the sample budget.
             currentFrameSettings.sssResolvedSampleBudget = currentFrameSettings.GetResolvedSssSampleBudget(m_Asset);
+
+            bool DLSSEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
+                && HDDynamicResolutionPlatformCapabilities.DLSSEnabled
+                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
+
+            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !DLSSEnabled);
+            currentFrameSettings.SetEnabled(FrameSettingsField.DLSS, DLSSEnabled);
 
             // Specific pass to simply display the content of the camera buffer if users have fill it themselves (like video player)
             if (additionalCameraData.fullscreenPassthrough)

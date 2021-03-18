@@ -11,6 +11,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 public static readonly GUIContent header = EditorGUIUtility.TrTextContent("Rendering", "These settings control for the specific rendering features for this camera.");
 
                 public static readonly GUIContent antialiasing = EditorGUIUtility.TrTextContent("Post Anti-aliasing", "The postprocess anti-aliasing method to use.");
+                public static readonly GUIContent antialiasingContentFallback = EditorGUIUtility.TrTextContent("Fallback Post Anti-aliasing", "The postprocess anti-aliasing method to use as a fallback.");
 
                 public static readonly GUIContent dithering = EditorGUIUtility.TrTextContent("Dithering", "Should we apply 8-bit dithering to the final render?");
                 public static readonly GUIContent stopNaNs = EditorGUIUtility.TrTextContent("Stop NaNs", "Automatically replaces NaN/Inf in shaders by a black pixel to avoid breaking some effects. This will slightly affect performances and should only be used if you experience NaN issues that you can't fix.");
@@ -29,6 +30,9 @@ namespace UnityEditor.Rendering.HighDefinition
                 public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Custom Frame Settings", "Define the custom Frame Settings for this Camera to use.");
                 public static readonly GUIContent fullScreenPassthrough = EditorGUIUtility.TrTextContent("Fullscreen Passthrough", "This will skip rendering settings to directly rendering in fullscreen(for instance: Useful for video)");
                 public static readonly GUIContent exposureTarget = EditorGUIUtility.TrTextContent("Exposure Target", "The object used as a target for centering the Exposure's Procedural Mask metering mode when target object option is set (See Exposure Volume Component).");
+
+                public const string DLSSFeatureDetectedMsg = "Unity detected NVIDIA Deep Learning Super Sampling and will ignore the Fallback Anti Aliasing Method.";
+                public const string DLSSFeatureNotDetectedMsg = "Unity cannot detect NVIDIA Deep Learning Super Sampling and will use the Fallback Anti Aliasing Method instead.";
             }
         }
     }

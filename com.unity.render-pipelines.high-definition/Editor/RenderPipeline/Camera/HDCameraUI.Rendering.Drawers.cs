@@ -41,15 +41,42 @@ namespace UnityEditor.Rendering.HighDefinition
 
             static void Drawer_Rendering_Antialiasing(SerializedHDCamera p, Editor owner)
             {
+                bool doGlobalIndent = false;
+                bool showAntialiasContentAsFallback = false;
+
+#if ENABLE_NVIDIA_MODULE
+                if (p.allowDynamicResolution.boolValue)
+                {
+                    bool isDLSSEnabled = HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
+                    doGlobalIndent = isDLSSEnabled;
+                    if (isDLSSEnabled)
+                    {
+                        showAntialiasContentAsFallback = true;
+                        bool featureDetected = HDDynamicResolutionPlatformCapabilities.DLSSDetected;
+
+                        //write here support string for dlss upscaler
+                        EditorGUILayout.HelpBox(
+                            featureDetected ? Styles.DLSSFeatureDetectedMsg : Styles.DLSSFeatureNotDetectedMsg,
+                            featureDetected ? MessageType.Info : MessageType.Warning);
+                    }
+                }
+#endif
+
+                if (doGlobalIndent)
+                    EditorGUI.indentLevel++;
+
                 Rect antiAliasingRect = EditorGUILayout.GetControlRect();
                 EditorGUI.BeginProperty(antiAliasingRect, Styles.antialiasing, p.antialiasing);
                 {
                     EditorGUI.BeginChangeCheck();
-                    int selectedValue = (int)(HDAdditionalCameraData.AntialiasingMode)EditorGUI.EnumPopup(antiAliasingRect, Styles.antialiasing, (HDAdditionalCameraData.AntialiasingMode)p.antialiasing.intValue);
+                    int selectedValue = (int)(HDAdditionalCameraData.AntialiasingMode)EditorGUI.EnumPopup(antiAliasingRect, showAntialiasContentAsFallback ? Styles.antialiasingContentFallback : Styles.antialiasing, (HDAdditionalCameraData.AntialiasingMode)p.antialiasing.intValue);
+
                     if (EditorGUI.EndChangeCheck())
                         p.antialiasing.intValue = selectedValue;
                 }
-                EditorGUI.EndProperty();
+
+                if (doGlobalIndent)
+                    EditorGUI.indentLevel--;
             }
 
             static CED.IDrawer AntialiasingModeDrawer(HDAdditionalCameraData.AntialiasingMode antialiasingMode, CED.ActionDrawer antialiasingDrawer)
