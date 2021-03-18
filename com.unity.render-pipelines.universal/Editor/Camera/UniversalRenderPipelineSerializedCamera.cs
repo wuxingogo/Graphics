@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
@@ -22,6 +23,22 @@ namespace UnityEditor.Rendering.Universal
 #if ENABLE_VR && ENABLE_XR_MODULE
         public SerializedProperty allowXRRendering { get; }
 #endif
+
+        public Camera this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= numCameras)
+                    return null;
+
+                // Return the camera on that index
+                return cameras
+                    .GetArrayElementAtIndex(index)
+                    .objectReferenceValue as Camera;
+            }
+        }
+
+        public int numCameras => cameras.arraySize;
 
         public UniversalRenderPipelineSerializedCamera(SerializedObject serializedObject)
         {

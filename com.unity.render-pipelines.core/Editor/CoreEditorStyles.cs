@@ -27,6 +27,9 @@ namespace UnityEditor.Rendering
         /// <summary><see cref="Texture2D"/> 1x1 pixel with blue color</summary>
         public static readonly Texture2D blueTexture;
 
+        public static readonly Texture2D errorIcon;
+        public static readonly Texture2D warningIcon;
+
         /// <summary> PaneOption icon </summary>
         static readonly Texture2D paneOptionsIconDark;
         static readonly Texture2D paneOptionsIconLight;
@@ -110,6 +113,9 @@ namespace UnityEditor.Rendering
             iconHelp = new GUIContent(EditorGUIUtility.FindTexture("_Help"));
             iconHelpStyle = GUI.skin.FindStyle("IconButton") ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle("IconButton");
             globalSettingsIcon = EditorGUIUtility.FindTexture("ScriptableObject Icon");
+
+            errorIcon = CoreEditorUtils.LoadConsoleIcon(true);
+            warningIcon = CoreEditorUtils.LoadConsoleIcon(false);
 
             // Make sure that textures are unloaded on domain reloads.
             void OnBeforeAssemblyReload()
