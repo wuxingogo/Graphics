@@ -62,9 +62,9 @@ namespace UnityEditor.ShaderGraph.Internal
             }
         }
 
-        internal override string GetPropertyAsArgumentString(string precisionString)
+        internal override string GetPropertyAsArgumentString()
         {
-            return $"{concreteShaderValueType.ToShaderString(precisionString)} {referenceName}";
+            return $"{concreteShaderValueType.ToShaderString(concretePrecision.ToShaderString())} {referenceName}";
         }
 
         internal override void ForeachHLSLProperty(Action<HLSLProperty> action)
