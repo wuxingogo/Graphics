@@ -19,6 +19,7 @@ namespace UnityEditor.Rendering.Universal
 
         UniversalRenderPipelineSerializedCamera serializedCamera { get; }
         Camera camera { get; }
+        UniversalAdditionalCameraData additionalCameraData { get; }
         CameraEditor.Settings settings { get; }
 
         #region Validation
@@ -39,20 +40,37 @@ namespace UnityEditor.Rendering.Universal
             typeErrorCameras.Clear();
         }
 
-        static bool Validate(Camera cam, Func<bool> isValid, List<Camera> cameraList)
+        (bool errorsFound, bool warningsFound) SearchForCameraIssues(Camera cam, CameraRenderType type)
         {
-            if (isValid())
+            bool warningsFound = false;
+            if (IsStackCameraOutputDirty(cam))
             {
-                if (cameraList.Contains(cam))
-                    cameraList.Remove(cam);
+                if (!outputWarningCameras.Contains(cam))
+                    outputWarningCameras.Add(cam);
 
-                return true;
+                warningsFound = true;
+            }
+            else
+            {
+                if (outputWarningCameras.Contains(cam))
+                    outputWarningCameras.Remove(cam);
             }
 
-            if (!cameraList.Contains(cam))
-                cameraList.Add(cam);
+            bool errorsFound = false;
+            if (type != CameraRenderType.Overlay)
+            {
+                if (!typeErrorCameras.Contains(cam))
+                    typeErrorCameras.Add(cam);
 
-            return false;
+                errorsFound = true;
+            }
+            else
+            {
+                if (typeErrorCameras.Contains(cam))
+                    typeErrorCameras.Remove(cam);
+            }
+
+            return (errorsFound, warningsFound);
         }
 
         #endregion
@@ -63,6 +81,7 @@ namespace UnityEditor.Rendering.Universal
         {
             this.serializedCamera = serializedCamera;
             this.camera = camera;
+            additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
             this.settings = settings;
 
             m_LayerList = new ReorderableList(serializedCamera.serializedObject, serializedCamera.cameras, true, true, true, true)
@@ -118,15 +137,16 @@ namespace UnityEditor.Rendering.Universal
             var cam = element.objectReferenceValue as Camera;
             if (cam != null)
             {
-                bool outputWarning = !Validate(cam, () => !IsStackCameraOutputDirty(cam), outputWarningCameras);
+                var currentAdditionalCameraData = cam.gameObject.GetComponent<UniversalAdditionalCameraData>();
 
+                var type = currentAdditionalCameraData.renderType;
+                (bool typeError, bool outputWarning) = SearchForCameraIssues(cam, type);
+                
                 GUIContent nameContent =
                     outputWarning ?
-                    EditorGUIUtility.TrTextContent(cam.name, "Output properties do not match base camera", CoreEditorStyles.warningIcon) :
+                    EditorGUIUtility.TrTextContent(cam.name, "Output properties do not match base Camera", CoreEditorStyles.warningIcon) :
                     EditorGUIUtility.TrTextContent(cam.name);
-
-                var type = cam.gameObject.GetComponent<UniversalAdditionalCameraData>().renderType;
-                bool typeError = !Validate(cam, () => type == CameraRenderType.Overlay, typeErrorCameras);
+                
                 GUIContent typeContent =
                     typeError ?
                     EditorGUIUtility.TrTextContent(type.GetName(), "Not a supported type", CoreEditorStyles.errorIcon) :
@@ -142,7 +162,7 @@ namespace UnityEditor.Rendering.Universal
                 }
 
                 // Printing if Post Processing is on or not.
-                var isPostActive = cam.gameObject.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing;
+                var isPostActive = currentAdditionalCameraData.renderPostProcessing;
                 if (isPostActive)
                 {
                     Rect selectRect = new Rect(rect.width - 20, rect.y, 50, EditorGUIUtility.singleLineHeight);
@@ -155,7 +175,7 @@ namespace UnityEditor.Rendering.Universal
             }
             else
             {
-                camera.GetComponent<UniversalAdditionalCameraData>().UpdateCameraStack();
+                additionalCameraData.UpdateCameraStack();
 
                 // Need to clean out the errorCamera list here.
                 ClearValidation();
