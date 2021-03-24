@@ -8,6 +8,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public enum MaterialFeatureFlags
         {
             HairKajiyaKay = 1 << 0,
+            HairMarschner = 1 << 1
         };
 
         //-----------------------------------------------------------------------------

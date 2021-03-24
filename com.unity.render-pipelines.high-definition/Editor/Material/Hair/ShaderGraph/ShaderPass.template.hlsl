@@ -49,6 +49,10 @@ void BuildSurfaceData(FragInputs fragInputs, inout SurfaceDescription surfaceDes
         surfaceData.materialFeatures |= MATERIALFEATUREFLAGS_HAIR_KAJIYA_KAY;
     #endif
 
+    #ifdef _MATERIAL_FEATURE_HAIR_MARSCHNER
+        surfaceData.materialFeatures |= MATERIALFEATUREFLAGS_HAIR_MARSCHNER;
+    #endif
+
     #ifdef _DOUBLESIDED_ON
         float3 doubleSidedConstants = _DoubleSidedConstants.xyz;
     #else
