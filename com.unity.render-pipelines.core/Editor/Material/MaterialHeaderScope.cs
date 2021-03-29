@@ -38,9 +38,6 @@ namespace UnityEditor.Rendering
         /// <param name="defaultExpandedState">The default state if the header is not present</param>
         public MaterialHeaderScope(GUIContent title, uint bitExpanded, MaterialEditor materialEditor, bool spaceAtEnd = true, bool subHeader = false, uint defaultExpandedState = uint.MaxValue)
         {
-            if (title == null)
-                throw new ArgumentNullException(nameof(title));
-
             bool beforeExpanded = materialEditor.IsAreaExpanded(bitExpanded, defaultExpandedState);
 
 #if !UNITY_2020_1_OR_NEWER
@@ -54,9 +51,10 @@ namespace UnityEditor.Rendering
             GUILayout.BeginVertical();
 
             bool saveChangeState = GUI.changed;
+            string text = title.text;
             expanded = subHeader
-                ? CoreEditorUtils.DrawSubHeaderFoldout(title, beforeExpanded, isBoxed: false)
-                : CoreEditorUtils.DrawHeaderFoldout(title, beforeExpanded);
+                ? CoreEditorUtils.DrawSubHeaderFoldout(text, beforeExpanded, isBoxed: false)
+                : CoreEditorUtils.DrawHeaderFoldout(text, beforeExpanded);
             if (expanded ^ beforeExpanded)
             {
                 materialEditor.SetIsAreaExpanded((uint)bitExpanded, expanded);
