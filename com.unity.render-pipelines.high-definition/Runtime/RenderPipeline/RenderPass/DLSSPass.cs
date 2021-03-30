@@ -130,6 +130,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 return false;
             }
 
+            if (!SystemInfo.graphicsDeviceVendor.ToLower().Contains("nvidia"))
+                return false;
+
             var device = Unity.External.NVIDIA.Device.CreateDevice();
             if (device == null)
                 return false;
@@ -195,11 +198,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
         private struct CameraKey
         {
-            private WeakReference<Camera> m_WeakReference;
             private int m_HashCode;
             public CameraKey(Camera camera)
             {
-                m_WeakReference = new WeakReference<Camera>(camera);
                 m_HashCode = camera.GetInstanceID();
             }
 
@@ -214,11 +215,6 @@ namespace UnityEngine.Rendering.HighDefinition
                     return GetHashCode() == ((CameraKey)obj).GetHashCode();
 
                 return false;
-            }
-
-            public bool IsAlive()
-            {
-                return m_WeakReference.TryGetTarget(out _);
             }
         }
 
@@ -344,14 +340,21 @@ namespace UnityEngine.Rendering.HighDefinition
 
         private class CameraState
         {
+            WeakReference<Camera> m_CamReference = null;
             ViewState[] m_Views = null;
             Unity.External.NVIDIA.Device m_Device = null;
 
             public UInt64 LastFrameId { set; get; }
 
-            public CameraState(Unity.External.NVIDIA.Device device)
+            public CameraState(Unity.External.NVIDIA.Device device, Camera camera)
             {
+                m_CamReference = new WeakReference<Camera>(camera);
                 m_Device = device;
+            }
+
+            public bool IsAlive()
+            {
+                return m_CamReference.TryGetTarget(out _);
             }
 
             public void SubmitCommands(
@@ -435,7 +438,7 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             foreach (KeyValuePair<CameraKey, CameraState> kv in m_CameraStates)
             {
-                if (kv.Key.IsAlive() && !HasCameraStateExpired(kv.Value))
+                if (kv.Value.IsAlive() && !HasCameraStateExpired(kv.Value))
                     continue;
 
                 m_InvalidCameraKeys.Add(kv.Key);
@@ -474,7 +477,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (cameraState == null && dlssActive)
             {
-                cameraState = new DLSSPass.CameraState(m_Device);
+                cameraState = new DLSSPass.CameraState(m_Device, hdCamera.camera);
                 m_CameraStates.Add(cameraKey, cameraState);
             }
             else if (cameraState != null && !dlssActive)

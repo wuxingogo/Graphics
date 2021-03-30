@@ -240,7 +240,7 @@ namespace UnityEngine.Rendering
                 //This is however wrong! because the actualViewport might not fit the finalViewport perfectly, due to rounding.
                 //A correct way is to instead downscale the maxViewport, and keep the final scale in terms of downsampled buffers.
                 Vector2 currentScale = (Vector2)viewportSize / (Vector2)DynamicResolutionHandler.instance.finalViewport;
-                DynamicResolutionHandler.instance.ApplyScalesOnSize(new Vector2Int(GetMaxWidth(), GetMaxHeight()), currentScale);
+                maxSize = DynamicResolutionHandler.instance.ApplyScalesOnSize(new Vector2Int(GetMaxWidth(), GetMaxHeight()), currentScale);
             }
 
             return new Vector2((float)viewportSize.x / maxSize.x, (float)viewportSize.y / maxSize.y);
