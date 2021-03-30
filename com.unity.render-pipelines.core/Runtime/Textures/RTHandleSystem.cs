@@ -232,17 +232,18 @@ namespace UnityEngine.Rendering
 
         internal Vector2 CalculateRatioAgainstMaxSize(in Vector2Int viewportSize)
         {
-            Vector2 currentScale = new Vector2(1.0f, 1.0f);
-            if (DynamicResolutionHandler.instance.HardwareDynamicResIsEnabled() && m_HardwareDynamicResRequested)
+            Vector2 maxSize = new Vector2(GetMaxWidth(), GetMaxHeight());
+
+            if (DynamicResolutionHandler.instance.HardwareDynamicResIsEnabled() && m_HardwareDynamicResRequested && viewportSize != DynamicResolutionHandler.instance.finalViewport)
             {
                 //for hardware resolution, the final goal is to figure out a scale from finalViewport into maxViewport.
                 //This is however wrong! because the actualViewport might not fit the finalViewport perfectly, due to rounding.
                 //A correct way is to instead downscale the maxViewport, and keep the final scale in terms of downsampled buffers.
-                currentScale = (Vector2)viewportSize / (Vector2)DynamicResolutionHandler.instance.finalViewport;
+                Vector2 currentScale = (Vector2)viewportSize / (Vector2)DynamicResolutionHandler.instance.finalViewport;
+                DynamicResolutionHandler.instance.ApplyScalesOnSize(new Vector2Int(GetMaxWidth(), GetMaxHeight()), currentScale);
             }
 
-            Vector2 scaledMaxSize = DynamicResolutionHandler.instance.ApplyScalesOnSize(new Vector2Int(GetMaxWidth(), GetMaxHeight()), currentScale);
-            return new Vector2((float)viewportSize.x / scaledMaxSize.x, (float)viewportSize.y / scaledMaxSize.y);
+            return new Vector2((float)viewportSize.x / maxSize.x, (float)viewportSize.y / maxSize.y);
         }
 
         /// <summary>
