@@ -1815,9 +1815,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     //capturedForwardWS.z *= -1; // Transform to RHS standard
                     m_TextureCaches.env2DCaptureForward[fetchIndex] = new Vector4(capturedForwardWS.x, capturedForwardWS.y, capturedForwardWS.z, 0.0f);
 
-                    //We must use the setting resolved from the probe, not from the frameSettings.
-                    //Using the frmaeSettings from the probe is wrong because it can be disabled (not ticking on using custom frame settings in the probe reflection component)
-                    if (probe.ExposureControlEnabled)
+                    if (probe.frameSettings.IsEnabled(FrameSettingsField.ExposureControl))
                         envLightData.rangeCompressionFactorCompensation = 1.0f / probe.ProbeExposureValue();
                     else
                         envLightData.rangeCompressionFactorCompensation = Mathf.Max(probe.rangeCompressionFactor, 1e-6f);
