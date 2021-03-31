@@ -7,7 +7,7 @@ namespace UnityEngine.Rendering.HighDefinition
     /// <summary>
     /// Decal Projector component.
     /// </summary>
-    [HDRPHelpURLAttribute("Decal-Projector")]
+    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "Decal-Projector" + Documentation.endURL)]
     [ExecuteAlways]
 #if UNITY_EDITOR
     [CanEditMultipleObjects]
