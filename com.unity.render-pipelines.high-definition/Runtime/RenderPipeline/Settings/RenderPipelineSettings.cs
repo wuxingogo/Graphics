@@ -306,10 +306,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public bool supportMSAA => msaaSampleCount != MSAASamples.None;
 
         // Returns true if the output of the rendering passes support an alpha channel
-        internal bool SupportsAlpha()
-        {
-            return CoreUtils.IsSceneFilteringEnabled() || (colorBufferFormat == ColorBufferFormat.R16G16B16A16);
-        }
+        internal bool supportsAlpha => colorBufferFormat == ColorBufferFormat.R16G16B16A16;
 
         /// <summary>Support motion vectors.</summary>
         public bool supportMotionVectors;
