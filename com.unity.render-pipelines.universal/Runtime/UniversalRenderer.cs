@@ -217,7 +217,14 @@ namespace UnityEngine.Rendering.Universal
                 bindTextureMS: bindMS,
                 name: "_CameraDepthAttachment");
 
-            m_DepthTexture = RTHandles.Alloc(URPShaderIDs._CameraDepthTexture, "_CameraDepthTexture");
+            m_DepthTexture = RTHandles.Alloc(
+                Vector2.one,
+                depthBufferBits: DepthBits.Depth32,
+                colorFormat: GraphicsFormat.DepthAuto,
+                filterMode: FilterMode.Point,
+                dimension: TextureDimension.Tex2D,
+                enableMSAA: false,
+                name: "_CameraDepthTexture");
             m_NormalsTexture = RTHandles.Alloc(URPShaderIDs._CameraNormalsTexture, "_CameraNormalsTexture");
             if (renderingMode == RenderingMode.Deferred)
             {
@@ -308,6 +315,7 @@ namespace UnityEngine.Rendering.Universal
             m_CameraAttachments.color.Release();
             m_CameraAttachments.depth.Release();
             m_OpaqueColor.Release();
+            m_DepthTexture.Release();
             if (m_GBufferHandles != null)
             {
                 m_GBufferHandles[(int) DeferredLights.GBufferHandles.DepthAsColor]?.Release();
@@ -497,8 +505,6 @@ namespace UnityEngine.Rendering.Universal
                         RenderTextureDescriptor normalDescriptor = m_DepthNormalPrepass.normalDescriptor;
                         normalDescriptor.graphicsFormat = m_DeferredLights.GetGBufferFormat(gbufferNormalIndex);
                         m_DepthNormalPrepass.normalDescriptor = normalDescriptor;
-                        // Depth is allocated by this renderer.
-                        m_DepthNormalPrepass.allocateDepth = false;
                         // Only render forward-only geometry, as standard geometry will be rendered as normal into the gbuffer.
                         m_DepthNormalPrepass.shaderTagId = new ShaderTagId(k_DepthNormalsOnly);
                     }
@@ -549,9 +555,6 @@ namespace UnityEngine.Rendering.Universal
             if (requiresDepthCopyPass)
             {
                 m_CopyDepthPass.Setup(m_ActiveCameraAttachments.depth, m_DepthTexture);
-
-                if (this.actualRenderingMode == RenderingMode.Deferred)
-                    m_CopyDepthPass.AllocateRT = false; // m_DepthTexture is already allocated by m_GBufferCopyDepthPass.
 
                 EnqueuePass(m_CopyDepthPass);
             }
