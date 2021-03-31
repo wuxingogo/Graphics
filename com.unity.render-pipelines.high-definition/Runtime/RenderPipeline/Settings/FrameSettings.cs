@@ -205,7 +205,7 @@ namespace UnityEngine.Rendering.HighDefinition
         [FrameSettingsField(0, displayedName: "Anti-aliasing", positiveDependencies: new[] { Postprocess }, customOrderInGroup: 19, tooltip: "When enabled, HDRP processes anti-aliasing for camera using these Frame Settings.")]
         Antialiasing = 91,
         /// <summary>When enabled, DLSS technique will be utilized for upsampling and anti-aliasing.</summary>
-        [FrameSettingsField(0, displayedName: "", positiveDependencies: new[] { Postprocess }, customOrderInGroup: 18, tooltip: "When enabled, HDRP runs NVIDIA Deep Learning Super Sampling rendering technique.")]
+        [FrameSettingsField(0, displayedName: "Deep Learning Super Sampling (DLSS)", positiveDependencies: new[] { Postprocess }, customOrderInGroup: 18, tooltip: "When enabled, HDRP runs NVIDIA Deep Learning Super Sampling rendering technique.")]
         DLSS = 97,
         /// <summary>When enabled, HDRP processes a post-processing render pass for Cameras using these Frame Settings.</summary>
         [FrameSettingsField(0, displayedName: "After Post-process", customOrderInGroup: 20, tooltip: "When enabled, HDRP processes a post-processing render pass for Cameras using these Frame Settings.")]
@@ -426,6 +426,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 (uint)FrameSettingsField.FilmGrain,
                 (uint)FrameSettingsField.Dithering,
                 (uint)FrameSettingsField.Antialiasing,
+                (uint)FrameSettingsField.DLSS,
                 (uint)FrameSettingsField.AfterPostprocess,
                 (uint)FrameSettingsField.LowResTransparent,
                 (uint)FrameSettingsField.ZTestAfterPostProcessTAA,
