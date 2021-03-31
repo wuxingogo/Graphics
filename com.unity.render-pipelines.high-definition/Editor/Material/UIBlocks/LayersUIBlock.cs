@@ -1,6 +1,11 @@
-// Include material common properties names
-
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
+using System.Linq;
+using UnityEditor;
+
+// Include material common properties names
 using static UnityEngine.Rendering.HighDefinition.HDMaterialProperties;
 
 namespace UnityEditor.Rendering.HighDefinition
