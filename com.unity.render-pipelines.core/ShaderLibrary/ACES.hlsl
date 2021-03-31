@@ -1,8 +1,6 @@
 #ifndef __ACES__
 #define __ACES__
 
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-
 /**
  * https://github.com/ampas/aces-dev
  *
@@ -1317,7 +1315,5 @@ half3 ODT_P3DCI_48nits(half3 oces)
 
     return outputCV;
 }
-
-#pragma warning (enable : 3205) // conversion of larger type to smaller
 
 #endif // __ACES__

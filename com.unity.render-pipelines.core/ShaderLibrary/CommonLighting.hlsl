@@ -1,8 +1,6 @@
 #ifndef UNITY_COMMON_LIGHTING_INCLUDED
 #define UNITY_COMMON_LIGHTING_INCLUDED
 
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-
 // Ligthing convention
 // Light direction is oriented backward (-Z). i.e in shader code, light direction is -lightData.forward
 
@@ -456,7 +454,5 @@ bool IsMatchingLightLayer(uint lightLayers, uint renderingLayers)
 {
     return (lightLayers & renderingLayers) != 0;
 }
-
-#pragma warning (enable : 3205) // conversion of larger type to smaller
 
 #endif // UNITY_COMMON_LIGHTING_INCLUDED

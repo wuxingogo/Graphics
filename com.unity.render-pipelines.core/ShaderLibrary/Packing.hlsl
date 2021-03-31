@@ -1,8 +1,6 @@
 #ifndef UNITY_PACKING_INCLUDED
 #define UNITY_PACKING_INCLUDED
 
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-
 //-----------------------------------------------------------------------------
 // Normal packing
 //-----------------------------------------------------------------------------
@@ -582,7 +580,5 @@ float2 Unpack8ToFloat2(float f)
     float y = y_expanded / 15.0;
     return float2(x, y);
 }
-
-#pragma warning (enable : 3205) // conversion of larger type to smaller
 
 #endif // UNITY_PACKING_INCLUDED

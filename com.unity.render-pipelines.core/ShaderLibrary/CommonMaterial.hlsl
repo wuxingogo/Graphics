@@ -1,8 +1,6 @@
 #ifndef UNITY_COMMON_MATERIAL_INCLUDED
 #define UNITY_COMMON_MATERIAL_INCLUDED
 
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-
 //-----------------------------------------------------------------------------
 // Define constants
 //-----------------------------------------------------------------------------
@@ -331,7 +329,4 @@ real3 LerpWhiteTo(real3 b, real t)
     real oneMinusT = 1.0 - t;
     return real3(oneMinusT, oneMinusT, oneMinusT) + b * t;
 }
-
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-
 #endif // UNITY_COMMON_MATERIAL_INCLUDED
