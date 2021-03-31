@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.Requests;
 using UnityEditorInternal;
 using UnityEditorInternal.VR;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
-using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -756,23 +754,32 @@ namespace UnityEditor.Rendering.HighDefinition
 
         const string k_HdrpPackageName = "com.unity.render-pipelines.high-definition";
         const string k_HdrpConfigPackageName = "com.unity.render-pipelines.high-definition-config";
+        const string k_LocalHdrpConfigPackagePath = "LocalPackages/com.unity.render-pipelines.high-definition-config";
         const string k_XRanagementPackageName = "com.unity.xr.management";
         const string k_LegacyInputHelpersPackageName = "com.unity.xr.legacyinputhelpers";
 
-        void IsLocalConfigurationPackageEmbeddedAsync(Action<bool> callback)
+        bool lastPackageConfigInstalledCheck = false;
+        void IsLocalConfigurationPackageInstalledAsync(Action<bool> callback)
         {
-            WaitForRequest(PackageManager.Client.List(true, true), listRequest =>
+            if (!Directory.Exists(k_LocalHdrpConfigPackagePath))
             {
-                if (listRequest.Status >= StatusCode.Failure)
-                {
-                    Debug.LogError($"Package Manager error: {listRequest.Error.message}");
-                    return;
-                }
+                callback?.Invoke(lastPackageConfigInstalledCheck = false);
+                return;
+            }
 
-                var packageInfo = listRequest.Result.First(info => info.name == k_HdrpConfigPackageName);
-                var isPackagedEmbedded = packageInfo?.source == PackageSource.Embedded;
-                callback?.Invoke(isPackagedEmbedded);
-            });
+            m_UsedPackageRetriever.ProcessAsync(
+                k_HdrpConfigPackageName,
+                (installed, info) =>
+                {
+                    // installed is not used because this one will be always installed
+
+                    DirectoryInfo directoryInfo = new DirectoryInfo(info.resolvedPath);
+                    string recomposedPath = $"{directoryInfo.Parent.Name}{Path.DirectorySeparatorChar}{directoryInfo.Name}";
+                    lastPackageConfigInstalledCheck =
+                        info.source == PackageManager.PackageSource.Local
+                        && info.resolvedPath.EndsWith(recomposedPath);
+                    callback?.Invoke(lastPackageConfigInstalledCheck);
+                });
         }
 
         void InstallLocalConfigurationPackage(Action onCompletion)
@@ -780,36 +787,59 @@ namespace UnityEditor.Rendering.HighDefinition
                 k_HdrpConfigPackageName,
                 (installed, info) =>
                 {
-                    if (!installed)
+                    // installed is not used because this one will be always installed
+
+                    bool copyFolder = false;
+                    if (!Directory.Exists(k_LocalHdrpConfigPackagePath))
                     {
-                        Debug.LogError("The the HDRP config package is missing, please install the one with the same version of your HDRP package.");
-                        return;
+                        copyFolder = true;
+                    }
+                    else
+                    {
+                        if (EditorUtility.DisplayDialog("Installing local configuration package",
+                            "A local configuration package already exists. Do you want to replace it or keep it? Replacing it may overwrite local changes you made and keeping it may make it desynchronized with the main HDRP packages version.",
+                            "Replace", "Keep"))
+                        {
+                            Directory.Delete(k_LocalHdrpConfigPackagePath, true);
+                            copyFolder = true;
+                        }
                     }
 
-                    WaitForRequest(Client.Embed(info.name), embedRequest =>
+                    if (copyFolder)
                     {
-                        if (embedRequest.Status >= StatusCode.Failure)
-                        {
-                            Debug.LogError($"Failed to install the config package {embedRequest.Error.message}");
-                            return;
-                        }
+                        CopyFolder(info.resolvedPath, k_LocalHdrpConfigPackagePath);
+                    }
 
+                    m_PackageInstaller.ProcessAsync($"file:../{k_LocalHdrpConfigPackagePath}", () =>
+                    {
+                        lastPackageConfigInstalledCheck = true;
                         onCompletion?.Invoke();
                     });
                 });
 
-        static void WaitForRequest<T>(T request, Action<T> onCompleted)
-            where T : Request
-        {
-            if (request.IsCompleted)
-                onCompleted(request);
-            else
-                EditorApplication.delayCall += () => WaitForRequest<T>(request, onCompleted);
-        }
-
         void RefreshDisplayOfConfigPackageArea()
         {
-            IsLocalConfigurationPackageEmbeddedAsync(present => UpdateDisplayOfConfigPackageArea(present ? ConfigPackageState.Present : ConfigPackageState.Missing));
+            IsLocalConfigurationPackageInstalledAsync(present => UpdateDisplayOfConfigPackageArea(present ? ConfigPackageState.Present : ConfigPackageState.Missing));
+        }
+
+        static void CopyFolder(string sourceFolder, string destFolder)
+        {
+            if (!Directory.Exists(destFolder))
+                Directory.CreateDirectory(destFolder);
+            string[] files = Directory.GetFiles(sourceFolder);
+            foreach (string file in files)
+            {
+                string name = Path.GetFileName(file);
+                string dest = Path.Combine(destFolder, name);
+                File.Copy(file, dest);
+            }
+            string[] folders = Directory.GetDirectories(sourceFolder);
+            foreach (string folder in folders)
+            {
+                string name = Path.GetFileName(folder);
+                string dest = Path.Combine(destFolder, name);
+                CopyFolder(folder, dest);
+            }
         }
 
         class UsedPackageRetriever
