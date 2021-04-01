@@ -61,15 +61,27 @@ namespace UnityEngine.Rendering
             internal Vector3 Y;
             internal Vector3 Z;
 
-            internal float maxSubdivision;
+            internal float maxSubdivisionMultiplier;
+            internal float minSubdivisionMultiplier;
 
-            public Volume(Matrix4x4 trs, float maxSubdivision)
+            public Volume(Matrix4x4 trs, float maxSubdivision, float minSubdivision)
             {
                 X = trs.GetColumn(0);
                 Y = trs.GetColumn(1);
                 Z = trs.GetColumn(2);
                 corner = (Vector3)trs.GetColumn(3) - X * 0.5f - Y * 0.5f - Z * 0.5f;
-                this.maxSubdivision = maxSubdivision;
+                this.maxSubdivisionMultiplier = maxSubdivision;
+                this.minSubdivisionMultiplier = minSubdivision;
+            }
+
+            public Volume(Vector3 corner, Vector3 X, Vector3 Y, Vector3 Z, float maxSubdivision = 1, float minSubdivision = 0)
+            {
+                this.corner = corner;
+                this.X = X;
+                this.Y = Y;
+                this.Z = Z;
+                this.maxSubdivisionMultiplier = maxSubdivision;
+                this.minSubdivisionMultiplier = minSubdivision;
             }
 
             public Volume(Volume copy)
@@ -78,7 +90,8 @@ namespace UnityEngine.Rendering
                 Y = copy.Y;
                 Z = copy.Z;
                 corner = copy.corner;
-                maxSubdivision = copy.maxSubdivision;
+                maxSubdivisionMultiplier = copy.maxSubdivisionMultiplier;
+                minSubdivisionMultiplier = copy.minSubdivisionMultiplier;
             }
 
             public Bounds CalculateAABB()
@@ -108,6 +121,12 @@ namespace UnityEngine.Rendering
                 return new Bounds((min + max) / 2, max - min);
             }
 
+            public void CalculateCenterAndSize(out Vector3 center, out Vector3 size)
+            {
+                size = new Vector3(X.magnitude, Y.magnitude, Z.magnitude);
+                center = corner + X * 0.5f + Y * 0.5f + Z * 0.5f;
+            }
+
             public void Transform(Matrix4x4 trs)
             {
                 corner = trs.MultiplyPoint(corner);
@@ -118,7 +137,7 @@ namespace UnityEngine.Rendering
 
             public override string ToString()
             {
-                return $"Corner: {corner}, X: {X}, Y: {Y}, Z: {Z}, MaxSubdiv: {maxSubdivision}";
+                return $"Corner: {corner}, X: {X}, Y: {Y}, Z: {Z}, MaxSubdiv: {maxSubdivisionMultiplier}";
             }
         }
 
@@ -604,7 +623,7 @@ namespace UnityEngine.Rendering
             int subDivCount = 0;
 
             // iterative subdivision
-            while (m_TmpBricks[0].Count > 0 && subDivCount <= GetMaxSubdivision(cellVolume.maxSubdivision))
+            while (m_TmpBricks[0].Count > 0 && subDivCount <= GetMaxSubdivision(cellVolume.maxSubdivisionMultiplier))
             {
                 m_TmpBricks[1].Clear();
                 m_TmpFlags.Clear();
@@ -762,7 +781,8 @@ namespace UnityEngine.Rendering
             outVolume.X = m.MultiplyVector(inVolume.X);
             outVolume.Y = m.MultiplyVector(inVolume.Y);
             outVolume.Z = m.MultiplyVector(inVolume.Z);
-            outVolume.maxSubdivision = inVolume.maxSubdivision;
+            outVolume.maxSubdivisionMultiplier = inVolume.maxSubdivisionMultiplier;
+            outVolume.minSubdivisionMultiplier = inVolume.minSubdivisionMultiplier;
         }
 
         // Creates bricks at the coarsest level for all areas that are overlapped by the pass in volume
@@ -774,7 +794,7 @@ namespace UnityEngine.Rendering
 
             // Calculate smallest brick size capable of covering shortest AABB dimension
             float minVolumeSize = Mathf.Min(AABB.size.x, Mathf.Min(AABB.size.y, AABB.size.z));
-            int brickSubDivLevel = Mathf.Min(Mathf.CeilToInt(Mathf.Log(minVolumeSize, 3)), m_MaxSubdivision) + 1;
+            int brickSubDivLevel = Mathf.Min(Mathf.CeilToInt(Mathf.Log(minVolumeSize, 3)), m_MaxSubdivision);
             int brickTotalSize = (int)Mathf.Pow(3, brickSubDivLevel);
 
             // Extend AABB to have origin that lies on a grid point

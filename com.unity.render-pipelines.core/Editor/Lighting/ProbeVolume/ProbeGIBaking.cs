@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using Unity.Collections;
 using System;
+using System.Linq;
 using UnityEditor;
 
 using Brick = UnityEngine.Rendering.ProbeBrickIndex.Brick;
@@ -444,37 +445,27 @@ namespace UnityEngine.Rendering
 
         private static void DeduplicateProbePositions(in Vector3[] probePositions, out Vector3[] deduplicatedProbePositions, out int[] indices)
         {
-            List<Vector3> uniqueProbePositions = new List<Vector3>();
-
+            var uniquePositions = new Dictionary<Vector3, int>();
             indices = new int[probePositions.Length];
 
-            // find duplicates
-            for (int i = 0; i < probePositions.Length; ++i)
+            int uniqueIndex = 0;
+            for (int i = 0; i < probePositions.Length; i++)
             {
-                Vector3 ppi = probePositions[i];
-                bool isDuplicate = false;
-                int index = uniqueProbePositions.Count;
+                var pos = probePositions[i];
 
-                // push if not a duplicate
-                for (int j = 0; j < uniqueProbePositions.Count; ++j)
+                if (uniquePositions.TryGetValue(pos, out var index))
                 {
-                    Vector3 ppj = uniqueProbePositions[j];
-
-                    if (ppi == ppj)
-                    {
-                        isDuplicate = true;
-                        index = j;
-                        break;
-                    }
+                    indices[i] = index;
                 }
-
-                if (!isDuplicate)
-                    uniqueProbePositions.Add(ppi);
-
-                indices[i] = index;
+                else
+                {
+                    uniquePositions[pos] = uniqueIndex;
+                    indices[i] = uniqueIndex;
+                    uniqueIndex++;
+                }
             }
 
-            deduplicatedProbePositions = uniqueProbePositions.ToArray();
+            deduplicatedProbePositions = uniquePositions.Keys.ToArray();
         }
 
         public static void RunPlacement()
@@ -515,7 +506,6 @@ namespace UnityEngine.Rendering
                 //BakeMesh[] bakeMeshes = GetEntityQuery(typeof(BakeMesh)).ToComponentDataArray<BakeMesh>();
                 Renderer[] renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
                 ProbeVolume[] probeVolumes = UnityEngine.Object.FindObjectsOfType<ProbeVolume>();
-                var probeHintVolumes = UnityEngine.Object.FindObjectsOfType<ProbeHintVolume>();
 
                 // Calculate the cell volume:
                 ProbeReferenceVolume.Volume cellVolume = new ProbeReferenceVolume.Volume();
@@ -525,14 +515,12 @@ namespace UnityEngine.Rendering
                 cellVolume.Z = new Vector3(0, 0, bakingReferenceVolumeAuthoring.cellSize);
                 cellVolume.Transform(cellTrans);
 
-                // The max subdivision in the cell is computed in CreateInfluenceVolumes() using the values in the Probe Volumes and Hint Volumes.
-
                 // In this max subdiv field, we store the minimum subdivision possible for the cell, then, locally we can subdivide more based on the probe volumes subdiv multiplier
-                cellVolume.maxSubdivision = 0;
+                cellVolume.maxSubdivisionMultiplier = 0;
 
                 Dictionary<Scene, int> sceneRefs;
                 List<ProbeReferenceVolume.Volume> influenceVolumes;
-                ProbePlacement.CreateInfluenceVolumes(ref cellVolume, renderers, probeVolumes, probeHintVolumes, out influenceVolumes, out sceneRefs);
+                ProbePlacement.CreateInfluenceVolumes(ref cellVolume, renderers, probeVolumes, out influenceVolumes, out sceneRefs);
 
                 // Each cell keeps a number of references it has to each scene it was influenced by
                 // We use this list to determine which scene's ProbeVolume asset to assign this cells data to

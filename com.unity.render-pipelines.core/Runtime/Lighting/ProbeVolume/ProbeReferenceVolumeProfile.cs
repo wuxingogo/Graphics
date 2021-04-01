@@ -11,22 +11,34 @@ namespace UnityEngine.Rendering
     /// </summary>
     public sealed class ProbeReferenceVolumeProfile : ScriptableObject
     {
-        internal static readonly int k_MaxSubdivision = 7;
+        internal enum Version
+        {
+            Initial,
+        }
 
-        /// <summary>
-        /// The default dimensions for APV's index data structure.
-        /// </summary>
-        public static Vector3Int s_DefaultIndexDimensions = new Vector3Int(1024, 64, 1024);
+        public enum CellSize
+        {
+            [InspectorName("1")]
+            CellSize1 = 1,
+            [InspectorName("9")]
+            CellSize9 = 9,
+            [InspectorName("27")]
+            CellSize27 = 27,
+            [InspectorName("81")]
+            CellSize81 = 81,
+            [InspectorName("243")]
+            CellSize243 = 243,
+        }
 
         /// <summary>
         /// The size of a Cell.
         /// </summary>
-        [Min(1)]
-        public int cellSize = 64;
+        public CellSize cellSizeInBricks = CellSize.CellSize81;
+
         /// <summary>
         /// The size of a Brick.
         /// </summary>
-        [Min(0.01f)]
+        [Min(0.1f)]
         public float minDistanceBetweenProbes = 1.0f;
         /// <summary>
         /// The normal bias to apply during shading.
@@ -34,8 +46,20 @@ namespace UnityEngine.Rendering
         [Range(0.0f, 1.0f), Delayed]
         public float normalBias = 0.2f;
 
+        [SerializeField]
+        Version version = CoreUtils.GetLastEnumValue<Version>();
+
         public int maxSubdivision => Mathf.CeilToInt(Mathf.Log((float)cellSize / brickSize, 3));
         public float brickSize => Mathf.Max(0.01f, minDistanceBetweenProbes * 3.0f);
+        public int cellSize => Mathf.CeilToInt((float)cellSizeInBricks * brickSize);
+
+        void OnEnable()
+        {
+            if (version != CoreUtils.GetLastEnumValue<Version>())
+            {
+                // Migration code
+            }
+        }
 
         /// <summary>
         /// Determines if the Probe Reference Volume Profile is equivalent to another one.
@@ -65,7 +89,7 @@ namespace UnityEngine.Rendering
         sealed class Styles
         {
             // TODO: Better tooltip are needed here.
-            public readonly GUIContent cellSizeStyle = new GUIContent("Cell Size", "Determine the size of the cells.");
+            public readonly GUIContent cellSizeStyle = new GUIContent("Brick Count Per Cell", "Determine how much bricks there is in a streamable unit.");
             public readonly GUIContent minDistanceBetweenProbes = new GUIContent("Min Distance Between Probes", "The minimal distance between two probes in meters.");
             public readonly GUIContent normalBias = new GUIContent("Normal Bias", "The normal bias used when sampling the volume. It can reduce leaking.");
             public readonly GUIContent indexDimensions = new GUIContent("Index Dimensions", "The dimensions of the index buffer.");
@@ -75,7 +99,7 @@ namespace UnityEngine.Rendering
 
         private void OnEnable()
         {
-            m_CellSize = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.cellSize));
+            m_CellSize = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.cellSizeInBricks));
             m_MinDistanceBetweenProbes = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.minDistanceBetweenProbes));
             m_NormalBias = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.normalBias));
         }
@@ -96,7 +120,7 @@ namespace UnityEngine.Rendering
             {
                 serializedObject.ApplyModifiedProperties();
 
-                float minDistanceBetweenProbes = ((float)profile.cellSize / Mathf.Pow(3, ProbeReferenceVolumeProfile.k_MaxSubdivision)) / 3.0f;
+                float minDistanceBetweenProbes = ((float)profile.cellSize / Mathf.Pow(3, ProbeBrickIndex.kMaxSubdivisionLevels)) / 3.0f;
                 if (profile.minDistanceBetweenProbes < minDistanceBetweenProbes)
                     profile.minDistanceBetweenProbes = minDistanceBetweenProbes;
             }
