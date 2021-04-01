@@ -2,15 +2,22 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class LensFlareInput : MonoBehaviour
 {
     [Header("References")]
-
     public GameObject cameraGameObject;
-    public GameObject lensFlareLight;
+    public SRPLensFlareOverride lensFlareComponent;
+    public Text lensFlareUIText;
 
     public GameObject[] skies;
+    public SRPLensFlareData[] lensFlares;
+
+    [Header("Light Settings")]
+    public GameObject lensFlareLight;
+    public float lightDistance;
+
 
     [Header("Camera Movement")]
     public float cameraRotationSpeed;
@@ -18,14 +25,14 @@ public class LensFlareInput : MonoBehaviour
 
     [Header("Camera Shake")]
     public bool enableCameraShake;
-    [Range(0,10)]
+    [Range(0, 10)]
     public float cameraShakeSpeed;
     [Range(0, 1)]
     public float cameraShakeAmplitude;
 
     private Camera cameraComponent;
-    private Vector3 cameraRotation;
 
+    private int flareNumber;
     private int skyNumber;
 
     private Vector2 mousePosition;
@@ -40,10 +47,11 @@ public class LensFlareInput : MonoBehaviour
     {
         SetSkyFromInput();
         MoveLightWithMouse();
-        MoveCameraWithKeyboard();
+        ChangeLensFlareWithMiddleMouse();
         CameraMovementWithMouse();
         CameraShake();
     }
+
     private void SetSkyFromInput()
     {
         for (int i = 0; i < skies.Length; i++)
@@ -76,33 +84,42 @@ public class LensFlareInput : MonoBehaviour
             mousePosition.x = Input.mousePosition.x / Screen.width;
             mousePosition.y = Input.mousePosition.y / Screen.height;
 
-            lensFlareLight.transform.position = cameraComponent.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 100.0f));
+            lensFlareLight.transform.position = cameraComponent.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, lightDistance));
         }
     }
 
-    private void MoveCameraWithKeyboard()
+    private void ChangeLensFlareWithMiddleMouse()
     {
-        cameraRotation = cameraGameObject.transform.localEulerAngles;
+        if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+        {
+            flareNumber += 1;
 
-        if (Input.GetKey("a"))
-        {
-            cameraRotation.y -= cameraRotationSpeed;
-        }
-        if (Input.GetKey("d"))
-        {
-            cameraRotation.y += cameraRotationSpeed;
-        }
-        if (Input.GetKey("w"))
-        {
-            cameraRotation.x -= cameraRotationSpeed;
-        }
-        if (Input.GetKey("s"))
-        {
-            cameraRotation.x += cameraRotationSpeed;
+            if (flareNumber == lensFlares.Length)
+            {
+                flareNumber = 0;
+            }
 
+            lensFlareComponent.lensFlareData = lensFlares[flareNumber];
+            UpdateFlareNameUI();
         }
+        else if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+        {
+            flareNumber -= 1;
 
-        cameraGameObject.transform.localEulerAngles = cameraRotation;
+            if (flareNumber < 0)
+            {
+                flareNumber = lensFlares.Length - 1;
+            }
+
+            lensFlareComponent.lensFlareData = lensFlares[flareNumber];
+            UpdateFlareNameUI();
+        }
+    }
+
+    private void UpdateFlareNameUI()
+    {
+        // set the flare name in the UI but only the name 
+        lensFlareUIText.text = lensFlares[flareNumber].ToString().Split(char.Parse("("))[0];
     }
 
     private void CameraMovementWithMouse()
@@ -126,13 +143,11 @@ public class LensFlareInput : MonoBehaviour
 
     private void LockCursorWhileMouseButtonDown(int mouseButton)
     {
-        // Lock and hide cursor when mouse button is clicked
         if (Input.GetMouseButtonDown(mouseButton))
         {
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        // Unlock and show cursor when mouse button released
         if (Input.GetMouseButtonUp(mouseButton))
         {
             Cursor.visible = true;

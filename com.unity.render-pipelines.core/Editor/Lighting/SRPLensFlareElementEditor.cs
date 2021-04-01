@@ -97,7 +97,8 @@ namespace UnityEditor.Rendering
             SerializedProperty distortionCurveProp = property.FindPropertyRelative("distortionCurve");
             SerializedProperty distortionRelativeToCenterProp = property.FindPropertyRelative("distortionRelativeToCenter");
 
-            if (lensFlareProp.objectReferenceValue != null)
+            SRPLensFlareType flareType = (UnityEngine.SRPLensFlareType)flareTypeProp.enumValueIndex;
+            if (lensFlareProp.objectReferenceValue != null && flareType != SRPLensFlareType.Circle && flareType != SRPLensFlareType.Polygon)
             {
                 Texture texture = lensFlareProp.objectReferenceValue as Texture;
                 float localAspectRatio = sizeXYProp.vector2Value.x / Mathf.Max(sizeXYProp.vector2Value.y, 1e-6f);
@@ -116,7 +117,7 @@ namespace UnityEditor.Rendering
                 }
             }
             Rect rect = m_CurrentRect;
-            if (isFoldOpenedProp.boolValue)
+            if (isFoldOpenedProp.boolValue && flareType != SRPLensFlareType.Circle && flareType != SRPLensFlareType.Polygon)
             {
                 m_CurrentRect.y += 1.5f * 35.0f;
             }
@@ -133,7 +134,6 @@ namespace UnityEditor.Rendering
             {
                 rect = GetNextRect();
                 EditorGUI.TextArea(rect, "Type", EditorStyles.boldLabel);
-                ++EditorGUI.indentLevel;
                 {
                     rect = GetNextRect();
                     SRPLensFlareType newType;
@@ -187,26 +187,35 @@ namespace UnityEditor.Rendering
                             inverseSDFProp.boolValue = tmpBool;
                     }
                 }
-                --EditorGUI.indentLevel;
 
                 rect = GetNextRect();
-                EditorGUI.TextArea(rect, "Common", EditorStyles.boldLabel);
-                ++EditorGUI.indentLevel;
+                EditorGUI.TextArea(rect, "Color", EditorStyles.boldLabel);
                 {
-                    rect = GetNextRect();
-                    if ((tmp = EditorGUI.FloatField(rect, Styles.intensity, intensityProp.floatValue)) != intensityProp.floatValue)
-                        intensityProp.floatValue = Mathf.Max(tmp, 0.0f);
                     rect = GetNextRect();
                     if ((tmpCol = EditorGUI.ColorField(rect, Styles.tint, tintProp.colorValue)) != tintProp.colorValue)
                         tintProp.colorValue = tmpCol;
+                    rect = GetNextRect();
+                    if ((tmpBool = EditorGUI.Toggle(rect, Styles.modulateByLightColor, modulateByLightColor.boolValue)) != modulateByLightColor.boolValue)
+                        modulateByLightColor.boolValue = tmpBool;
+                    rect = GetNextRect();
+                    if ((tmp = EditorGUI.FloatField(rect, Styles.intensity, intensityProp.floatValue)) != intensityProp.floatValue)
+                        intensityProp.floatValue = Mathf.Max(tmp, 0.0f);
                     rect = GetNextRect();
                     SRPLensFlareBlendMode newBlendMode;
                     SRPLensFlareBlendMode blendModeValue = (UnityEngine.SRPLensFlareBlendMode)blendModeProp.enumValueIndex;
                     if ((newBlendMode = ((SRPLensFlareBlendMode)(EditorGUI.EnumPopup(rect, Styles.blendMode, blendModeValue)))) != blendModeValue)
                         blendModeProp.enumValueIndex = (int)newBlendMode;
+                }
+
+                rect = GetNextRect();
+                EditorGUI.TextArea(rect, "Transform", EditorStyles.boldLabel);
+                {
                     rect = GetNextRect();
-                    if ((tmpBool = EditorGUI.Toggle(rect, Styles.modulateByLightColor, modulateByLightColor.boolValue)) != modulateByLightColor.boolValue)
-                        modulateByLightColor.boolValue = tmpBool;
+                    if ((tmpVec2 = EditorGUI.Vector2Field(rect, Styles.positionOffset, positionOffsetProp.vector2Value)) != positionOffsetProp.vector2Value)
+                        positionOffsetProp.vector2Value = tmpVec2;
+                    rect = GetNextRect();
+                    if ((tmpBool = EditorGUI.Toggle(rect, Styles.autoRotate, autoRotateProp.boolValue)) != autoRotateProp.boolValue)
+                        autoRotateProp.boolValue = tmpBool;
                     rect = GetNextRect();
                     if ((tmp = EditorGUI.FloatField(rect, Styles.rotation, rotationProp.floatValue)) != rotationProp.floatValue)
                         rotationProp.floatValue = tmp;
@@ -222,22 +231,15 @@ namespace UnityEditor.Rendering
                     if ((tmp = EditorGUI.FloatField(rect, Styles.uniformScale, uniformScaleProp.floatValue)) != uniformScaleProp.floatValue)
                         uniformScaleProp.floatValue = Mathf.Max(tmp, 0.0f);
 
-                    rect = GetNextRect();
-                    if ((tmpBool = EditorGUI.Toggle(rect, Styles.autoRotate, autoRotateProp.boolValue)) != autoRotateProp.boolValue)
-                        autoRotateProp.boolValue = tmpBool;
+
                 }
-                --EditorGUI.indentLevel;
 
                 rect = GetNextRect();
-                EditorGUI.TextArea(rect, "Axis Transforms", EditorStyles.boldLabel);
-                ++EditorGUI.indentLevel;
+                EditorGUI.TextArea(rect, "Axis Transform", EditorStyles.boldLabel);
                 {
                     rect = GetNextRect();
                     if ((tmp = EditorGUI.FloatField(rect, Styles.position, positionProp.floatValue)) != positionProp.floatValue)
                         positionProp.floatValue = tmp;
-                    rect = GetNextRect();
-                    if ((tmpVec2 = EditorGUI.Vector2Field(rect, Styles.positionOffset, positionOffsetProp.vector2Value)) != positionOffsetProp.vector2Value)
-                        positionOffsetProp.vector2Value = tmpVec2;
                     rect = GetNextRect();
                     if ((tmp = EditorGUI.FloatField(rect, Styles.angularOffset, angularOffsetProp.floatValue)) != angularOffsetProp.floatValue)
                         angularOffsetProp.floatValue = tmp;
@@ -245,11 +247,9 @@ namespace UnityEditor.Rendering
                     if ((tmpVec2 = EditorGUI.Vector2Field(rect, Styles.translationScale, translationScaleProp.vector2Value)) != translationScaleProp.vector2Value)
                         translationScaleProp.vector2Value = tmpVec2;
                 }
-                --EditorGUI.indentLevel;
 
                 rect = GetNextRect();
                 EditorGUI.TextArea(rect, "Radial Distortion", EditorStyles.boldLabel);
-                ++EditorGUI.indentLevel;
                 {
                     rect = GetNextRect();
                     if ((tmpBool = EditorGUI.Toggle(rect, Styles.enableDistortion, enableDistortionProp.boolValue)) != enableDistortionProp.boolValue)
@@ -266,11 +266,9 @@ namespace UnityEditor.Rendering
                             distortionRelativeToCenterProp.boolValue = tmpBool;
                     }
                 }
-                --EditorGUI.indentLevel;
 
                 rect = GetNextRect();
                 EditorGUI.TextArea(rect, "Multiple Elements", EditorStyles.boldLabel);
-                ++EditorGUI.indentLevel;
                 {
                     rect = GetNextRect();
                     if ((tmpBool = EditorGUI.Toggle(rect, Styles.allowMultipleElement, allowMultipleElementProp.boolValue)) != allowMultipleElementProp.boolValue)
@@ -335,7 +333,6 @@ namespace UnityEditor.Rendering
                         }
                     }
                 }
-                --EditorGUI.indentLevel;
 
                 isFoldOpenedProp.boolValue = true;
             }
@@ -346,19 +343,20 @@ namespace UnityEditor.Rendering
                 SRPLensFlareType typeValue = (UnityEngine.SRPLensFlareType)flareTypeProp.enumValueIndex;
                 if ((newType = ((SRPLensFlareType)(EditorGUI.EnumPopup(rect, Styles.flareType, typeValue)))) != typeValue)
                     flareTypeProp.enumValueIndex = (int)newType;
+                                rect = GetNextRect();
+                if ((tmpCol = EditorGUI.ColorField(rect, Styles.tint, tintProp.colorValue)) != tintProp.colorValue)
+                    tintProp.colorValue = tmpCol;
 
                 rect = GetNextRect();
                 if ((tmp = EditorGUI.FloatField(rect, Styles.intensity, intensityProp.floatValue)) != intensityProp.floatValue)
                     intensityProp.floatValue = Mathf.Max(tmp, 0.0f);
 
-                rect = GetNextRect();
-                if ((tmpCol = EditorGUI.ColorField(rect, Styles.tint, tintProp.colorValue)) != tintProp.colorValue)
-                    tintProp.colorValue = tmpCol;
+
                 if (allowMultipleElementProp.boolValue)
                 {
                     rect = GetNextRect();
                     if ((iTmp = EditorGUI.IntField(rect, Styles.count, countProp.intValue)) != countProp.intValue)
-                        countProp.intValue = Mathf.Max(iTmp, 1);
+                        countProp.intValue = Mathf.Max(iTmp, 2);
                 }
 
                 isFoldOpenedProp.boolValue = false;
@@ -389,9 +387,9 @@ namespace UnityEditor.Rendering
             if (isFoldOpened.boolValue)
             {
                 if (preserveAspectRatio.boolValue)
-                    coef = 25.0f;
-                else
                     coef = 26.0f;
+                else
+                    coef = 27.0f;
 
                 if (flareType == SRPLensFlareType.Polygon || flareType == SRPLensFlareType.Circle)
                 {
@@ -421,6 +419,11 @@ namespace UnityEditor.Rendering
                     {
                         coef += 3.0f;
                     }
+                }
+
+                if (flareType == SRPLensFlareType.Polygon || flareType == SRPLensFlareType.Circle)
+                {
+                    coef -= 2.5f;
                 }
 
                 offset = 1.5f * 35.0f;

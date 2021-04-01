@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering.HighDefinition
 {
-    [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "HDRP-Asset" + Documentation.endURL)]
+    [HDRPHelpURLAttribute("HDRP-Asset")]
     partial class RenderPipelineResources : ScriptableObject
     {
         [Serializable, ReloadGroup]
@@ -306,7 +306,7 @@ namespace UnityEngine.Rendering.HighDefinition
             [Reload("Runtime/PostProcessing/Shaders/TemporalAntialiasing.shader")]
             public Shader temporalAntialiasingPS;
             [Reload("Runtime/PostProcessing/Shaders/LensFlareDataDriven.shader")]
-            public Shader lensFlareShaderPS;
+            public Shader lensFlareDataDrivenPS;
 
             // Physically based DoF
             [Reload("Runtime/PostProcessing/Shaders/DoFCircleOfConfusion.compute")]
