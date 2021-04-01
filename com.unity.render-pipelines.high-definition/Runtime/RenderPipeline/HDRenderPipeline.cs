@@ -2021,13 +2021,6 @@ namespace UnityEngine.Rendering.HighDefinition
             // With the Frame Settings now properly set up, we can resolve the sample budget.
             currentFrameSettings.sssResolvedSampleBudget = currentFrameSettings.GetResolvedSssSampleBudget(m_Asset);
 
-            bool DLSSEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
-                && HDDynamicResolutionPlatformCapabilities.DLSSEnabled
-                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
-
-            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !DLSSEnabled);
-            currentFrameSettings.SetEnabled(FrameSettingsField.DLSS, DLSSEnabled);
-
             // Specific pass to simply display the content of the camera buffer if users have fill it themselves (like video player)
             if (additionalCameraData.fullscreenPassthrough)
                 return false;

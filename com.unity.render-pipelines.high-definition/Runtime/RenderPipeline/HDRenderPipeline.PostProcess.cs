@@ -138,7 +138,6 @@ namespace UnityEngine.Rendering.HighDefinition
         bool m_TonemappingFS;
         bool m_FilmGrainFS;
         bool m_DitheringFS;
-        bool m_DLSSFS;
         bool m_AntialiasingFS;
 
         // Debug Exposure compensation (Drive by debug menu) to add to all exposure processed value
@@ -168,6 +167,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         System.Random m_Random;
 
+        bool m_DLSSPassEnabled = false;
         DLSSPass m_DLSSPass = null;
         void InitializePostProcess()
         {
@@ -324,14 +324,13 @@ namespace UnityEngine.Rendering.HighDefinition
             m_TonemappingFS = frameSettings.IsEnabled(FrameSettingsField.Tonemapping);
             m_FilmGrainFS = frameSettings.IsEnabled(FrameSettingsField.FilmGrain);
             m_DitheringFS = frameSettings.IsEnabled(FrameSettingsField.Dithering);
-            m_DLSSFS                = frameSettings.IsEnabled(FrameSettingsField.DLSS);
             m_AntialiasingFS = frameSettings.IsEnabled(FrameSettingsField.Antialiasing);
 
             // Override full screen anti-aliasing when doing path tracing (which is naturally anti-aliased already)
             m_AntialiasingFS &= !m_PathTracing.enable.value;
 
             // Sanity check, cant run dlss unless the pass is not null
-            m_DLSSFS &= m_DLSSPass != null;
+            m_DLSSPassEnabled = m_DLSSPass != null && camera.IsDLSSEnabled();
 
             m_DebugExposureCompensation = m_CurrentDebugDisplaySettings.data.lightingDebugSettings.debugExposure;
 
@@ -435,7 +434,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 source = DynamicExposurePass(renderGraph, hdCamera, source);
 
-                if (m_DLSSFS && DynamicResolutionHandler.instance.upsamplerSchedule == DynamicResolutionHandler.UpsamplerScheduleType.BeforePost)
+                if (m_DLSSPassEnabled && DynamicResolutionHandler.instance.upsamplerSchedule == DynamicResolutionHandler.UpsamplerScheduleType.BeforePost)
                 {
                     var upsamplignSceneResults = SceneUpsamplePass(renderGraph, hdCamera, source, depthBuffer, motionVectors);
                     source = upsamplignSceneResults.color;
@@ -3144,7 +3143,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             TextureHandle upsampledColor = TextureHandle.nullHandle;
             bool upsampleColorInScenePass = true;
-            if (m_DLSSFS)
+            if (m_DLSSPassEnabled)
             {
                 upsampledColor = DoDLSSPass(renderGraph, hdCamera, inputColor, inputDepth, inputMotionVectors);
                 upsampleColorInScenePass = false;

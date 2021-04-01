@@ -642,9 +642,11 @@ namespace UnityEngine.Rendering.HighDefinition
             return antialiasing == AntialiasingMode.TemporalAntialiasing;
         }
 
+        private bool m_IsDLSSEnabled = false;
+
         internal bool IsDLSSEnabled()
         {
-            return frameSettings.IsEnabled(FrameSettingsField.DLSS);
+            return m_IsDLSSEnabled;
         }
 
         internal bool RequiresCameraJitter()
@@ -683,6 +685,14 @@ namespace UnityEngine.Rendering.HighDefinition
         // Otherwise, previous frame view constants will be wrong.
         internal void Update(FrameSettings currentFrameSettings, HDRenderPipeline hdrp, MSAASamples newMSAASamples, XRPass xrPass, bool allocateHistoryBuffers = true)
         {
+            // Figure out if this camera can do DLSS or not based on external settings
+            m_IsDLSSEnabled = DynamicResolutionHandler.instance.DynamicResolutionEnabled()
+                && HDDynamicResolutionPlatformCapabilities.DLSSEnabled
+                && HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS;
+
+            //Forcefully disable antialiasing if DLSS is enabled.
+            currentFrameSettings.SetEnabled(FrameSettingsField.Antialiasing, currentFrameSettings.IsEnabled(FrameSettingsField.Antialiasing) && !m_IsDLSSEnabled);
+
             // Inherit animation settings from the parent camera.
             Camera aniCam = (parentCamera != null) ? parentCamera : camera;
 
@@ -815,7 +825,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 actualHeight = Math.Max((int)finalViewport.size.y, 1);
             }
 
-            DynamicResolutionHandler.instance.upsamplerSchedule = IsDLSSEnabled() ? DynamicResolutionHandler.UpsamplerScheduleType.BeforePost : DynamicResolutionHandler.UpsamplerScheduleType.AfterPost;
+            DynamicResolutionHandler.instance.upsamplerSchedule = m_IsDLSSEnabled ? DynamicResolutionHandler.UpsamplerScheduleType.BeforePost : DynamicResolutionHandler.UpsamplerScheduleType.AfterPost;
             DynamicResolutionHandler.instance.finalViewport = new Vector2Int((int)finalViewport.width, (int)finalViewport.height);
 
             Vector2Int nonScaledViewport = new Vector2Int(actualWidth, actualHeight);
