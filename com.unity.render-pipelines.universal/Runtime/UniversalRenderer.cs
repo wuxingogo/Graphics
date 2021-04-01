@@ -465,7 +465,7 @@ namespace UnityEngine.Rendering.Universal
 
             // Doesn't create texture for Overlay cameras as they are already overlaying on top of created textures.
             // Configure all settings require to start a new camera stack (base camera only)
-            if (cameraData.renderType == CameraRenderType.Base && createDepthTexture && !createColorTexture)
+            if (cameraData.renderType == CameraRenderType.Base && !createColorTexture && !createDepthTexture)
             {
                 m_ActiveCameraAttachments.color = cameraTarget;
                 m_ActiveCameraAttachments.depth = cameraTarget;
