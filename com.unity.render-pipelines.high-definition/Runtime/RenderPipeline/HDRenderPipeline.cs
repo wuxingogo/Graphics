@@ -1126,6 +1126,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
                     dynResHandler.SetCurrentCameraRequest(cameraRequestedDynamicRes);
                     DynamicResolutionHandler.instance.allowDynamicResolutionOnAllPercentages = cameraRequestedDynamicRes
+                        && HDDynamicResolutionPlatformCapabilities.DLSSDetected
                         && HDDynamicResolutionPlatformCapabilities.DLSSEnabled
                         && m_Asset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enableDLSS
                         && m_Asset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.enabled;
