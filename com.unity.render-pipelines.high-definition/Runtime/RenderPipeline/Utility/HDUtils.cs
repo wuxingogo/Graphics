@@ -695,9 +695,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 graphicDevice == GraphicsDeviceType.GameCoreXboxOne ||
                 graphicDevice == GraphicsDeviceType.GameCoreXboxSeries ||
                 graphicDevice == GraphicsDeviceType.Metal ||
-                graphicDevice == GraphicsDeviceType.Vulkan
-                // Switch isn't supported currently (19.3)
-                /* || graphicDevice == GraphicsDeviceType.Switch */);
+                graphicDevice == GraphicsDeviceType.Vulkan ||
+                graphicDevice == GraphicsDeviceType.Switch);
         }
 
 #if UNITY_EDITOR
