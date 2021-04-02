@@ -65,6 +65,9 @@ namespace UnityEngine.Rendering
         /// <summary>Opaque quality setting of NVIDIA Deep Learning Super Sampling.</summary>
         public uint DLSSPerfQualitySetting;
 
+        /// <summary>Use DLSS recommended optimal settings for scaling and sharpness.</summary>
+        public bool DLSSUseOptimalSettings;
+
         /// <summary>Shaprness of NVIDIA Deep Leraning Super Sampling Upsampler.</summary>
         public float DLSSSharpness;
 

@@ -243,7 +243,8 @@ namespace UnityEditor.Rendering.HighDefinition
 
             public static readonly GUIContent enabled = EditorGUIUtility.TrTextContent("Enable", "When enabled, HDRP dynamically lowers the resolution of render targets to reduce the workload on the GPU.");
             public static readonly GUIContent enableDLSS = EditorGUIUtility.TrTextContent("Enable NVIDIA Deep Learning Super Sampling", "Enables NVIDIA Deep Learning Super Sampling.");
-            public static readonly GUIContent DLSSQualitySettingContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Performance Quality Setting.", "Selects a performance quality setting for NVIDIA Deep Learning Super Sampling.");
+            public static readonly GUIContent DLSSQualitySettingContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Performance Quality", "Selects a performance quality setting for NVIDIA Deep Learning Super Sampling.");
+            public static readonly GUIContent DLSSUseOptimalSettingsContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Use Optimal Settings", "Sets the sharpness and scale automatically, depending on the values of quality settings.");
             public static readonly GUIContent DLSSSharpnessContent = EditorGUIUtility.TrTextContent("NVIDIA DLSS Sharpness", "NVIDIA Deep Learning Super Sampling pixel sharpness of upsampler.");
             public static readonly GUIContent[] DLSSPerfQualityNames =
             {

@@ -331,6 +331,16 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <summary>Enable to retain history buffers even if the camera is disabled.</summary>
         public bool hasPersistentHistory = false;
 
+        /// <summary>Enables Deep Learning Super Sampling on this camera.</summary>
+        [Tooltip("Allow Deep Learning Super Sampling on this camera")]
+        public bool allowDeepLearningSuperSampling = true;
+
+        /// <summary>Allows Deep Learning Super Sampling to use optimal settings.</summary>
+        [Tooltip("Allow Deep Learning Super Sampling on this camera")]
+        public bool allowDeepLearningSuperSamplingOptimalSettings = true;
+
+        internal bool cameraCanRenderDLSS = false;
+
         /// <summary>Event used to override HDRP rendering for this particular camera.</summary>
         public event Action<ScriptableRenderContext, HDCamera> customRender;
         /// <summary>True if any Custom Render event is registered for this camera.</summary>

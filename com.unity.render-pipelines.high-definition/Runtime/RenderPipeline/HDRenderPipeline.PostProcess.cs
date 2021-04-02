@@ -570,10 +570,10 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             using (var builder = renderGraph.AddRenderPass<DLSSData>("Deep Learning Super Sampling", out var passData, ProfilingSampler.Get(HDProfileId.DeepLearningSuperSampling)))
             {
-                passData.parameters = new DLSSPass.Parameters() {
-                    hdCamera = hdCamera,
-                    sharpness = HDRenderPipeline.currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings.DLSSSharpness
-                };
+                passData.parameters = new DLSSPass.Parameters();
+                passData.parameters.hdCamera = hdCamera;
+                passData.parameters.drsSettings = currentAsset.currentPlatformRenderPipelineSettings.dynamicResolutionSettings;
+
                 var viewHandles = new DLSSPass.ViewResourceHandles();
                 viewHandles.source = builder.ReadTexture(source);
                 viewHandles.output = builder.WriteTexture(GetPostprocessUpsampledOutputHandle(renderGraph, "DLSS destination"));

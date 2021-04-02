@@ -454,6 +454,8 @@ namespace UnityEditor.Rendering.HighDefinition
 
             bool showUpsampleFilterAsFallback = false;
 
+            ++EditorGUI.indentLevel;
+
 #if ENABLE_NVIDIA_MODULE
             if (serialized.renderPipelineSettings.dynamicResolutionSettings.enabled.boolValue)
             {
@@ -469,11 +471,16 @@ namespace UnityEditor.Rendering.HighDefinition
                             serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSPerfQualitySetting.intValue = selectedVal;
                     }
 
-                    float DLSSSharpness = serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSSharpness.floatValue;
-                    EditorGUI.BeginChangeCheck();
-                    DLSSSharpness = EditorGUILayout.DelayedFloatField(Styles.DLSSSharpnessContent, DLSSSharpness);
-                    if (EditorGUI.EndChangeCheck())
-                        serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSSharpness.floatValue = Mathf.Clamp(DLSSSharpness, 0.0f, 1.0f);
+                    EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSUseOptimalSettings, Styles.DLSSUseOptimalSettingsContent);
+
+                    using (new EditorGUI.DisabledScope(serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSUseOptimalSettings.boolValue))
+                    {
+                        float DLSSSharpness = serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSSharpness.floatValue;
+                        EditorGUI.BeginChangeCheck();
+                        DLSSSharpness = EditorGUILayout.DelayedFloatField(Styles.DLSSSharpnessContent, DLSSSharpness);
+                        if (EditorGUI.EndChangeCheck())
+                            serialized.renderPipelineSettings.dynamicResolutionSettings.DLSSSharpness.floatValue = Mathf.Clamp(DLSSSharpness, 0.0f, 1.0f);
+                    }
                 }
 
                 showUpsampleFilterAsFallback = serialized.renderPipelineSettings.dynamicResolutionSettings.enableDLSS.boolValue;
@@ -487,7 +494,6 @@ namespace UnityEditor.Rendering.HighDefinition
             }
 #endif
 
-            ++EditorGUI.indentLevel;
             using (new EditorGUI.DisabledScope(!serialized.renderPipelineSettings.dynamicResolutionSettings.enabled.boolValue))
             {
                 EditorGUILayout.PropertyField(serialized.renderPipelineSettings.dynamicResolutionSettings.dynamicResType, Styles.dynResType);
