@@ -7,7 +7,6 @@ namespace UnityEditor.ShaderGraph.Internal
 {
     [Serializable]
     [FormerName("UnityEditor.ShaderGraph.TextureShaderProperty")]
-    [BlackboardInputInfo(50)]
     public sealed class Texture2DShaderProperty : AbstractShaderProperty<SerializableTexture>
     {
         public enum DefaultType { White, Black, Grey, Bump }
@@ -20,6 +19,7 @@ namespace UnityEditor.ShaderGraph.Internal
 
         public override PropertyType propertyType => PropertyType.Texture2D;
 
+        internal override bool isBatchable => false;
         internal override bool isExposable => true;
         internal override bool isRenamable => true;
 
@@ -30,35 +30,14 @@ namespace UnityEditor.ShaderGraph.Internal
             return $"{hideTagString}{modifiableTagString}[NoScaleOffset]{referenceName}(\"{displayName}\", 2D) = \"{defaultType.ToString().ToLower()}\" {{}}";
         }
 
-        // Texture2D properties cannot be set via Hybrid path at the moment; disallow that choice
-        internal override bool AllowHLSLDeclaration(HLSLDeclaration decl) => (decl != HLSLDeclaration.HybridPerInstance) && (decl != HLSLDeclaration.DoNotDeclare);
-
-        internal override void ForeachHLSLProperty(Action<HLSLProperty> action)
+        internal override string GetPropertyDeclarationString(string delimiter = ";")
         {
-            HLSLDeclaration decl = (generatePropertyBlock ? HLSLDeclaration.UnityPerMaterial : HLSLDeclaration.Global);
-
-            action(new HLSLProperty(HLSLType._Texture2D, referenceName, HLSLDeclaration.Global));
-            action(new HLSLProperty(HLSLType._SamplerState, "sampler" + referenceName, HLSLDeclaration.Global));
-            action(new HLSLProperty(HLSLType._float4, referenceName + "_TexelSize", decl));
-            // action(new HLSLProperty(HLSLType._float4, referenceName + "_ST", decl)); // TODO: allow users to make use of the ST values
+            return $"TEXTURE2D({referenceName}){delimiter} SAMPLER(sampler{referenceName}){delimiter} {concretePrecision.ToShaderString()}4 {referenceName}_TexelSize{delimiter}";
         }
 
-        internal override string GetPropertyAsArgumentString(string precisionString)
+        internal override string GetPropertyAsArgumentString()
         {
-            return "UnityTexture2D " + referenceName;
-        }
-
-        internal override string GetPropertyAsArgumentStringForVFX(string precisionString)
-        {
-            return "TEXTURE2D(" + referenceName + ")";
-        }
-
-        internal override string GetHLSLVariableName(bool isSubgraphProperty)
-        {
-            if (isSubgraphProperty)
-                return referenceName;
-            else
-                return $"UnityBuildTexture2DStructNoScale({referenceName})";
+            return $"TEXTURE2D_PARAM({referenceName}, sampler{referenceName}), {concretePrecision.ToShaderString()}4 {referenceName}_TexelSize";
         }
 
         [SerializeField]
@@ -89,8 +68,7 @@ namespace UnityEditor.ShaderGraph.Internal
             return new PreviewProperty(propertyType)
             {
                 name = referenceName,
-                textureValue = value.texture,
-                texture2DDefaultType = defaultType
+                textureValue = value.texture
             };
         }
 
@@ -99,8 +77,8 @@ namespace UnityEditor.ShaderGraph.Internal
             return new Texture2DShaderProperty()
             {
                 displayName = displayName,
-                value = value,
-                defaultType = defaultType,
+                hidden = hidden,
+                value = value
             };
         }
     }

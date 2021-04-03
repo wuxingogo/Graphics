@@ -6,26 +6,9 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Shadow/ShadowSamplingTent.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
-
 // ------------------------------------------------------------------
 //  PCF Filtering methods
 // ------------------------------------------------------------------
-
-real SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerComparisonState compSamp, float depthBias)
-{
-#if SHADOW_USE_DEPTH_BIAS == 1
-    // add the depth bias
-    coord.z += depthBias;
-#endif
-
-    float2 f = frac(coord.xy * shadowAtlasSize.zw - 0.5f);
-
-    float4 shadowMapTaps = GATHER_TEXTURE2D(tex, s_point_clamp_sampler, coord.xy);
-    float4 shadowResults = (coord.z > shadowMapTaps.x);
-
-    return lerp(lerp(shadowResults.w, shadowResults.z, f.x),
-                lerp(shadowResults.x, shadowResults.y, f.x), f.y);
-}
 
 real SampleShadow_PCF_Tent_3x3(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerComparisonState compSamp, float depthBias)
 {
@@ -87,7 +70,7 @@ real SampleShadow_PCF_Tent_5x5(float4 shadowAtlasSize, float3 coord, Texture2D t
 #else
     for (int i = 0; i < 9; i++)
     {
-        shadow += fetchesWeights[i] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, real3(fetchesUV[i].xy, coord.z)).x;
+        shadow += fetchesWeights[i] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, real3(fetchesUV[i].xy, coord.z), slice).x;
     }
 #endif
 
@@ -147,7 +130,7 @@ real SampleShadow_PCF_Tent_7x7(float4 shadowAtlasSize, float3 coord, Texture2D t
 #else
     for(int i = 0; i < 16; i++)
     {
-        shadow += fetchesWeights[i] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, real3(fetchesUV[i].xy, coord.z)).x;
+        shadow += fetchesWeights[i] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, real3(fetchesUV[i].xy, coord.z).x;
     }
 #endif
 
@@ -285,8 +268,7 @@ float SampleShadow_MSM_1tap(float3 tcs, float lightLeakBias, float momentBias, f
 //
 //                  PCSS sampling
 //
-// Note shadowAtlasInfo contains: x: resolution, y: the inverse of atlas resolution
-float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective, float2 shadowAtlasInfo)
+float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective)
 {
 #if SHADOW_USE_DEPTH_BIAS == 1
     // add the depth bias
@@ -297,6 +279,8 @@ float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, f
     float sampleJitterAngle = InterleavedGradientNoise(posSS.xy, taaFrameIndex) * 2.0 * PI;
     float2 sampleJitter = float2(sin(sampleJitterAngle), cos(sampleJitterAngle));
 
+    // x contains resolution and y the inverse of atlas resolution
+    float2 shadowAtlasInfo = isPerspective ? _ShadowAtlasSize.xz : _CascadeShadowAtlasSize.xz;
 
     // Note: this is a hack, but the original implementation was faulty as it didn't scale offset based on the resolution of the atlas (*not* the shadow map).
     // All the softness fitting has been done using a reference 4096x4096, hence the following scale.
@@ -309,17 +293,17 @@ float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, f
     //1) Blocker Search
     float averageBlockerDepth = 0.0;
     float numBlockers         = 0.0;
-    bool blockerFound = BlockerSearch(averageBlockerDepth, numBlockers, min((shadowSoftness + 0.000001), resIndepenentMaxSoftness) * atlasResFactor, tcs, sampleJitter, tex, samp, blockerSampleCount);
+    if (!BlockerSearch(averageBlockerDepth, numBlockers, min((shadowSoftness + 0.000001), resIndepenentMaxSoftness) * atlasResFactor, tcs, sampleJitter, tex, samp, blockerSampleCount))
+        return 1.0;
 
     // We scale the softness also based on the distance between the occluder if we assume that the light is a sphere source.
-    // Also, we don't bother if the blocker has not been found.
-    if (isPerspective && blockerFound)
+    if (isPerspective)
     {
         float dist = 1.0f / (zParams.z * averageBlockerDepth + zParams.w);
         dist = min(dist, 7.5);  // We need to clamp the distance as the fitted curve will do strange things after this and because there is no point in scale further after this point.
         float dist2 = dist * dist;
         float dist4 = dist2 * dist2;
-        // Fitted curve to match ray trace reference as good as possible.
+        // Fitted curve to match ray trace reference as good as possible. 
         float distScale = 3.298300241 - 2.001364639  * dist + 0.4967311427 * dist2 - 0.05464058455 * dist * dist2 + 0.0021974 * dist2 * dist2;
         shadowSoftness *= distScale;
 
@@ -328,14 +312,13 @@ float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, f
     }
 
     //2) Penumbra Estimation
-    float filterSize = shadowSoftness * (isPerspective ? PenumbraSizePunctual(tcs.z, averageBlockerDepth) :
+    float filterSize = shadowSoftness * (isPerspective ? PenumbraSizePunctual(tcs.z, averageBlockerDepth) : 
                                                          PenumbraSizeDirectional(tcs.z, averageBlockerDepth, zParams.x));
     filterSize = max(filterSize, minFilterRadius);
     filterSize *= atlasResFactor;
 
     //3) Filter
-    // Note: we can't early out of the function if blockers are not found since Vulkan triggers a warning otherwise. Hence, we check for blockerFound here.
-    return blockerFound ? PCSS(tcs, filterSize, scale, offset, sampleJitter, tex, compSamp, filterSampleCount) : 1.0f;
+    return PCSS(tcs, filterSize, scale, offset, sampleJitter, tex, compSamp, filterSampleCount);
 }
 
 // Note this is currently not available as an option, but is left here to show what needs including if IMS is to be used.

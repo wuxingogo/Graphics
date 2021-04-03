@@ -1,4 +1,4 @@
-using UnityEngine.Scripting.APIUpdating;
+﻿using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Rendering.Universal
 {

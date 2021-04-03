@@ -1,26 +1,16 @@
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
-    class SerializedHDCamera : ISerializedCamera
+    class SerializedHDCamera
     {
-        public SerializedObject serializedObject { get; }
-        public SerializedObject serializedAdditionalDataObject { get; }
-        public CameraEditor.Settings baseCameraSettings { get; }
+        public SerializedObject serializedObject;
+        public SerializedObject serializedAdditionalDataObject;
 
-        // This one is internal in UnityEditor for whatever reason...
-        public SerializedProperty projectionMatrixMode { get; }
-
-        // Common properties
-        public SerializedProperty dithering { get; }
-        public SerializedProperty stopNaNs { get; }
-        public SerializedProperty allowDynamicResolution { get; }
-        public SerializedProperty volumeLayerMask { get; }
-        public SerializedProperty clearDepth { get; }
-        public SerializedProperty antialiasing { get; }
-
-        // HDRP specific properties
+        //public SerializedProperty backgroundColor;
+        
         public SerializedProperty iso;
         public SerializedProperty shutterSpeed;
         public SerializedProperty aperture;
@@ -28,23 +18,26 @@ namespace UnityEditor.Rendering.HighDefinition
         public SerializedProperty curvature;
         public SerializedProperty barrelClipping;
         public SerializedProperty anamorphism;
-        public SerializedProperty exposureTarget;
 
+        public SerializedProperty antialiasing;
         public SerializedProperty SMAAQuality;
         public SerializedProperty taaSharpenStrength;
-        public SerializedProperty taaHistorySharpening;
-        public SerializedProperty taaAntiFlicker;
-        public SerializedProperty taaMotionVectorRejection;
-        public SerializedProperty taaAntiRinging;
-        public SerializedProperty taaQualityLevel;
-
+        public SerializedProperty dithering;
+        public SerializedProperty stopNaNs;
         public SerializedProperty clearColorMode;
         public SerializedProperty backgroundColorHDR;
-        public SerializedProperty xrRendering;
         public SerializedProperty passThrough;
         public SerializedProperty customRenderingSettings;
+        public SerializedProperty clearDepth;
+        public SerializedProperty volumeLayerMask;
         public SerializedProperty volumeAnchorOverride;
+        public SerializedProperty allowDynamicResolution;
         public SerializedFrameSettings frameSettings;
+        public CameraEditor.Settings baseCameraSettings { get; private set; }
+
+        // This one is internal in UnityEditor for whatever reason...
+        public SerializedProperty projectionMatrixMode;
+
         public SerializedProperty probeLayerMask;
 
         public SerializedHDCamera(SerializedObject serializedObject)
@@ -62,15 +55,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 hideFlags.intValue = (int)HideFlags.None;
             serializedAdditionalDataObject.ApplyModifiedProperties();
 
-            // Common properties
-            dithering = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.dithering);
-            stopNaNs = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.stopNaNs);
-            allowDynamicResolution = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.allowDynamicResolution);
-            volumeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.volumeLayerMask);
-            clearDepth = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.clearDepth);
-            antialiasing = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.antialiasing);
-
-            // HDRP specific properties
+            //backgroundColor = serializedObject.FindProperty("m_BackGroundColor");
             iso = serializedAdditionalDataObject.FindProperty("physicalParameters.m_Iso");
             shutterSpeed = serializedAdditionalDataObject.FindProperty("physicalParameters.m_ShutterSpeed");
             aperture = serializedAdditionalDataObject.FindProperty("physicalParameters.m_Aperture");
@@ -79,36 +64,30 @@ namespace UnityEditor.Rendering.HighDefinition
             barrelClipping = serializedAdditionalDataObject.FindProperty("physicalParameters.m_BarrelClipping");
             anamorphism = serializedAdditionalDataObject.FindProperty("physicalParameters.m_Anamorphism");
 
-            exposureTarget = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.exposureTarget);
-
+            antialiasing = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.antialiasing);
             SMAAQuality = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.SMAAQuality);
             taaSharpenStrength = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaSharpenStrength);
-            taaQualityLevel = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.TAAQuality);
-            taaHistorySharpening = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaHistorySharpening);
-            taaAntiFlicker = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaAntiFlicker);
-            taaMotionVectorRejection = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaMotionVectorRejection);
-            taaAntiRinging = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.taaAntiHistoryRinging);
-            taaQualityLevel = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.TAAQuality);
-
+            dithering = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.dithering);
+            stopNaNs = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.stopNaNs);
             clearColorMode = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.clearColorMode);
             backgroundColorHDR = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.backgroundColorHDR);
-            xrRendering = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.xrRendering);
             passThrough = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.fullscreenPassthrough);
             customRenderingSettings = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.customRenderingSettings);
+            clearDepth = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.clearDepth);
+            volumeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.volumeLayerMask);
             volumeAnchorOverride = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.volumeAnchorOverride);
-            probeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.probeLayerMask);
             frameSettings = new SerializedFrameSettings(
                 serializedAdditionalDataObject.FindProperty("m_RenderingPathCustomFrameSettings"),
                 serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.renderingPathCustomFrameSettingsOverrideMask)
-            );
+                );
+
+            probeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.probeLayerMask);
+            allowDynamicResolution = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.allowDynamicResolution);
 
             baseCameraSettings = new CameraEditor.Settings(serializedObject);
             baseCameraSettings.OnEnable();
         }
 
-        /// <summary>
-        /// Updates the internal serialized objects
-        /// </summary>
         public void Update()
         {
             serializedObject.Update();
@@ -121,20 +100,10 @@ namespace UnityEditor.Rendering.HighDefinition
             baseCameraSettings.HDR.boolValue = false;
         }
 
-        /// <summary>
-        /// Applies the modified properties to the serialized objects
-        /// </summary>
         public void Apply()
         {
             serializedObject.ApplyModifiedProperties();
             serializedAdditionalDataObject.ApplyModifiedProperties();
-        }
-
-        /// <summary>
-        /// Refreshes the serialized properties from the serialized objects
-        /// </summary>
-        public void Refresh()
-        {
         }
     }
 }

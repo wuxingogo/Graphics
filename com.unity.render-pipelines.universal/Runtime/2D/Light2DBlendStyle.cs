@@ -1,5 +1,4 @@
 using System;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Serialization;
 
@@ -37,7 +36,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
         {
             Additive = 0,
             Multiply = 1,
-            Subtractive = 2
+            Subtractive = 2,
+            Custom = 99
         }
 
         [Serializable]
@@ -47,13 +47,22 @@ namespace UnityEngine.Experimental.Rendering.Universal
             public float additive;
         }
 
+        [System.Obsolete("This field is obsolete. Blend Styles are now automatically enabled/disabled.")]
+        public bool enabled;
+
         public string name;
 
         [SerializeField]
         internal TextureChannel maskTextureChannel;
 
+        [SerializeField, Range(0.01f, 1.0f)]
+        internal float renderTextureScale;
+
         [SerializeField]
         internal BlendMode blendMode;
+
+        [SerializeField]
+        internal BlendFactors customBlendFactors;
 
         internal Vector2 blendFactors
         {
@@ -75,9 +84,12 @@ namespace UnityEngine.Experimental.Rendering.Universal
                         result.x = 0.0f;
                         result.y = -1.0f;
                         break;
+                    case BlendMode.Custom:
+                        result.x = customBlendFactors.multiplicative;
+                        result.y = customBlendFactors.additive;
+                        break;
                     default:
-                        result.x = 1.0f;
-                        result.y = 0.0f;
+                        result = Vector2.zero;
                         break;
                 }
 
@@ -113,10 +125,5 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 }
             }
         }
-
-        // Transient data
-        internal bool isDirty { get; set; }
-        internal bool hasRenderTarget { get; set; }
-        internal RenderTargetHandle renderTargetHandle;
     }
 }

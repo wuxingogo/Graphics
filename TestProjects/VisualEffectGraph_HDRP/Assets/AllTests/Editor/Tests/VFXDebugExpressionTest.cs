@@ -10,12 +10,27 @@ using System.Linq;
 using UnityEditor.VFX.UI;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 
 namespace UnityEditor.VFX.Test
 {
     public class VFXDebugExpressionTest
     {
+        string tempFilePath = "Assets/TmpTests/vfxTest_time.vfx";
+
+        VFXGraph MakeTemporaryGraph()
+        {
+            if (System.IO.File.Exists(tempFilePath))
+            {
+                AssetDatabase.DeleteAsset(tempFilePath);
+            }
+
+            var asset = VisualEffectAssetEditorUtility.CreateNewAsset(tempFilePath);
+            VisualEffectResource resource = asset.GetResource(); // force resource creation
+            VFXGraph graph = ScriptableObject.CreateInstance<VFXGraph>();
+            graph.visualEffectResource = resource;
+            return graph;
+        }
+
         private float m_previousFixedTimeStep;
         private float m_previousMaxDeltaTime;
         private GameObject m_gameObject;
@@ -40,23 +55,17 @@ namespace UnityEditor.VFX.Test
         {
             UnityEngine.VFX.VFXManager.fixedTimeStep = m_previousFixedTimeStep;
             UnityEngine.VFX.VFXManager.maxDeltaTime = m_previousMaxDeltaTime;
-            VFXTestCommon.DeleteAllTemporaryGraph();
+            AssetDatabase.DeleteAsset(tempFilePath);
 
             UnityEngine.Object.DestroyImmediate(m_gameObject);
             UnityEngine.Object.DestroyImmediate(m_camera);
         }
 
-        static VFXModelDescriptor<VFXOperator> GetTotalTimeOperator()
-        {
-            string opName = ObjectNames.NicifyVariableName(VFXExpressionOperation.TotalTime.ToString());
-            return VFXLibrary.GetOperators().First(o => o.name.StartsWith(opName));
-        }
-
         [UnityTest]
         public IEnumerator Create_Asset_And_Component_Check_Expected_TotalTime()
         {
-            yield return new EnterPlayMode();
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            var graph = MakeTemporaryGraph();
 
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var constantRate = ScriptableObject.CreateInstance<VFXSpawnerConstantRate>();
@@ -70,17 +79,18 @@ namespace UnityEditor.VFX.Test
             initContext.LinkTo(outputContext);
 
             var slotRate = constantRate.GetInputSlot(0);
-            var totalTime = GetTotalTimeOperator().CreateInstance();
+            string opName = ObjectNames.NicifyVariableName(VFXExpressionOperation.TotalTime.ToString());
+
+            var totalTime = VFXLibrary.GetOperators().First(o => o.name == opName).CreateInstance();
             slotRate.Link(totalTime.GetOutputSlot(0));
 
             spawnerContext.AddChild(constantRate);
             graph.AddChild(spawnerContext);
 
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
             var expressionIndex = graph.FindReducedExpressionIndexFromSlotCPU(slotRate);
 
-            while (m_gameObject.GetComponent<VisualEffect>() != null)
-                UnityEngine.Object.DestroyImmediate(m_gameObject.GetComponent<VisualEffect>());
+            while (m_gameObject.GetComponent<VisualEffect>() != null) UnityEngine.Object.DestroyImmediate(m_gameObject.GetComponent<VisualEffect>());
             var vfxComponent = m_gameObject.AddComponent<VisualEffect>();
             vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
 
@@ -97,73 +107,6 @@ namespace UnityEditor.VFX.Test
                 yield return null;
             }
             Assert.IsTrue(maxFrame > 0);
-            yield return new ExitPlayMode();
-        }
-
-        [UnityTest]
-        public IEnumerator Check_Total_Time_Is_Always_The_Sum_of_DeltaTime()
-        {
-            yield return new EnterPlayMode();
-            var graph = VFXTestCommon.MakeTemporaryGraph();
-
-            var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
-
-            var blockCustomSpawner = ScriptableObject.CreateInstance<VFXSpawnerCustomWrapper>();
-            blockCustomSpawner.SetSettingValue("m_customType", new SerializableType(typeof(VFXCustomSpawnerTimeCheckerTest)));
-
-            var initContext = ScriptableObject.CreateInstance<VFXBasicInitialize>();
-            var outputContext = ScriptableObject.CreateInstance<VFXPointOutput>();
-
-            spawnerContext.LinkTo(initContext);
-            initContext.LinkTo(outputContext);
-
-            spawnerContext.AddChild(blockCustomSpawner);
-            graph.AddChild(spawnerContext);
-            graph.AddChild(initContext);
-            graph.AddChild(outputContext);
-
-            //plug total time into custom spawn total time
-            var builtInParameter = ScriptableObject.CreateInstance<VFXBuiltInParameter>();
-            builtInParameter.SetSettingValue("m_expressionOp", VFXExpressionOperation.TotalTime);
-            blockCustomSpawner.inputSlots[0].Link(builtInParameter.outputSlots[0]);
-
-            graph.AddChild(builtInParameter);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            var vfxComponent = m_gameObject.AddComponent<VisualEffect>();
-            vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
-
-            int maxFrame = 64;
-            while (vfxComponent.culled && --maxFrame > 0)
-                yield return null;
-            Assert.IsTrue(maxFrame > 0);
-
-            while (--maxFrame > 0 && VFXCustomSpawnerTimeCheckerTest.s_ReadInternalTotalTime < 0.2f)
-                yield return null;
-            Assert.IsTrue(maxFrame > 0);
-
-            //Moved the object until culled
-            var backupPosition = vfxComponent.transform.position;
-
-            maxFrame = 64;
-            while (--maxFrame > 0 && !vfxComponent.culled)
-            {
-                vfxComponent.transform.position = vfxComponent.transform.position + Vector3.up * 5.0f;
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            for (int i = 0; i < 8; ++i)
-                yield return null;
-
-            vfxComponent.transform.position = backupPosition;
-
-            for (int i = 0; i < 8; ++i)
-                yield return null;
-
-            Assert.AreEqual((double)VFXCustomSpawnerTimeCheckerTest.s_ReadInternalTotalTime, (double)VFXCustomSpawnerTimeCheckerTest.s_ReadTotalTimeThroughInput, 0.0001f);
-            yield return new ExitPlayMode();
         }
 
 #pragma warning disable 0414
@@ -173,7 +116,8 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator Create_Asset_And_Component_Check_Overflow_MaxDeltaTime([ValueSource("updateModes")] object updateMode)
         {
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            var graph = MakeTemporaryGraph();
             graph.visualEffectResource.updateMode = (VFXUpdateMode)updateMode;
 
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
@@ -188,7 +132,7 @@ namespace UnityEditor.VFX.Test
 
             spawnerContext.AddChild(constantRate);
             graph.AddChild(spawnerContext);
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var vfxComponent = m_gameObject.AddComponent<VisualEffect>();
             vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
@@ -199,17 +143,19 @@ namespace UnityEditor.VFX.Test
             UnityEngine.VFX.VFXManager.fixedTimeStep = fixedTimeStep;
             UnityEngine.VFX.VFXManager.maxDeltaTime = maxTimeStep;
 
-            /* waiting for culling (simulating big delay between each frame) */
+            /* waiting for culling */
             int maxFrame = 512;
-            VFXSpawnerState spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0u);
-            float sleepTimeInSeconds = maxTimeStep * 5.0f;
-            while (--maxFrame > 0 && spawnerState.deltaTime != maxTimeStep)
+            while (vfxComponent.culled && --maxFrame > 0)
             {
-                System.Threading.Thread.Sleep((int)(sleepTimeInSeconds * 1000.0f));
                 yield return null;
-                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0u);
             }
             Assert.IsTrue(maxFrame > 0);
+
+            float sleepTimeInSeconds = maxTimeStep * 5.0f;
+            System.Threading.Thread.Sleep((int)(sleepTimeInSeconds * 1000.0f));
+            yield return null;
+
+            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0u);
             if (graph.visualEffectResource.updateMode == VFXUpdateMode.FixedDeltaTime)
             {
                 Assert.AreEqual(maxTimeStep, spawnerState.deltaTime);

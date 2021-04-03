@@ -1,8 +1,14 @@
 # Post-processing in the Universal Render Pipeline
 
-The Universal Render Pipeline (URP) includes an integrated implementation of [post-processing](https://docs.unity3d.com/Manual/PostProcessingOverview.html) effects. If you use URP, it's not necessary to install an extra package for post-processing effects. URP is not compatible with the [Post&nbsp;Processing&nbsp;Stack&nbsp;v2](https://docs.unity3d.com/Packages/com.unity.postprocessing@latest/index.html) package.
+URP contains its own integrated post-processing solution. URP 7.x also supports the Post Processing Stack v2 (PPv2) package, for backwards compatibility with existing projects. Both post-processing solutions are supported in the versions of URP that are compatible with Unity 2019.4 LTS. Starting with Unity 2020.1, only the integrated post-processing solution is supported.
 
-URP uses the [Volume](Volumes.md) framework for post-processing effects.
+## Post Processing Stack v2 (PPv2)
+
+Refer to the [documentation for the PPv2 package](https://docs.unity3d.com/Packages/com.unity.postprocessing@latest).
+
+## URP's integrated post-processing solution
+
+URP's integrated post-processing solution uses the [Volume](Volumes.md) framework for post-processing effects. 
 
 The images below show a Scene with and without URP post-processing.
 
@@ -40,10 +46,9 @@ To configure post-processing in a new Scene:
 
 2. Add a GameObject with a [Volume](Volumes.md) component in the Scene. This instruction adds a Global Volume. Select **GameObject > Volume > Global Volume**.
 
-3. Select the **Global Volume** GameObject. In the Volume component, create a new Profile by clicking **New** button on the right side of the Profile property.
+3. Select the **Global Volume** GameObject. In the Volume component, create a new Profile by clicking **New** button on the right side of the Profile property. 
 
     ![Create new Profile.](Images/post-proc/volume-new-scene-new-profile.png)
-
 
 3. Add post-processing effects to the Camera by adding [Volume Overrides](VolumeOverrides.md#volume-add-override) to the Volume component.
 
@@ -56,7 +61,7 @@ Now you can adjust post-processing effect settings in Overrides in the Volume co
 
 To configure location-based post-processing effects, see [How to use Local Volumes](Volumes.md#volume-local).
 
-## Post-processing in URP for mobile devices
+### Post-processing in URP for mobile devices
 
 Post-processing effects can take up a lot of frame time. If you’re using URP for mobile devices, these effects are the most “mobile-friendly” by default:
 
@@ -68,7 +73,7 @@ Post-processing effects can take up a lot of frame time. If you’re using URP f
 
 **Note:** For depth-of field, Unity recommends that you use Gaussian Depth of Field for lower-end devices. For console and desktop platforms, use Bokeh Depth of Field.
 
-**Note:** For anti-aliasing on mobile platforms, Unity recommends that you use FXAA.
+**Note:** For anti-aliasing on mobile platforms, Unity recommends that you use FXAA. 
 
-## Post-processing in URP for VR
+### Post-processing in URP for VR
 In VR apps and games, certain post-processing effects can cause nausea and disorientation. To reduce motion sickness in fast-paced or high-speed apps, use the Vignette effect for VR, and avoid the effects Lens Distortion, Chromatic Aberration, and Motion Blur for VR.

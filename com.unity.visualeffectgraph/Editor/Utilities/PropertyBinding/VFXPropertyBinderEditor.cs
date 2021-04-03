@@ -57,8 +57,6 @@ namespace UnityEditor.Experimental.VFX.Utility
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
-
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(m_ExecuteInEditor);
@@ -67,10 +65,8 @@ namespace UnityEditor.Experimental.VFX.Utility
             EditorGUILayout.Space();
             if (EditorGUI.EndChangeCheck())
                 serializedObject.ApplyModifiedProperties();
-            if (m_ElementEditor != null && m_ElementEditor.target != null && m_ElementEditor.serializedObject.targetObject != null)
+            if (m_ElementEditor != null)
             {
-                m_ElementEditor.serializedObject.Update();
-
                 EditorGUI.BeginChangeCheck();
 
                 var fieldAttribute = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;

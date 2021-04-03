@@ -13,7 +13,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <summary>
         /// The minimum allowed aperture.
         /// </summary>
-        public const float kMinAperture = 0.7f;
+        public const float kMinAperture = 1f;
 
         /// <summary>
         /// The maximum allowed aperture.
@@ -31,18 +31,18 @@ namespace UnityEngine.Rendering.HighDefinition
         public const int kMaxBladeCount = 11;
 
         // Camera body
-        [SerializeField][Min(1f)] int m_Iso = 200;
-        [SerializeField][Min(0f)] float m_ShutterSpeed = 1f / 200f;
+        [SerializeField] [Min(1f)] int m_Iso = 200;
+        [SerializeField] [Min(0f)] float m_ShutterSpeed = 1f / 200f;
 
         // Lens
         // Note: focalLength is already defined in the regular camera component
-        [SerializeField][Range(kMinAperture, kMaxAperture)] float m_Aperture = 16f;
+        [SerializeField] [Range(kMinAperture, kMaxAperture)] float m_Aperture = 16f;
 
         // Aperture shape
-        [SerializeField][Range(kMinBladeCount, kMaxBladeCount)] int m_BladeCount = 5;
+        [SerializeField] [Range(kMinBladeCount, kMaxBladeCount)] int m_BladeCount = 5;
         [SerializeField] Vector2 m_Curvature = new Vector2(2f, 11f);
-        [SerializeField][Range(0f, 1f)] float m_BarrelClipping = 0.25f;
-        [SerializeField][Range(-1f, 1f)] float m_Anamorphism = 0f;
+        [SerializeField] [Range(0f, 1f)] float m_BarrelClipping = 0.25f;
+        [SerializeField] [Range(-1f, 1f)] float m_Anamorphism = 0f;
 
         /// <summary>
         /// The sensor sensitivity (ISO).
@@ -131,8 +131,7 @@ namespace UnityEngine.Rendering.HighDefinition
     /// <summary>
     /// Additional component that holds HDRP specific parameters for Cameras.
     /// </summary>
-    [HDRPHelpURLAttribute("HDRP-Camera")]
-    [AddComponentMenu("")] // Hide in menu
+    [HelpURL(Documentation.baseURL + Documentation.releaseVersion + Documentation.subURL + "HDRP-Camera" + Documentation.endURL)]
     [DisallowMultipleComponent, ExecuteAlways]
     [RequireComponent(typeof(Camera))]
     public partial class HDAdditionalCameraData : MonoBehaviour, IFrameSettingsHistoryContainer
@@ -215,16 +214,12 @@ namespace UnityEngine.Rendering.HighDefinition
         public enum AntialiasingMode
         {
             /// <summary>No Anti-aliasing.</summary>
-            [InspectorName("No Anti-aliasing")]
             None,
             /// <summary>FXAA.</summary>
-            [InspectorName("Fast Approximate Anti-aliasing (FXAA)")]
             FastApproximateAntialiasing,
             /// <summary>Temporal anti-aliasing.</summary>
-            [InspectorName("Temporal Anti-aliasing (TAA)")]
             TemporalAntialiasing,
             /// <summary>SMAA.</summary>
-            [InspectorName("Subpixel Morphological Anti-aliasing (SMAA)")]
             SubpixelMorphologicalAntiAliasing
         }
 
@@ -232,19 +227,6 @@ namespace UnityEngine.Rendering.HighDefinition
         /// SMAA quality level.
         /// </summary>
         public enum SMAAQualityLevel
-        {
-            /// <summary>Low quality.</summary>
-            Low,
-            /// <summary>Medium quality.</summary>
-            Medium,
-            /// <summary>High quality.</summary>
-            High
-        }
-
-        /// <summary>
-        /// TAA quality level.
-        /// </summary>
-        public enum TAAQualityLevel
         {
             /// <summary>Low quality.</summary>
             Low,
@@ -280,35 +262,13 @@ namespace UnityEngine.Rendering.HighDefinition
 
         /// <summary>Strength of the sharpening component of temporal anti-aliasing.</summary>
         [Range(0, 2)]
-        public float taaSharpenStrength = 0.5f;
-
-        /// <summary>Quality of the anti-aliasing when using TAA.</summary>
-        public TAAQualityLevel TAAQuality = TAAQualityLevel.Medium;
-
-        /// <summary>Strength of the sharpening of the history sampled for TAA.</summary>
-        [Range(0, 1)]
-        public float taaHistorySharpening = 0.35f;
-
-        /// <summary>Drive the anti-flicker mechanism. With high values flickering might be reduced, but it can lead to more ghosting or disocclusion artifacts.</summary>
-        [Range(0.0f, 1.0f)]
-        public float taaAntiFlicker = 0.5f;
-
-        /// <summary>Larger is this value, more likely history will be rejected when current and reprojected history motion vector differ by a substantial amount.
-        /// Larger values can decrease ghosting but will also reintroduce aliasing on the aforementioned cases.</summary>
-        [Range(0.0f, 1.0f)]
-        public float taaMotionVectorRejection = 0.0f;
-
-        /// <summary>When enabled, ringing artifacts (dark or strangely saturated edges) caused by history sharpening will be improved. This comes at a potential loss of sharpness upon motion.</summary>
-        public bool taaAntiHistoryRinging = false;
+        public float taaSharpenStrength = 0.6f;
 
         /// <summary>Physical camera parameters.</summary>
         public HDPhysicalCamera physicalParameters = new HDPhysicalCamera();
 
         /// <summary>Vertical flip mode.</summary>
         public FlipYMode flipYMode;
-
-        /// <summary>Enable XR rendering.</summary>
-        public bool xrRendering = true;
 
         /// <summary>Skips rendering settings to directly render in fullscreen (Useful for video).</summary>
         [Tooltip("Skips rendering settings to directly render in fullscreen (Useful for video).")]
@@ -343,11 +303,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <summary>RequestAccessDelegate used to request access to various buffers of this camera.</summary>
         public event RequestAccessDelegate requestGraphicsBuffer;
 
-        /// <summary>The object used as a target for centering the Exposure's Procedural Mask metering mode when target object option is set (See Exposure Volume Component).</summary>
-        public GameObject exposureTarget = null;
-
         internal float probeCustomFixedExposure = 1.0f;
-        internal float deExposureMultiplier = 1.0f;
 
         [SerializeField, FormerlySerializedAs("renderingPathCustomFrameSettings")]
         FrameSettings m_RenderingPathCustomFrameSettings = FrameSettings.NewDefaultCamera();
@@ -386,10 +342,10 @@ namespace UnityEngine.Rendering.HighDefinition
         /// </summary>
         /// <returns>.</returns>
         Action IDebugData.GetReset()
-        //caution: we actually need to retrieve the right
-        //m_FrameSettingsHistory as it is a struct so no direct
-        // => m_FrameSettingsHistory.TriggerReset
-            => () => m_RenderingPathHistory.TriggerReset();
+                //caution: we actually need to retrieve the right
+                //m_FrameSettingsHistory as it is a struct so no direct
+                // => m_FrameSettingsHistory.TriggerReset
+                => () => m_RenderingPathHistory.TriggerReset();
 
         internal ProfilingSampler profilingSampler;
 
@@ -514,7 +470,6 @@ namespace UnityEngine.Rendering.HighDefinition
             data.volumeAnchorOverride = volumeAnchorOverride;
             data.antialiasing = antialiasing;
             data.dithering = dithering;
-            data.xrRendering = xrRendering;
             physicalParameters.CopyTo(data.physicalParameters);
 
             data.renderingPathCustomFrameSettings = renderingPathCustomFrameSettings;
@@ -558,7 +513,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (m_Camera.cameraType != CameraType.Preview && m_Camera.cameraType != CameraType.Reflection)
                 {
                     DebugDisplaySettings.RegisterCamera(this);
-                    VolumeDebugSettings.RegisterCamera(this);
                 }
                 m_IsDebugRegistered = true;
             }
@@ -572,7 +526,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 // Do not attempt to not register them till this issue persist.
                 if (m_Camera.cameraType != CameraType.Preview && m_Camera?.cameraType != CameraType.Reflection)
                 {
-                    VolumeDebugSettings.UnRegisterCamera(this);
                     DebugDisplaySettings.UnRegisterCamera(this);
                 }
                 m_IsDebugRegistered = false;
@@ -662,7 +615,7 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             HDCamera hdCamera = HDCamera.GetOrCreate(m_Camera);
             if ((type & BufferAccessType.Color) != 0)
-                return hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.ColorBufferMipChain);
+                return  hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.ColorBufferMipChain);
             else if ((type & BufferAccessType.Depth) != 0)
                 return hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.Depth);
             else if ((type & BufferAccessType.Normal) != 0)

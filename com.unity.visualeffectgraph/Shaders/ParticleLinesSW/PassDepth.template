@@ -10,6 +10,5 @@ Pass
 	#define VFX_PASSDEPTH VFX_PASSDEPTH_ACTUAL
 	${VFXPassDepthAdditionalPragma}
 	${VFXInclude("Shaders/ParticleLinesSW/PassDepthOrMV.template")}
-
 	ENDHLSL
 }

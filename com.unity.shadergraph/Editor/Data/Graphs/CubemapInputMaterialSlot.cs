@@ -10,7 +10,6 @@ using UnityEngine.UIElements;
 namespace UnityEditor.ShaderGraph
 {
     [Serializable]
-    [HasDependencies(typeof(MinimalCubemapInputMaterialSlot))]
     class CubemapInputMaterialSlot : CubemapMaterialSlot
     {
         [SerializeField]
@@ -21,8 +20,6 @@ namespace UnityEditor.ShaderGraph
             get { return m_Cubemap.cubemap; }
             set { m_Cubemap.cubemap = value; }
         }
-
-        public override bool isDefaultValue => cubemap == null;
 
         public CubemapInputMaterialSlot()
         {}
@@ -43,21 +40,21 @@ namespace UnityEditor.ShaderGraph
 
         public override string GetDefaultValue(GenerationMode generationMode)
         {
-            var nodeOwner = owner as AbstractMaterialNode;
-            if (nodeOwner == null)
+            var matOwner = owner as AbstractMaterialNode;
+            if (matOwner == null)
                 throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
 
-            return $"UnityBuildTextureCubeStruct({nodeOwner.GetVariableNameForSlot(id)})";
+            return matOwner.GetVariableNameForSlot(id);
         }
 
         public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)
         {
-            var nodeOwner = owner as AbstractMaterialNode;
-            if (nodeOwner == null)
+            var matOwner = owner as AbstractMaterialNode;
+            if (matOwner == null)
                 throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
 
             var prop = new CubemapShaderProperty();
-            prop.overrideReferenceName = nodeOwner.GetVariableNameForSlot(id);
+            prop.overrideReferenceName = matOwner.GetVariableNameForSlot(id);
             prop.modifiable = false;
             prop.generatePropertyBlock = true;
             prop.value.cubemap = cubemap;
@@ -78,25 +75,7 @@ namespace UnityEditor.ShaderGraph
         {
             var slot = foundSlot as CubemapInputMaterialSlot;
             if (slot != null)
-            {
                 m_Cubemap = slot.m_Cubemap;
-                bareResource = slot.bareResource;
-            }
-        }
-    }
-
-    class MinimalCubemapInputMaterialSlot : IHasDependencies
-    {
-        [SerializeField]
-        private SerializableCubemap m_Cubemap = null;
-
-        public void GetSourceAssetDependencies(AssetCollection assetCollection)
-        {
-            var guidString = m_Cubemap.guid;
-            if (!string.IsNullOrEmpty(guidString) && GUID.TryParse(guidString, out var guid))
-            {
-                assetCollection.AddAssetDependency(guid, AssetCollection.Flags.IncludeInExportPackage);
-            }
         }
     }
 }

@@ -1,10 +1,6 @@
 #ifndef UNITY_BSDF_INCLUDED
 #define UNITY_BSDF_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
-
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
 // Note: All NDF and diffuse term have a version with and without divide by PI.
@@ -144,9 +140,6 @@ TEMPLATE_1_REAL(Fresnel0ToIor, fresnel0, return ((1.0 + sqrt(fresnel0)) / (1.0 -
 // Optimization: Fit of the function (3 mad) for range [0.04 (should return 0), 1 (should return 1)]
 TEMPLATE_1_REAL(ConvertF0ForAirInterfaceToF0ForClearCoat15, fresnel0, return saturate(-0.0256868 + fresnel0 * (0.326846 + (0.978946 - 0.283835 * fresnel0) * fresnel0)))
 
-// Even coarser approximation of ConvertF0ForAirInterfaceToF0ForClearCoat15 (above) for mobile (2 mad)
-TEMPLATE_1_REAL(ConvertF0ForAirInterfaceToF0ForClearCoat15Fast, fresnel0, return saturate(fresnel0 * (fresnel0 * 0.526868 + 0.529324) - 0.0482256))
-
 // Artist Friendly Metallic Fresnel Ref: http://jcgt.org/published/0003/04/03/paper.pdf
 
 real3 GetIorN(real3 f0, real3 edgeTint)
@@ -171,11 +164,6 @@ real3 CoatRefract(real3 X, real3 N, real ieta)
 //-----------------------------------------------------------------------------
 // Specular BRDF
 //-----------------------------------------------------------------------------
-
-float Lambda_GGX(float roughness, float3 V)
-{
-    return 0.5 * (sqrt(1.0 + (Sq(roughness * V.x) + Sq(roughness * V.y)) / Sq(V.z)) - 1.0);
-}
 
 real D_GGXNoPI(real NdotH, real roughness)
 {
@@ -204,6 +192,12 @@ real G_MaskingSmithGGX(real NdotV, real roughness)
     // Assume that (VdotH > 0), e.i. (acos(LdotV) < Pi).
 
     return 1.0 / (0.5 + 0.5 * sqrt(1.0 + Sq(roughness) * (1.0 / Sq(NdotV) - 1.0)));
+}
+
+// Ref: Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs, p. 12.
+real D_GGX_Visible(real NdotH, real NdotV, real VdotH, real roughness)
+{
+    return D_GGX(NdotH, roughness) * G_MaskingSmithGGX(NdotV, roughness) * VdotH / NdotV;
 }
 
 // Precompute part of lambdaV
@@ -641,9 +635,4 @@ real3 D_KajiyaKay(real3 T, real3 H, real specularExponent)
 
     return dirAttn * norm * PositivePow(sinTHSq, 0.5 * n);
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
-
 #endif // UNITY_BSDF_INCLUDED

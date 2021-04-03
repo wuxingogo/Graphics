@@ -1,4 +1,8 @@
-half4 _RendererColor;
+#if ETC1_EXTERNAL_ALPHA
+    TEXTURE2D(_AlphaTex); SAMPLER(sampler_AlphaTex);
+    float _EnableAlphaTexture;
+#endif
+    float4 _RendererColor;
 
 PackedVaryings vert(Attributes input)
 {
@@ -8,8 +12,8 @@ PackedVaryings vert(Attributes input)
     return packedOutput;
 }
 
-half4 frag(PackedVaryings packedInput) : SV_TARGET
-{
+half4 frag(PackedVaryings packedInput) : SV_TARGET 
+{    
     Varyings unpacked = UnpackVaryings(packedInput);
     UNITY_SETUP_INSTANCE_ID(unpacked);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(unpacked);
@@ -17,12 +21,12 @@ half4 frag(PackedVaryings packedInput) : SV_TARGET
     SurfaceDescriptionInputs surfaceDescriptionInputs = BuildSurfaceDescriptionInputs(unpacked);
     SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
 
-#ifdef UNIVERSAL_USELEGACYSPRITEBLOCKS
-    half4 color = surfaceDescription.SpriteColor;
-#else
-    half4 color = half4(surfaceDescription.BaseColor, surfaceDescription.Alpha);
+#if ETC1_EXTERNAL_ALPHA
+    float4 alpha = SAMPLE_TEXTURE2D(_AlphaTex, sampler_AlphaTex, unpacked.texCoord0.xy);
+    surfaceDescription.Color.a = lerp (surfaceDescription.Color.a, alpha.r, _EnableAlphaTexture);
 #endif
 
-    color *= unpacked.color * _RendererColor;
-    return color;
+    surfaceDescription.Color *= unpacked.color * _RendererColor;
+
+    return surfaceDescription.Color;
 }

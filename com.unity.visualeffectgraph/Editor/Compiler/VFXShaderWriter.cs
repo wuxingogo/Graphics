@@ -216,35 +216,24 @@ namespace UnityEditor.VFX
             return padding;
         }
 
-        public void WriteBuffer(VFXUniformMapper mapper)
-        {
-            foreach (var buffer in mapper.buffers)
-            {
-                var name = mapper.GetName(buffer);
-                WriteLineFormat("{0} {1};", VFXExpression.TypeToCode(buffer.valueType), name);
-            }
-        }
-
         public void WriteTexture(VFXUniformMapper mapper)
         {
             foreach (var texture in mapper.textures)
             {
                 var names = mapper.GetNames(texture);
+
                 // TODO At the moment issue all names sharing the same texture as different texture slots. This is not optimized as it required more texture binding than necessary
                 for (int i = 0; i < names.Count; ++i)
                 {
                     WriteLineFormat("{0} {1};", VFXExpression.TypeToCode(texture.valueType), names[i]);
-                    if (VFXExpression.IsTexture(texture.valueType)) //Mesh doesn't require a sampler or texel helper
-                    {
-                        WriteLineFormat("SamplerState sampler{0};", names[i]);
-                        WriteLineFormat("float4 {0}_TexelSize;", names[i]); // TODO This is not very good to add a uniform for each texture that is hardly ever used
-                    }
+                    WriteLineFormat("SamplerState sampler{0};", names[i]);
+                    WriteLineFormat("float4 {0}_TexelSize;", names[i]); // TODO This is not very good to add a uniform for each texture that is hardly ever used
                     WriteLine();
                 }
             }
         }
 
-        public void WriteEventBuffers(string baseName, int count)
+        public void WriteEventBuffer(string baseName, int count)
         {
             for (int i = 0; i < count; ++i)
             {
@@ -282,7 +271,7 @@ namespace UnityEditor.VFX
                     {
                         string type = VFXExpression.TypeToUniformCode(value.valueType);
                         string name = mapper.GetName(value);
-                        if (name.StartsWith("unity_")) //Reserved unity variable name (could be filled manually see : VFXCameraUpdate)
+                        if (name.StartsWith("unity_")) //Reserved unity variable name (could be filled manually see : VFXMotionVector)
                             continue;
 
                         currentSize += VFXExpression.TypeToSize(value.valueType);
@@ -325,7 +314,7 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D: return "VFXSampler3D";
                 case VFXValueType.TextureCube: return "VFXSamplerCube";
                 case VFXValueType.TextureCubeArray: return "VFXSamplerCubeArray";
-                case VFXValueType.CameraBuffer: return "VFXSamplerCameraBuffer";
+
                 default:
                     return VFXExpression.TypeToCode(type);
             }
@@ -341,7 +330,6 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D:
                 case VFXValueType.TextureCube:
                 case VFXValueType.TextureCubeArray: return string.Format("GetVFXSampler({0}, {1})", expressionName, ("sampler" + expressionName));
-                case VFXValueType.CameraBuffer: return string.Format("GetVFXSampler({0}, {1})", expressionName, ("sampler" + expressionName));
 
                 default:
                     return expressionName;

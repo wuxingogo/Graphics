@@ -1,12 +1,8 @@
 using System.IO;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-#if UNITY_2020_2_OR_NEWER
-using UnityEditor.AssetImporters;
-#else
-using UnityEditor.Experimental.AssetImporters;
-#endif
 
 namespace UnityEditor.Rendering.Universal
 {
@@ -39,11 +35,9 @@ namespace UnityEditor.Rendering.Universal
         {
             float classIdA;
             float classIdB;
-            string originalMtl;
             description.TryGetProperty("ClassIDa", out classIdA);
             description.TryGetProperty("ClassIDb", out classIdB);
-            description.TryGetProperty("ORIGINAL_MTL", out originalMtl);
-            return classIdA == 2121471519 && classIdB == 1660373836 && originalMtl != "PHYSICAL_MTL";
+            return classIdA == 2121471519 && classIdB == 1660373836;
         }
 
         public void OnPreprocessMaterialDescription(MaterialDescription description, Material material,
@@ -101,6 +95,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     material.SetFloat("_OPACITY", opacity);
                 }
+
             }
             else
             {
@@ -111,7 +106,7 @@ namespace UnityEditor.Rendering.Universal
                 material.shader = shader;
             }
 
-
+            
             foreach (var clip in clips)
             {
                 clip.ClearCurves();
@@ -226,6 +221,7 @@ namespace UnityEditor.Rendering.Universal
             remapPropertyFloatOrTexture3DsMax(description, material, "specular_IOR", "_SPECULAR_IOR");
 
             remapPropertyTexture(description, material, "normal_camera", "_NORMAL_MAP");
+
         }
 
         static void SetMaterialTextureProperty(string propertyName, Material material,

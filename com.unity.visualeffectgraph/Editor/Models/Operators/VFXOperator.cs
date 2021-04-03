@@ -41,7 +41,7 @@ namespace UnityEditor.VFX
                 try
                 {
                     changed = base.ResyncSlots(notify);
-                    if (changed && notify)
+                    if (notify)
                         foreach (var slot in outputSlots) // invalidate expressions on output slots
                             slot.InvalidateExpressionTree();
                 }
@@ -55,27 +55,31 @@ namespace UnityEditor.VFX
 
         protected override void OnInvalidate(VFXModel model, InvalidationCause cause)
         {
-            var outputSlotSpaceable = outputSlots.Where(o => o.spaceable);
-            bool needUpdateInputSpaceable = false;
-            foreach (var output in outputSlotSpaceable)
+            //Detect spaceable input slot & set output slot as a result (if one output slot is spaceable)
+            var inputSlotSpaceable = inputSlots.Where(o => o.spaceable);
+            if (inputSlotSpaceable.Any() || inputSlots.Count == 0)
             {
-                var currentSpaceForSlot = GetOutputSpaceFromSlot(output);
-                if (currentSpaceForSlot != output.space)
+                var outputSlotSpaceable = outputSlots.Where(o => o.spaceable);
+                bool needUpdateInputSpaceable = false;
+                foreach (var output in outputSlotSpaceable)
                 {
-                    output.space = currentSpaceForSlot;
-                    needUpdateInputSpaceable = true;
+                    var currentSpaceForSlot = GetOutputSpaceFromSlot(output);
+                    if (currentSpaceForSlot != output.space)
+                    {
+                        output.space = currentSpaceForSlot;
+                        needUpdateInputSpaceable = true;
+                    }
                 }
-            }
 
-            //If one of output slot has changed its space, expression tree for inputs,
-            //and more generally, current operation expression graph is invalid.
-            //=> Trigger invalidation on input is enough to recompute the graph from this operator
-            if (needUpdateInputSpaceable)
-            {
-                var inputSlotSpaceable = inputSlots.Where(o => o.spaceable);
-                foreach (var input in inputSlotSpaceable)
+                //If one of output slot has changed its space, expression tree for inputs,
+                //and more generally, current operation expression graph is invalid.
+                //=> Trigger invalidation on input is enough to recompute the graph from this operator
+                if (needUpdateInputSpaceable)
                 {
-                    input.Invalidate(InvalidationCause.kSpaceChanged);
+                    foreach (var input in inputSlotSpaceable)
+                    {
+                        input.Invalidate(InvalidationCause.kSpaceChanged);
+                    }
                 }
             }
 

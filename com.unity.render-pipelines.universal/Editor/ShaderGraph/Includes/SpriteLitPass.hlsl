@@ -1,3 +1,8 @@
+#if ETC1_EXTERNAL_ALPHA
+    TEXTURE2D(_AlphaTex); SAMPLER(sampler_AlphaTex);
+    float _EnableAlphaTexture;
+#endif
+
 #if USE_SHAPE_LIGHT_TYPE_0
 SHAPE_LIGHT(0)
 #endif
@@ -24,8 +29,8 @@ PackedVaryings vert(Attributes input)
     return packedOutput;
 }
 
-half4 frag(PackedVaryings packedInput) : SV_TARGET
-{
+half4 frag(PackedVaryings packedInput) : SV_TARGET 
+{    
     Varyings unpacked = UnpackVaryings(packedInput);
     UNITY_SETUP_INSTANCE_ID(unpacked);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(unpacked);
@@ -33,12 +38,12 @@ half4 frag(PackedVaryings packedInput) : SV_TARGET
     SurfaceDescriptionInputs surfaceDescriptionInputs = BuildSurfaceDescriptionInputs(unpacked);
     SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
 
-#ifdef UNIVERSAL_USELEGACYSPRITEBLOCKS
-    half4 color = surfaceDescription.SpriteColor;
-#else
-    half4 color = half4(surfaceDescription.BaseColor, surfaceDescription.Alpha);
+#if ETC1_EXTERNAL_ALPHA
+    float4 alpha = SAMPLE_TEXTURE2D(_AlphaTex, sampler_AlphaTex, unpacked.texCoord0.xy);
+    surfaceDescription.Color.a = lerp (surfaceDescription.Color.a, alpha.r, _EnableAlphaTexture);
 #endif
 
-    color *= unpacked.color;
-    return CombinedShapeLightShared(color, surfaceDescription.SpriteMask, unpacked.screenPosition.xy / unpacked.screenPosition.w);
+    surfaceDescription.Color *= unpacked.color;
+
+    return CombinedShapeLightShared(surfaceDescription.Color, surfaceDescription.Mask, unpacked.screenPosition.xy / unpacked.screenPosition.w);
 }

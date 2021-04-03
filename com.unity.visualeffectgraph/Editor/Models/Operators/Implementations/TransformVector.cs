@@ -18,7 +18,7 @@ namespace UnityEditor.VFX.Operator
         public class OutputProperties
         {
             [Tooltip("Outputs the transformed vector.")]
-            public Vector tVec;
+            public Vector vec;
         }
 
         override public string name { get { return "Transform (Vector)"; } }

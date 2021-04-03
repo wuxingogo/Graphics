@@ -306,7 +306,7 @@ namespace UnityEditor.VFX.Block
                     {
                         var attrib = currentAttribute;
 
-                        VFXPropertyAttributes attr = new VFXPropertyAttributes();
+                        VFXPropertyAttribute[] attr = null;
                         var field = typeof(VFXAttribute).GetField(attrib.name.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture) + attrib.name.Substring(1), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
 
                         TooltipAttribute tooltip = null;
@@ -317,14 +317,14 @@ namespace UnityEditor.VFX.Block
                         if (attrib.Equals(VFXAttribute.Color))
                         {
                             if (tooltip != null)
-                                attr = new VFXPropertyAttributes(new ShowAsColorAttribute(), tooltip);
+                                attr = VFXPropertyAttribute.Create(new ShowAsColorAttribute(), tooltip);
                             else
-                                attr = new VFXPropertyAttributes(new ShowAsColorAttribute());
+                                attr = VFXPropertyAttribute.Create(new ShowAsColorAttribute());
                         }
                         else
                         {
                             if (tooltip != null)
-                                attr = new VFXPropertyAttributes(tooltip);
+                                attr = VFXPropertyAttribute.Create(tooltip);
                         }
 
 
@@ -372,17 +372,17 @@ namespace UnityEditor.VFX.Block
 
                         if (Random == RandomMode.Off)
                         {
-                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, GenerateLocalAttributeName(attrib.name), attr), content);
+                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, GenerateLocalAttributeName(attrib.name)) { attributes = attr }, content);
                         }
                         else
                         {
-                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, "A", attr), content);
-                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, "B", attr), content);
+                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, "A") { attributes = attr }, content);
+                            yield return new VFXPropertyWithValue(new VFXProperty(slotType, "B") { attributes = attr }, content);
                         }
                     }
 
                     if (Composition == AttributeCompositionMode.Blend)
-                        yield return new VFXPropertyWithValue(new VFXProperty(typeof(float), "Blend", new RangeAttribute(0.0f, 1.0f)));
+                        yield return new VFXPropertyWithValue(new VFXProperty(typeof(float), "Blend", VFXPropertyAttribute.Create(new RangeAttribute(0.0f, 1.0f))));
                 }
             }
         }

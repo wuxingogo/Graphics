@@ -22,7 +22,7 @@ namespace UnityEditor.VFX.UI
 
         public Vector3PropertyRM(IPropertyRMProvider controller, float labelWidth) : base(controller, labelWidth)
         {
-            bool isColor = m_Provider.attributes.Is(VFXPropertyAttributes.Type.Color);
+            bool isColor = VFXPropertyAttribute.IsColor(m_Provider.attributes);
 
             if (isColor)
             {
@@ -47,9 +47,6 @@ namespace UnityEditor.VFX.UI
                 Add(labeledField);
                 labeledField.AddToClassList("fieldContainer");
             }
-
-            m_VectorField.onValueDragFinished = ValueDragFinished;
-            m_VectorField.onValueDragStarted = ValueDragStarted;
         }
 
         public override void UpdateGUI(bool force)
@@ -76,18 +73,6 @@ namespace UnityEditor.VFX.UI
             NotifyValueChanged();
         }
 
-        protected void ValueDragFinished()
-        {
-            m_Provider.EndLiveModification();
-            hasChangeDelayed = false;
-            NotifyValueChanged();
-        }
-
-        protected void ValueDragStarted()
-        {
-            m_Provider.StartLiveModification();
-        }
-
         protected override void UpdateEnabled()
         {
             m_VectorField.SetEnabled(propertyEnabled);
@@ -104,14 +89,14 @@ namespace UnityEditor.VFX.UI
 
         public override float GetPreferredControlWidth()
         {
-            return 170;
+            return 140;
         }
 
         public override bool IsCompatible(IPropertyRMProvider provider)
         {
             if (!base.IsCompatible(provider)) return false;
 
-            bool isColor = provider.attributes.Is(VFXPropertyAttributes.Type.Color);
+            bool isColor = VFXPropertyAttribute.IsColor(provider.attributes);
 
             return isColor == (m_ColorField != null);
         }

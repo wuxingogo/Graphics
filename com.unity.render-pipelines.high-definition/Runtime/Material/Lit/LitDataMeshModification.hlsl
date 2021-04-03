@@ -58,25 +58,20 @@ float4 GetTessellationFactors(float3 p0, float3 p1, float3 p2, float3 n0, float3
     // Thus the following code play with both.
     float frustumEps = -maxDisplacement; // "-" Expected parameter for CullTriangleEdgesFrustum
 
-#ifndef SCENEPICKINGPASS
     // TODO: the only reason I test the near plane here is that I am not sure that the product of other tessellation factors
     // (such as screen-space/distance-based) results in the tessellation factor of 1 for the geometry behind the near plane.
     // If that is the case (and, IMHO, it should be), we shouldn't have to test the near plane here.
-    bool4 frustumCullEdgesMainView = CullFullTriangleAndEdgesFrustum(p0, p1, p2, frustumEps, _FrustumPlanes, 5); // Do not test the far plane
-#else
-    // During the scene picking pass, we have no access to camera frustum planes
-    bool4 frustumCullEdgesMainView = false;
-#endif
+    bool3 frustumCullEdgesMainView = CullTriangleEdgesFrustum(p0, p1, p2, frustumEps, _FrustumPlanes, 5); // Do not test the far plane
 
 #if defined(SHADERPASS) && (SHADERPASS != SHADERPASS_SHADOWS)
-    bool frustumCullCurrView = frustumCullEdgesMainView.w;
+    bool frustumCullCurrView = all(frustumCullEdgesMainView);
 #else
     bool frustumCullCurrView = CullTriangleFrustum(p0, p1, p2, frustumEps, _ShadowFrustumPlanes, 4); // Do not test near/far planes
 #endif
 
     bool faceCull = false;
 
-#if !defined(_DOUBLESIDED_ON) && !defined(SCENESELECTIONPASS) && !defined(SCENEPICKINGPASS)
+#ifndef _DOUBLESIDED_ON
     if (_TessellationBackFaceCullEpsilon > -1.0) // Is back-face culling enabled ?
     {
         // Handle transform mirroring (like negative scaling)
@@ -119,7 +114,7 @@ float4 GetTessellationFactors(float3 p0, float3 p1, float3 p2, float3 n0, float3
         edgeTessFactors *= distFactor * distFactor;
     }
 
-    edgeTessFactors *= _TessellationFactor * _GlobalTessellationFactorMultiplier;
+    edgeTessFactors *= _TessellationFactor;
 
     // TessFactor below 1.0 have no effect. At 0 it kill the triangle, so clamp it to 1.0
     edgeTessFactors = max(edgeTessFactors, float3(1.0, 1.0, 1.0));

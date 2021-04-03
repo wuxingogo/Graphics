@@ -253,10 +253,9 @@ namespace UnityEditor.VFX.UI
                     value = new VFXSerializableObject(p.model.type, p.model.value),
                     exposed = p.model.exposed,
                     isOutput = p.model.isOutput,
-                    valueFilter = p.valueFilter,
-                    min = p.valueFilter == VFXValueFilter.Range ? new VFXSerializableObject(p.model.type, p.model.min) : null,
-                    max = p.valueFilter == VFXValueFilter.Range ? new VFXSerializableObject(p.model.type, p.model.max) : null,
-                    enumValue = p.valueFilter == VFXValueFilter.Enum ? p.model.enumValues.ToArray() : null,
+                    range = p.hasRange,
+                    min = p.hasRange ? p.model.m_Min : null,
+                    max = p.hasRange ? p.model.m_Max : null,
                     tooltip = p.model.tooltip,
                     nodes = c.Select((u, i) => CopyParameterNode(cpt - 1, i, u, parameterIndices[Array.IndexOf(parameters, u)])).ToArray()
                 };
@@ -370,7 +369,6 @@ namespace UnityEditor.VFX.UI
             var blocks = controller.blockControllers;
 
             context.label = controller.model.label;
-            context.systemName = VFXSystemNames.GetSystemName(controller.model);
 
             if (controller.model.GetData() != null)
                 context.dataIndex = Array.IndexOf(datas, controller.model.GetData());

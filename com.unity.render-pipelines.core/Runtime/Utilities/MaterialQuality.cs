@@ -1,13 +1,13 @@
 using System;
-using UnityEngine.Scripting.APIUpdating;
+using UnityEngine;
+using UnityEngine.Rendering;
 
-namespace UnityEngine.Rendering
+namespace Utilities
 {
     /// <summary>
     /// Material quality flags.
     /// </summary>
     [Flags]
-    [MovedFrom("Utilities")]
     public enum MaterialQuality
     {
         /// <summary>Low Material Quality.</summary>
@@ -21,7 +21,6 @@ namespace UnityEngine.Rendering
     /// <summary>
     /// Material Quality utility class.
     /// </summary>
-    [MovedFrom("Utilities")]
     public static class MaterialQualityUtilities
     {
         /// <summary>
@@ -58,7 +57,7 @@ namespace UnityEngine.Rendering
         {
             for (var i = Keywords.Length - 1; i >= 0; --i)
             {
-                var level = (MaterialQuality)(1 << i);
+                var level = (MaterialQuality) (1 << i);
                 if ((levels & level) != 0)
                     return level;
             }
@@ -118,7 +117,7 @@ namespace UnityEngine.Rendering
         {
             for (var i = 0; i < KeywordNames.Length; ++i)
             {
-                if ((level & (MaterialQuality)(1 << i)) != 0)
+                if ((level & (MaterialQuality) (1 << i)) != 0)
                     Shader.EnableKeyword(KeywordNames[i]);
                 else
                     Shader.DisableKeyword(KeywordNames[i]);
@@ -150,7 +149,7 @@ namespace UnityEngine.Rendering
         {
             for (var i = 0; i < KeywordNames.Length; ++i)
             {
-                if ((level & (MaterialQuality)(1 << i)) != 0)
+                if ((level & (MaterialQuality) (1 << i)) != 0)
                     return i;
             }
 
@@ -162,6 +161,6 @@ namespace UnityEngine.Rendering
         /// </summary>
         /// <param name="index">Index of the material quality.</param>
         /// <returns>The equivalent enum.</returns>
-        public static MaterialQuality FromIndex(int index) => (MaterialQuality)(1 << index);
+        public static MaterialQuality FromIndex(int index) => (MaterialQuality) (1 << index);
     }
 }

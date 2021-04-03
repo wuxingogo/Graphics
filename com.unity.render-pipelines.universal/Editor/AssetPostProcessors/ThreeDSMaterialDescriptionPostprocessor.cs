@@ -7,7 +7,8 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
-    class ThreeDSMaterialDescriptionPreprocessor : AssetPostprocessor
+    [Obsolete("ThreeDSMaterialDescriptionPreprocessor is deprecated, consider creating a new AsserPostProcessor rather than overriding it.")]
+    public class ThreeDSMaterialDescriptionPreprocessor : AssetPostprocessor
     {
         static readonly uint k_Version = 1;
         static readonly int k_Order = 2;
@@ -52,27 +53,27 @@ namespace UnityEditor.Rendering.Universal
             bool isTransparent = vectorProperty.w <= 0.99f || floatProperty > .0f;
             if (isTransparent)
             {
-                material.SetFloat("_Mode", 3.0f); // From C# enum BlendMode
+                material.SetFloat("_Mode", (float)3.0); // From C# enum BlendMode
                 material.SetOverrideTag("RenderType", "Transparent");
-                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
-                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetFloat("_ZWrite", 0.0f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
                 material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-                material.SetFloat("_Surface", 1.0f);
+                material.SetInt("_Surface", 1);
             }
             else
             {
-                material.SetFloat("_Mode", 0.0f); // From C# enum BlendMode
+                material.SetFloat("_Mode", (float)0.0); // From C# enum BlendMode
                 material.SetOverrideTag("RenderType", "");
-                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
-                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetFloat("_ZWrite", 1.0f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_ZWrite", 1);
                 material.DisableKeyword("_ALPHATEST_ON");
                 material.DisableKeyword("_ALPHABLEND_ON");
                 material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.renderQueue = -1;
-                material.SetFloat("_Surface", 0.0f);
+                material.SetInt("_Surface", 0);
             }
 
             if (floatProperty > .0f)
@@ -113,3 +114,4 @@ namespace UnityEditor.Rendering.Universal
         }
     }
 }
+

@@ -65,7 +65,7 @@ namespace UnityEditor.VFX.Operator
         public class OutputPropertiesCommon
         {
             [Tooltip("Outputs the position projected on the depth buffer of the selected Camera in world space.")]
-            public Position position = Vector3.zero;
+            public Vector3 position = Vector3.zero;
         }
 
         public class OutputPropertiesCull
@@ -86,12 +86,6 @@ namespace UnityEditor.VFX.Operator
             {
                 return "Position (Depth)";
             }
-        }
-
-        protected override sealed void GenerateErrors(VFXInvalidateErrorReporter manager)
-        {
-            if (camera == CameraMode.Main && (UnityEngine.Rendering.RenderPipelineManager.currentPipeline == null || !UnityEngine.Rendering.RenderPipelineManager.currentPipeline.ToString().Contains("HDRenderPipeline")))
-                manager.RegisterError("PositionDepthOperatorUnavailableWithoutHDRP", VFXErrorType.Warning, "Position (Depth) is currently only supported in the High Definition Render Pipeline (HDRP).");
         }
 
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
@@ -131,11 +125,6 @@ namespace UnityEditor.VFX.Operator
 
                 return properties;
             }
-        }
-
-        public override VFXCoordinateSpace GetOutputSpaceFromSlot(VFXSlot outputSlot)
-        {
-            return VFXCoordinateSpace.World;
         }
 
         protected override VFXExpression[] BuildExpression(VFXExpression[] inputExpression)
@@ -197,10 +186,10 @@ namespace UnityEditor.VFX.Operator
             }
 
             VFXExpression projpos = uv * VFXValue.Constant<Vector2>(new Vector2(2f, 2f)) - VFXValue.Constant<Vector2>(Vector2.one);
-            VFXExpression uvs = new VFXExpressionCombine(uv.x * CamPixDim.x, uv.y * CamPixDim.y);
+            VFXExpression uvs = new VFXExpressionCombine(uv.x * CamPixDim.x, uv.y * CamPixDim.y, VFXValue.Constant(0f), VFXValue.Constant(0f));
 
             // Get depth
-            VFXExpression depth = new VFXExpressionExtractComponent(new VFXExpressionLoadCameraBuffer(Camera_depthBuffer, uvs), 0);
+            VFXExpression depth = new VFXExpressionExtractComponent(new VFXExpressionLoadTexture2DArray(Camera_depthBuffer, uvs), 0);
 
             if (SystemInfo.usesReversedZBuffer)
             {
@@ -220,14 +209,14 @@ namespace UnityEditor.VFX.Operator
 
                     VFXExpression depthRange = inputExpression[inputSlots.IndexOf(inputSlots.LastOrDefault(o => o.name == "DepthRange")) + _customCameraOffset];
 
-                    VFXExpression nearRangeCheck = new VFXExpressionCondition(VFXValueType.Float, VFXCondition.Less, depth, depthRange.x);
-                    VFXExpression farRangeCheck = new VFXExpressionCondition(VFXValueType.Float, VFXCondition.Greater, depth, depthRange.y);
+                    VFXExpression nearRangeCheck = new VFXExpressionCondition(VFXCondition.Less, depth, depthRange.x);
+                    VFXExpression farRangeCheck = new VFXExpressionCondition(VFXCondition.Greater, depth, depthRange.y);
                     VFXExpression logicOr = new VFXExpressionLogicalOr(nearRangeCheck, farRangeCheck);
                     isAlive = new VFXExpressionBranch(logicOr, VFXValue.Constant(false), VFXValue.Constant(true));
                     break;
 
                 case CullMode.FarPlane:
-                    VFXExpression farPlaneCheck = new VFXExpressionCondition(VFXValueType.Float, VFXCondition.GreaterOrEqual, depth, VFXValue.Constant(1f) - VFXValue.Constant(Mathf.Epsilon));
+                    VFXExpression farPlaneCheck = new VFXExpressionCondition(VFXCondition.GreaterOrEqual, depth, VFXValue.Constant(1f) - VFXValue.Constant(Mathf.Epsilon));
                     isAlive = new VFXExpressionBranch(farPlaneCheck, VFXValue.Constant(false), VFXValue.Constant(true));
                     break;
             }
@@ -249,7 +238,7 @@ namespace UnityEditor.VFX.Operator
             if (inheritSceneColor)
             {
                 VFXExpression Camera_colorBuffer = expressions.First(e => e.name == "Camera_colorBuffer").exp;
-                VFXExpression tempColor = new VFXExpressionLoadCameraBuffer(Camera_colorBuffer, uvs);
+                VFXExpression tempColor = new VFXExpressionLoadTexture2DArray(Camera_colorBuffer, uvs);
                 color = new VFXExpressionCombine(tempColor.x, tempColor.y, tempColor.z, VFXValue.Constant(1.0f));
             }
 

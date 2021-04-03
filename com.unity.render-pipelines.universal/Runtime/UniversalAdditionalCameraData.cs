@@ -63,6 +63,22 @@ namespace UnityEngine.Rendering.Universal
     }
 
     /// <summary>
+    /// Holds information about the output target for a camera.
+    /// Only used for cameras of render type Base. <seealso cref="CameraRenderType"/>.
+    /// </summary>
+    [Obsolete("This enum is deprecated.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public enum CameraOutput
+    {
+        Screen,
+        Texture,
+
+        [Obsolete("Use CameraOutput.Screen instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        Camera = Screen,
+    }
+
+    /// <summary>
     /// Controls SMAA anti-aliasing quality.
     /// </summary>
     public enum AntialiasingQuality
@@ -113,18 +129,21 @@ namespace UnityEngine.Rendering.Universal
     [ImageEffectAllowedInSceneView]
     [MovedFrom("UnityEngine.Rendering.LWRP")] public class UniversalAdditionalCameraData : MonoBehaviour, ISerializationCallbackReceiver
     {
+        [Tooltip("If enabled shadows will render for this camera.")]
         [FormerlySerializedAs("renderShadows"), SerializeField]
         bool m_RenderShadows = true;
 
+        [Tooltip("If enabled depth texture will render for this camera bound as _CameraDepthTexture.")]
         [SerializeField]
         CameraOverrideOption m_RequiresDepthTextureOption = CameraOverrideOption.UsePipelineSettings;
 
+        [Tooltip("If enabled opaque color texture will render for this camera and bound as _CameraOpaqueTexture.")]
         [SerializeField]
         CameraOverrideOption m_RequiresOpaqueTextureOption = CameraOverrideOption.UsePipelineSettings;
 
         [SerializeField] CameraRenderType m_CameraType = CameraRenderType.Base;
-        [SerializeField] List<Camera> m_Cameras = new List<Camera>();
-        [SerializeField] int m_RendererIndex = -1;
+		[SerializeField] List<Camera> m_Cameras = new List<Camera>();
+		[SerializeField] int m_RendererIndex = -1;
 
         [SerializeField] LayerMask m_VolumeLayerMask = 1; // "Default"
         [SerializeField] Transform m_VolumeTrigger = null;
@@ -135,9 +154,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_StopNaN = false;
         [SerializeField] bool m_Dithering = false;
         [SerializeField] bool m_ClearDepth = true;
-        [SerializeField] bool m_AllowXRRendering = true;
 
-        [NonSerialized] Camera m_Camera;
         // Deprecated:
         [FormerlySerializedAs("requiresDepthTexture"), SerializeField]
         bool m_RequiresDepthTexture = false;
@@ -145,7 +162,7 @@ namespace UnityEngine.Rendering.Universal
         [FormerlySerializedAs("requiresColorTexture"), SerializeField]
         bool m_RequiresColorTexture = false;
 
-        [HideInInspector][SerializeField] float m_Version = 2;
+        [HideInInspector] [SerializeField] float m_Version = 2;
 
         public float version => m_Version;
 
@@ -160,23 +177,6 @@ namespace UnityEngine.Rendering.Universal
                 return s_DefaultAdditionalCameraData;
             }
         }
-
-#if UNITY_EDITOR
-        internal new Camera camera
-#else
-        internal Camera camera
-#endif
-        {
-            get
-            {
-                if (!m_Camera)
-                {
-                    gameObject.TryGetComponent<Camera>(out m_Camera);
-                }
-                return m_Camera;
-            }
-        }
-
 
         /// <summary>
         /// Controls if this camera should render shadows.
@@ -218,6 +218,40 @@ namespace UnityEngine.Rendering.Universal
             set => m_CameraType = value;
         }
 
+        #region deprecated
+        /// <summary>
+        /// Returns the camera output type. Only valid for Base cameras.
+        /// <see cref="CameraOutput"/>.
+        /// <seealso cref="CameraRenderType"/>.
+        /// <seealso cref="Camera"/>
+        /// </summary>
+        [Obsolete("CameraOutput has been deprecated. Use Camera.targetTexture instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public CameraOutput cameraOutput
+        {
+            get
+            {
+                gameObject.TryGetComponent<Camera>(out var camera);
+                if (camera?.targetTexture == null)
+                    return CameraOutput.Screen;
+
+                return CameraOutput.Texture;
+            }
+            set { }
+        }
+
+        [Obsolete("AddCamera has been deprecated. You can add cameras to the stack by calling <c>cameraStack</c> property and modifying the camera stack list.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void AddCamera(Camera camera)
+        {
+            m_Cameras.Add(camera);
+        }
+
+        [Obsolete("cameras property has been deprecated. Use cameraStack property instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public List<Camera> cameras => cameraStack;
+        #endregion
+
         /// <summary>
         /// Returns the camera stack. Only valid for Base cameras.
         /// Overlay cameras have no stack and will return null.
@@ -240,6 +274,7 @@ namespace UnityEngine.Rendering.Universal
                     Debug.LogWarning(string.Format("{0}: This camera has a ScriptableRenderer that doesn't support camera stacking. Camera stack is null.", camera.name));
                     return null;
                 }
+
                 return m_Cameras;
             }
         }
@@ -312,20 +347,7 @@ namespace UnityEngine.Rendering.Universal
         /// </summary>
         public ScriptableRenderer scriptableRenderer
         {
-            get
-            {
-                if (UniversalRenderPipeline.asset is null)
-                    return null;
-                if (!UniversalRenderPipeline.asset.ValidateRendererData(m_RendererIndex))
-                {
-                    int defaultIndex = UniversalRenderPipeline.asset.m_DefaultRendererIndex;
-                    Debug.LogWarning(
-                        $"Renderer at <b>index {m_RendererIndex.ToString()}</b> is missing for camera <b>{camera.name}</b>, falling back to Default Renderer. <b>{UniversalRenderPipeline.asset.m_RendererDataList[defaultIndex].name}</b>",
-                        UniversalRenderPipeline.asset);
-                    return UniversalRenderPipeline.asset.GetRenderer(defaultIndex);
-                }
-                return UniversalRenderPipeline.asset.GetRenderer(m_RendererIndex);
-            }
+            get => UniversalRenderPipeline.asset.GetRenderer(m_RendererIndex);
         }
 
         /// <summary>
@@ -388,15 +410,6 @@ namespace UnityEngine.Rendering.Universal
         {
             get => m_Dithering;
             set => m_Dithering = value;
-        }
-
-        /// <summary>
-        /// Returns true if this camera allows render in XR.
-        /// </summary>
-        public bool allowXRRendering
-        {
-            get => m_AllowXRRendering;
-            set => m_AllowXRRendering = value;
         }
 
         public void OnBeforeSerialize()

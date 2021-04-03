@@ -101,7 +101,6 @@ namespace UnityEditor.VFX.UI
             public string label;
             public Node[] blocks;
             public SubOutput[] subOutputs;
-            public string systemName;
         }
 
         [Serializable]
@@ -133,10 +132,9 @@ namespace UnityEditor.VFX.UI
             public string name;
             public VFXSerializableObject value;
             public bool exposed;
-            public VFXValueFilter valueFilter;
+            public bool range;
             public VFXSerializableObject min;
             public VFXSerializableObject max;
-            public string[] enumValue;
             public string tooltip;
             public bool isOutput;
             public ParameterNode[] nodes;

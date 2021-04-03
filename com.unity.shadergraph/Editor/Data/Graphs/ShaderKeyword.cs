@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.ShaderGraph.Internal;
-using UnityEngine.Serialization;
 
 namespace UnityEditor.ShaderGraph
 {
@@ -20,9 +19,9 @@ namespace UnityEditor.ShaderGraph
         {
             this.displayName = keywordType.ToString();
             this.keywordType = keywordType;
-
+            
             // Add sensible default entries for Enum type
-            if (keywordType == KeywordType.Enum)
+            if(keywordType == KeywordType.Enum)
             {
                 m_Entries = new List<KeywordEntry>();
                 m_Entries.Add(new KeywordEntry(1, "A", "A"));
@@ -31,20 +30,21 @@ namespace UnityEditor.ShaderGraph
             }
         }
 
-        public static ShaderKeyword CreateBuiltInKeyword(KeywordDescriptor descriptor)
+        public static ShaderKeyword Create(KeywordDescriptor descriptor)
         {
-            if (descriptor.entries != null)
+            if(descriptor.entries != null)
             {
-                for (int i = 0; i < descriptor.entries.Length; i++)
+                for(int i = 0; i < descriptor.entries.Length; i++)
                 {
-                    if (descriptor.entries[i].id == -1)
+                    if(descriptor.entries[i].id == -1)
                         descriptor.entries[i].id = i + 1;
                 }
             }
 
             return new ShaderKeyword()
             {
-                isBuiltIn = true,
+                m_IsExposable = false,
+                m_IsEditable = false,
                 displayName = descriptor.displayName,
                 overrideReferenceName = descriptor.referenceName,
                 keywordType = descriptor.type,
@@ -101,65 +101,65 @@ namespace UnityEditor.ShaderGraph
         }
 
         [SerializeField]
-        private bool m_IsEditable = true;       // this serializes !isBuiltIn
+        private bool m_IsEditable = true;
 
-        public bool isBuiltIn
+        public bool isEditable
         {
-            get => !m_IsEditable;
-            set => m_IsEditable = !value;
+            get => m_IsEditable;
+            set => m_IsEditable = value;
         }
 
-        internal override bool isExposable => !isBuiltIn && (keywordDefinition != KeywordDefinition.Predefined);
+        [SerializeField]
+        private bool m_IsExposable = true;
 
-        internal override bool isRenamable => !isBuiltIn;
+        internal override bool isExposable => m_IsExposable 
+            && (keywordType == KeywordType.Enum || referenceName.EndsWith("_ON"));
+
+        internal override bool isRenamable => isEditable;
 
         internal override ConcreteSlotValueType concreteShaderValueType => keywordType.ToConcreteSlotValueType();
 
-        public override string GetOldDefaultReferenceName()
+        public override string GetDefaultReferenceName()
         {
             // _ON suffix is required for exposing Boolean type to Material
             var suffix = string.Empty;
-            if (keywordType == KeywordType.Boolean)
+            if(keywordType == KeywordType.Boolean)
             {
                 suffix = "_ON";
             }
 
-            return $"{keywordType.ToString()}_{objectId}{suffix}".ToUpper();
+            return $"{keywordType.ToString()}_{GuidEncoder.Encode(guid)}{suffix}".ToUpper();
         }
 
-        public void AppendPropertyBlockStrings(ShaderStringBuilder builder)
+        public string GetPropertyBlockString()
         {
-            if (isExposed)
+            switch(keywordType)
             {
-                switch (keywordType)
-                {
-                    case KeywordType.Enum:
-                        string enumTagString = $"[KeywordEnum({string.Join(", ", entries.Select(x => x.displayName))})]";
-                        builder.AppendLine($"{enumTagString}{referenceName}(\"{displayName}\", Float) = {value}");
-                        break;
-                    case KeywordType.Boolean:
-                        if (referenceName.EndsWith("_ON"))
-                            builder.AppendLine($"[Toggle]{referenceName.Remove(referenceName.Length - 3, 3)}(\"{displayName}\", Float) = {value}");
-                        else
-                            builder.AppendLine($"[Toggle({referenceName})]{referenceName}(\"{displayName}\", Float) = {value}");
-                        break;
-                    default:
-                        break;
-                }
+                case KeywordType.Enum:
+                    string enumTagString = $"[KeywordEnum({string.Join(", ", entries.Select(x => x.displayName))})]";
+                    return $"{enumTagString}{referenceName}(\"{displayName}\", Float) = {value}";
+                case KeywordType.Boolean:
+                    // Reference name must be appended with _ON but must be removed when generating block
+                    if(referenceName.EndsWith("_ON"))
+                        return $"[Toggle]{referenceName.Remove(referenceName.Length - 3, 3)}(\"{displayName}\", Float) = {value}";
+                    else 
+                        return string.Empty;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
         public string GetKeywordDeclarationString()
         {
             // Predefined keywords do not need to be defined
-            if (keywordDefinition == KeywordDefinition.Predefined)
+            if(keywordDefinition == KeywordDefinition.Predefined)
                 return string.Empty;
 
             // Get definition type using scope
             string scopeString = keywordScope == KeywordScope.Local ? "_local" : string.Empty;
             string definitionString = $"{keywordDefinition.ToDeclarationString()}{scopeString}";
 
-            switch (keywordType)
+            switch(keywordType)
             {
                 case KeywordType.Boolean:
                     return $"#pragma {definitionString} _ {referenceName}";
@@ -174,7 +174,7 @@ namespace UnityEditor.ShaderGraph
 
         public string GetKeywordPreviewDeclarationString()
         {
-            switch (keywordType)
+            switch(keywordType)
             {
                 case KeywordType.Boolean:
                     return value == 1 ? $"#define {referenceName}" : string.Empty;
@@ -193,27 +193,15 @@ namespace UnityEditor.ShaderGraph
             return new ShaderKeyword()
             {
                 displayName = displayName,
-                value = value,
-                isBuiltIn = isBuiltIn,
+                overrideReferenceName = overrideReferenceName,
+                generatePropertyBlock = generatePropertyBlock,
+                m_IsExposable = isExposable,
+                isEditable = isEditable,
                 keywordType = keywordType,
                 keywordDefinition = keywordDefinition,
                 keywordScope = keywordScope,
-                entries = entries,
+                entries = entries
             };
-        }
-
-        public override int latestVersion => 1;
-        public override void OnAfterDeserialize(string json)
-        {
-            if (sgVersion == 0)
-            {
-                // we now allow keywords to control whether they are exposed (for Material control) or not.
-                // old exposable keywords set their exposed state to maintain previous behavior
-                // (where only keywords ending in "_ON" showed up in the material)
-                if (isExposable)
-                    generatePropertyBlock = referenceName.EndsWith("_ON");
-                ChangeVersion(1);
-            }
         }
     }
 }

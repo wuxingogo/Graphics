@@ -58,15 +58,6 @@ namespace UnityEditor.VFX.UI
             return name.ToLower();
         }
 
-        public void UpdateLabel()
-        {
-            var graph = controller.model.GetGraph();
-            if (graph != null && controller.model.contextType == VFXContextType.Spawner)
-                m_Label.text = graph.systemNames.GetUniqueSystemName(controller.model);
-            else
-                m_Label.text = controller.model.label;
-        }
-
         protected override void SelfChange()
         {
             base.SelfChange();
@@ -77,10 +68,7 @@ namespace UnityEditor.VFX.UI
                 m_BlockProvider = new VFXBlockProvider(controller, (d, mPos) =>
                 {
                     if (d is VFXBlockProvider.NewBlockDescriptor)
-                    {
-                        UpdateSelectionWithNewBlocks();
                         AddBlock(mPos, (d as VFXBlockProvider.NewBlockDescriptor).newBlock);
-                    }
                     else
                     {
                         var subgraphBlock = AssetDatabase.LoadAssetAtPath<VisualEffectSubgraphBlock>((d as VFXBlockProvider.SubgraphBlockDescriptor).item.path);
@@ -89,11 +77,8 @@ namespace UnityEditor.VFX.UI
                         VFXBlock newModel = ScriptableObject.CreateInstance<VFXSubgraphBlock>();
 
                         newModel.SetSettingValue("m_Subgraph", subgraphBlock);
-                        UpdateSelectionWithNewBlocks();
-                        using (var growContext = new GrowContext(this))
-                        {
-                            controller.AddBlock(blockIndex, newModel, true);
-                        }
+
+                        controller.AddBlock(blockIndex, newModel);
                     }
                 });
             }
@@ -171,17 +156,8 @@ namespace UnityEditor.VFX.UI
             {
                 if (m_Footer.parent == null)
                     mainContainer.Add(m_Footer);
-
-                if (controller.model.outputFlowSlot.Any())
-                {
-                    m_FooterTitle.text = controller.model.outputType.ToString();
-                    m_FooterIcon.image = GetIconForVFXType(controller.model.outputType);
-                }
-                else
-                {
-                    m_FooterTitle.text = string.Empty;
-                    m_FooterIcon.image = null;
-                }
+                m_FooterTitle.text = controller.model.outputType.ToString();
+                m_FooterIcon.image = GetIconForVFXType(controller.model.outputType);
                 m_FooterIcon.visible = m_FooterIcon.image != null;
             }
 
@@ -232,8 +208,7 @@ namespace UnityEditor.VFX.UI
             }
             Profiler.EndSample();
 
-            UpdateLabel();
-
+            m_Label.text = controller.model.label;
             if (string.IsNullOrEmpty(m_Label.text))
             {
                 m_Label.AddToClassList("empty");
@@ -492,7 +467,6 @@ namespace UnityEditor.VFX.UI
 
                         newModel.SetSettingValue("m_Subgraph", references.First());
 
-                        UpdateSelectionWithNewBlocks();
                         controller.AddBlock(blockIndex, newModel);
                     }
 
@@ -594,10 +568,6 @@ namespace UnityEditor.VFX.UI
                 if (blockControllers.Count > 0)
                 {
                     VFXBlockUI prevBlock = null;
-
-                    VFXView view = GetFirstAncestorOfType<VFXView>();
-
-                    bool selectionCleared = false;
                     foreach (var blockController in blockControllers)
                     {
                         VFXBlockUI blockUI;
@@ -613,22 +583,9 @@ namespace UnityEditor.VFX.UI
                             blockUI = InstantiateBlock(blockController);
                             m_BlockContainer.Add(blockUI);
                             m_BlockContainer.Insert(prevBlock == null ? 0 : m_BlockContainer.IndexOf(prevBlock) + 1, blockUI);
-
-                            if (m_UpdateSelectionWithNewBlocks)
-                            {
-                                if (!selectionCleared)
-                                {
-                                    selectionCleared = true;
-                                    view.ClearSelection();
-                                }
-                                view.AddToSelection(blockUI);
-                            }
-                            //Refresh error can only be called after the block has been instanciated
-                            blockController.model.RefreshErrors(controller.viewController.graph);
                         }
                         prevBlock = blockUI;
                     }
-                    m_UpdateSelectionWithNewBlocks = false;
                     VFXBlockUI firstBlock = m_BlockContainer.Query<VFXBlockUI>();
                     firstBlock.AddToClassList("first");
                 }
@@ -777,15 +734,6 @@ namespace UnityEditor.VFX.UI
             if (!(desc.model is VFXAbstractParticleOutput))
                 return false;
 
-            foreach (var links in controller.model.inputFlowSlot.Select((t, i) => new { index = i, links = t.link }))
-            {
-                foreach (var link in links.links)
-                {
-                    if (!VFXContext.CanLink(link.context, (VFXContext)desc.model, links.index, link.slotIndex))
-                        return false;
-                }
-            }
-
             return (desc.model as VFXContext).contextType == VFXContextType.Output;
         }
 
@@ -802,6 +750,7 @@ namespace UnityEditor.VFX.UI
             if (view == null) return;
 
             mPos = view.contentViewContainer.ChangeCoordinatesTo(view, controller.position);
+
             var newNodeController = view.AddNode(d, mPos);
             var newContextController = newNodeController as VFXContextController;
 
@@ -961,12 +910,6 @@ namespace UnityEditor.VFX.UI
         void OnTitleChange(ChangeEvent<string> e)
         {
             m_Label.text = m_TextField.value;
-        }
-
-        bool m_UpdateSelectionWithNewBlocks;
-        public void UpdateSelectionWithNewBlocks()
-        {
-            m_UpdateSelectionWithNewBlocks = true;
         }
     }
 }

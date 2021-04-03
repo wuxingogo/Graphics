@@ -1,9 +1,6 @@
-using System;
-
 using UnityEditor.Rendering;
-using UnityEditor.Rendering.HighDefinition;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HighDefinition
 {
@@ -47,17 +44,13 @@ namespace UnityEditor.Experimental.Rendering.HighDefinition
 
                 if (m_Enable.overrideState.boolValue && m_Enable.value.boolValue)
                 {
-                    using (new HDEditorUtils.IndentScope())
-                    {
-                        PropertyField(m_LayerMask);
-                        PropertyField(m_MaxSamples);
-                        PropertyField(m_MinDepth);
-                        PropertyField(m_MaxDepth);
-                        PropertyField(m_MaxIntensity);
-                    }
-
-                    // Make sure MaxDepth is always greater or equal than MinDepth
-                    m_MaxDepth.value.intValue = Math.Max(m_MinDepth.value.intValue, m_MaxDepth.value.intValue);
+                    EditorGUI.indentLevel++;
+                    PropertyField(m_LayerMask);
+                    PropertyField(m_MaxSamples);
+                    PropertyField(m_MinDepth);
+                    PropertyField(m_MaxDepth);
+                    PropertyField(m_MaxIntensity);
+                    EditorGUI.indentLevel--;
                 }
             }
         }

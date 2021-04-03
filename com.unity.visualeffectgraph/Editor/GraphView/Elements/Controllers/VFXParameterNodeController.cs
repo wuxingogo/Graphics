@@ -151,16 +151,16 @@ namespace UnityEditor.VFX.UI
 
         public string exposedName
         {
-            get { return m_ParentController.model.exposedName; }
+            get { return m_ParentController.parameter.exposedName; }
         }
         public bool exposed
         {
-            get { return m_ParentController.model.exposed; }
+            get { return m_ParentController.parameter.exposed; }
         }
 
         public int order
         {
-            get { return m_ParentController.model.order; }
+            get { return m_ParentController.parameter.order; }
         }
         public override bool expanded
         {
@@ -244,7 +244,7 @@ namespace UnityEditor.VFX.UI
 
         object[] IPropertyRMProvider.customAttributes { get { return new object[] {}; } }
 
-        VFXPropertyAttributes IPropertyRMProvider.attributes { get { return new VFXPropertyAttributes(); } }
+        VFXPropertyAttribute[] IPropertyRMProvider.attributes { get { return new VFXPropertyAttribute[] {}; } }
 
         public Type portType
         {
@@ -265,9 +265,6 @@ namespace UnityEditor.VFX.UI
         {
             throw new NotImplementedException();
         }
-
-        void IPropertyRMProvider.StartLiveModification() {}
-        void IPropertyRMProvider.EndLiveModification() {}
 
         public override void DrawGizmos(VisualEffect component)
         {

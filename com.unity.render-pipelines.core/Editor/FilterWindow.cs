@@ -232,8 +232,6 @@ namespace UnityEditor.Rendering
             s_FilterWindow = null;
         }
 
-        void OnLostFocus() => Close();
-
         internal static bool ValidateAddComponentMenuItem()
         {
             return true;
@@ -376,6 +374,7 @@ namespace UnityEditor.Rendering
             if (!m_ActiveParent.WantsFocus)
             {
                 EditorGUI.FocusTextInControl("ComponentSearch");
+                Focus();
             }
 
             var searchRect = GUILayoutUtility.GetRect(10, 20);
@@ -456,11 +455,8 @@ namespace UnityEditor.Rendering
 
                     if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                     {
-                        if (m_ActiveElement != null)
-                        {
-                            GoToChild(m_ActiveElement, true);
-                            evt.Use();
-                        }
+                        GoToChild(m_ActiveElement, true);
+                        evt.Use();
                     }
 
                     // Do these if we're not in search mode

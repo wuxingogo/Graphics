@@ -2,10 +2,213 @@ using System.Collections.Generic;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.ShaderGraph.Drawing.Interfaces;
 
 namespace UnityEditor.ShaderGraph.Drawing
 {
+    interface IResizable
+    {
+        void OnStartResize();
+        void OnResized();
+    }
+
+    class ResizableElementFactory : UxmlFactory<ResizableElement>
+    {}
+    class ElementResizer : Manipulator
+    {
+//        static MethodInfo m_ValidateLayoutMethod;
+//        public static void InternalValidateLayout(IPanel panel)
+//        {
+//            if (m_ValidateLayoutMethod == null)
+//                m_ValidateLayoutMethod = panel.GetType().GetMethod("ValidateLayout", BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.NonPublic | BindingFlags.Public);
+//
+//            m_ValidateLayoutMethod.Invoke(panel, new object[] {});
+//        }
+
+        public readonly ResizableElement.Resizer direction;
+
+        public readonly VisualElement resizedElement;
+
+        public ElementResizer(VisualElement resizedElement, ResizableElement.Resizer direction)
+        {
+            this.direction = direction;
+            this.resizedElement = resizedElement;
+        }
+
+        protected override void RegisterCallbacksOnTarget()
+        {
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        protected override void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        Vector2 m_StartMouse;
+        Vector2 m_StartSize;
+
+        Vector2 m_MinSize;
+        Vector2 m_MaxSize;
+
+        Vector2 m_StartPosition;
+
+        bool m_DragStarted = false;
+
+        void OnMouseDown(MouseDownEvent e)
+        {
+            if (e.button == 0 && e.clickCount == 1)
+            {
+                VisualElement resizedTarget = resizedElement.parent;
+                if (resizedTarget != null)
+                {
+                    VisualElement resizedBase = resizedTarget.parent;
+                    if (resizedBase != null)
+                    {
+                        target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+                        e.StopPropagation();
+                        target.CaptureMouse();
+                        m_StartMouse = resizedBase.WorldToLocal(e.mousePosition);
+                        m_StartSize = new Vector2(resizedTarget.resolvedStyle.width, resizedTarget.resolvedStyle.height);
+                        m_StartPosition = new Vector2(resizedTarget.resolvedStyle.left, resizedTarget.resolvedStyle.top);
+
+                        bool minWidthDefined = resizedTarget.resolvedStyle.minWidth != StyleKeyword.Auto;
+                        bool maxWidthDefined = resizedTarget.resolvedStyle.maxWidth != StyleKeyword.None;
+                        bool minHeightDefined = resizedTarget.resolvedStyle.minHeight != StyleKeyword.Auto;
+                        bool maxHeightDefined = resizedTarget.resolvedStyle.maxHeight != StyleKeyword.None;
+                        m_MinSize = new Vector2(
+                            minWidthDefined ? resizedTarget.resolvedStyle.minWidth.value : Mathf.NegativeInfinity,
+                            minHeightDefined ? resizedTarget.resolvedStyle.minHeight.value : Mathf.NegativeInfinity);
+                        m_MaxSize = new Vector2(
+                            maxWidthDefined ? resizedTarget.resolvedStyle.maxWidth.value : Mathf.Infinity,
+                            maxHeightDefined ? resizedTarget.resolvedStyle.maxHeight.value : Mathf.Infinity);
+
+                        m_DragStarted = false;
+                    }
+                }
+            }
+        }
+
+        void OnMouseMove(MouseMoveEvent e)
+        {
+            VisualElement resizedTarget = resizedElement.parent;
+            VisualElement resizedBase = resizedTarget.parent;
+            Vector2 mousePos = resizedBase.WorldToLocal(e.mousePosition);
+            if (!m_DragStarted)
+            {
+                if (resizedTarget is IResizable)
+                {
+                    (resizedTarget as IResizable).OnStartResize();
+                }
+                m_DragStarted = true;
+            }
+
+            if ((direction & ResizableElement.Resizer.Right) != 0)
+            {
+                resizedTarget.style.width = Mathf.Min(m_MaxSize.x, Mathf.Max(m_MinSize.x, m_StartSize.x + mousePos.x - m_StartMouse.x));
+            }
+            else if ((direction & ResizableElement.Resizer.Left) != 0)
+            {
+                float delta = mousePos.x - m_StartMouse.x;
+
+                if (m_StartSize.x - delta < m_MinSize.x)
+                {
+                    delta = -m_MinSize.x + m_StartSize.x;
+                }
+                else if (m_StartSize.x - delta > m_MaxSize.x)
+                {
+                    delta = -m_MaxSize.x + m_StartSize.x;
+                }
+
+                resizedTarget.style.left = delta + m_StartPosition.x;
+                resizedTarget.style.width = -delta + m_StartSize.x;
+            }
+            if ((direction & ResizableElement.Resizer.Bottom) != 0)
+            {
+                resizedTarget.style.height = Mathf.Min(m_MaxSize.y, Mathf.Max(m_MinSize.y, m_StartSize.y + mousePos.y - m_StartMouse.y));
+            }
+            else if ((direction & ResizableElement.Resizer.Top) != 0)
+            {
+                float delta = mousePos.y - m_StartMouse.y;
+
+                if (m_StartSize.y - delta < m_MinSize.y)
+                {
+                    delta = -m_MinSize.y + m_StartSize.y;
+                }
+                else if (m_StartSize.y - delta > m_MaxSize.y)
+                {
+                    delta = -m_MaxSize.y + m_StartSize.y;
+                }
+                resizedTarget.style.top = delta + m_StartPosition.y;
+                resizedTarget.style.height = -delta + m_StartSize.y;
+            }
+            e.StopPropagation();
+        }
+
+        void OnMouseUp(MouseUpEvent e)
+        {
+            if (e.button == 0)
+            {
+                VisualElement resizedTarget = resizedElement.parent;
+                if (resizedTarget.style.width != m_StartSize.x || resizedTarget.style.height != m_StartSize.y)
+                {
+                    if (resizedTarget is IResizable)
+                    {
+                        (resizedTarget as IResizable).OnResized();
+                    }
+                }
+                target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+                target.ReleaseMouse();
+                e.StopPropagation();
+            }
+        }
+    }
+    class ResizableElement : VisualElement
+    {
+        public ResizableElement() : this("uxml/Resizable")
+        {
+            pickingMode = PickingMode.Ignore;
+        }
+
+        public ResizableElement(string uiFile)
+        {
+            var tpl = Resources.Load<VisualTreeAsset>(uiFile);
+            var sheet = Resources.Load<StyleSheet>("Resizable");
+            styleSheets.Add(sheet);
+
+            tpl.CloneTree(this);
+
+            foreach (Resizer value in System.Enum.GetValues(typeof(Resizer)))
+            {
+                VisualElement resizer = this.Q(value.ToString().ToLower() + "-resize");
+                if (resizer != null)
+                    resizer.AddManipulator(new ElementResizer(this, value));
+                m_Resizers[value] = resizer;
+            }
+
+            foreach (Resizer vertical in new[] {Resizer.Top, Resizer.Bottom})
+                foreach (Resizer horizontal in new[] {Resizer.Left, Resizer.Right})
+                {
+                    VisualElement resizer = this.Q(vertical.ToString().ToLower() + "-" + horizontal.ToString().ToLower() + "-resize");
+                    if (resizer != null)
+                        resizer.AddManipulator(new ElementResizer(this, vertical | horizontal));
+                    m_Resizers[vertical | horizontal] = resizer;
+                }
+        }
+
+        public enum Resizer
+        {
+            Top =           1 << 0,
+            Bottom =        1 << 1,
+            Left =          1 << 2,
+            Right =         1 << 3,
+        }
+
+        Dictionary<Resizer, VisualElement> m_Resizers = new Dictionary<Resizer, VisualElement>();
+    }
+
+
     class StickyNodeChangeEvent : EventBase<StickyNodeChangeEvent>
     {
         public static StickyNodeChangeEvent GetPooled(StickyNote target, Change change)
@@ -27,7 +230,7 @@ namespace UnityEditor.ShaderGraph.Drawing
         public Change change {get; protected set; }
     }
 
-    class StickyNote : GraphElement, ISGResizable
+    class StickyNote : GraphElement, IResizable
     {
         GraphData m_Graph;
         public new StickyNoteData userData
@@ -95,11 +298,6 @@ namespace UnityEditor.ShaderGraph.Drawing
         public virtual void OnResized()
         {
             userData.position = new Rect(resolvedStyle.left, resolvedStyle.top, style.width.value.value, style.height.value.value);
-        }
-
-        public bool CanResizePastParentBounds()
-        {
-            return true;
         }
 
         Vector2 AllExtraSpace(VisualElement element)
@@ -199,8 +397,6 @@ namespace UnityEditor.ShaderGraph.Drawing
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         }
 
-        public string displayName => $"{m_Title.text} (Sticky Note)";
-
         public StickyNote(string uiFile, Rect position, GraphData graph)
         {
             m_Graph = graph;
@@ -259,7 +455,7 @@ namespace UnityEditor.ShaderGraph.Drawing
                     evt.menu.AppendAction("Light Theme", OnChangeTheme, e => DropdownMenuAction.Status.Normal, Theme.Classic);
                 else
                     evt.menu.AppendAction("Dark Theme", OnChangeTheme, e => DropdownMenuAction.Status.Normal, Theme.Black);
-                evt.menu.AppendSeparator();
+
                 foreach (TextSize value in System.Enum.GetValues(typeof(TextSize)))
                 {
                     evt.menu.AppendAction(value.ToString() + " Text Size", OnChangeSize, e => DropdownMenuAction.Status.Normal, value);
@@ -268,7 +464,7 @@ namespace UnityEditor.ShaderGraph.Drawing
 
                 evt.menu.AppendAction("Fit To Text", OnFitToText, e => DropdownMenuAction.Status.Normal);
                 evt.menu.AppendSeparator();
-
+                
                 evt.menu.AppendAction("Delete",  OnDelete, e => DropdownMenuAction.Status.Normal);
                 evt.menu.AppendSeparator();
             }
@@ -279,18 +475,12 @@ namespace UnityEditor.ShaderGraph.Drawing
             m_Graph.owner.RegisterCompleteObjectUndo("Delete Sticky Note");
             m_Graph.RemoveStickyNote(userData);
         }
-
+        
         void OnTitleChange(EventBase e)
         {
             //m_Graph.owner.RegisterCompleteObjectUndo("Title Changed");
             //title = m_TitleField.value;
             //userData.title = title;
-        }
-
-        public PropertySheet GetInspectorContent()
-        {
-            var sheet = new PropertySheet();
-            return sheet;
         }
 
         const string fitTextClass = "fit-text";
@@ -399,7 +589,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             Rect rect = m_Title.layout;
             m_Title.parent.ChangeCoordinatesTo(m_TitleField.parent, rect);
 
-            m_TitleField.style.left = rect.xMin - 1;
+            m_TitleField.style.left = rect.xMin -1;
             m_TitleField.style.right = rect.yMin + m_Title.resolvedStyle.marginTop;
             m_TitleField.style.width = rect.width - m_Title.resolvedStyle.marginLeft - m_Title.resolvedStyle.marginRight;
             m_TitleField.style.height = rect.height - m_Title.resolvedStyle.marginTop - m_Title.resolvedStyle.marginBottom;
@@ -462,5 +652,5 @@ namespace UnityEditor.ShaderGraph.Drawing
         protected TextField m_TitleField;
         Label m_Contents;
         protected TextField m_ContentsField;
-    }
+	}
 }

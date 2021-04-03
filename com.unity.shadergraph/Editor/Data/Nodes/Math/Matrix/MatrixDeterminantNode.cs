@@ -11,7 +11,6 @@ namespace UnityEditor.ShaderGraph
             name = "Matrix Determinant";
         }
 
-        public override bool hasPreview => false;
 
         protected override MethodInfo GetFunctionToConvert()
         {
@@ -23,7 +22,7 @@ namespace UnityEditor.ShaderGraph
             [Slot(1, Binding.None)] out Vector1 Out)
         {
             return
-@"
+                @"
 {
     Out = determinant(In);
 }

@@ -12,6 +12,7 @@ Shader "Hidden/Light2D-Shape-Volumetric"
             Cull Off
 
             HLSLPROGRAM
+            #pragma prefer_hlslcc gles
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_local SPRITE_LIGHT __
@@ -23,28 +24,33 @@ Shader "Hidden/Light2D-Shape-Volumetric"
             {
                 float3 positionOS   : POSITION;
                 float4 color        : COLOR;
+                float4 volumeColor  : TANGENT;
+
+#ifdef SPRITE_LIGHT
                 half2  uv           : TEXCOORD0;
+#endif
             };
 
             struct Varyings
             {
                 float4  positionCS  : SV_POSITION;
-                half4   color       : COLOR;
-                half2   uv          : TEXCOORD0;
+                float4  color       : COLOR;
+                float2  uv          : TEXCOORD0;
 
                 SHADOW_COORDS(TEXCOORD1)
             };
 
-            half4 _LightColor;
-            half  _FalloffDistance;
-            half  _VolumeOpacity;
-            half  _InverseHDREmulationScale;
+            float4 _LightColor;
+            float  _FalloffDistance;
+            float4 _FalloffOffset;
+            float  _VolumeOpacity;
+            float  _InverseHDREmulationScale;
 
 #ifdef SPRITE_LIGHT
-            TEXTURE2D(_CookieTex);          // This can either be a sprite texture uv or a falloff texture
+            TEXTURE2D(_CookieTex);			// This can either be a sprite texture uv or a falloff texture
             SAMPLER(sampler_CookieTex);
 #else
-            uniform half  _FalloffIntensity;
+            uniform float  _FalloffIntensity;
             TEXTURE2D(_FalloffLookup);
             SAMPLER(sampler_FalloffLookup);
 #endif
@@ -56,13 +62,13 @@ Shader "Hidden/Light2D-Shape-Volumetric"
                 Varyings o = (Varyings)0;
 
                 float3 positionOS = attributes.positionOS;
+                positionOS.x = positionOS.x + _FalloffDistance * attributes.color.r + (1 - attributes.color.a) * _FalloffOffset.x;
+                positionOS.y = positionOS.y + _FalloffDistance * attributes.color.g + (1 - attributes.color.a) * _FalloffOffset.y;
 
-                positionOS.x = positionOS.x + _FalloffDistance * attributes.color.r;
-                positionOS.y = positionOS.y + _FalloffDistance * attributes.color.g;
 
                 o.positionCS = TransformObjectToHClip(positionOS);
                 o.color = _LightColor * _InverseHDREmulationScale;
-                o.color.a = _LightColor.a * _VolumeOpacity;
+                o.color.a = _VolumeOpacity;
 
 #ifdef SPRITE_LIGHT
                 o.uv = attributes.uv;

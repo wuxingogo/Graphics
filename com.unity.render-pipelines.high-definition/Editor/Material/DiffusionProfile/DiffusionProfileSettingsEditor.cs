@@ -1,7 +1,7 @@
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -27,8 +27,8 @@ namespace UnityEditor.Rendering.HighDefinition
 
             internal Profile()
             {
-                profileRT       = new RenderTexture(256, 256, 0, GraphicsFormat.R16G16B16A16_SFloat);
-                transmittanceRT = new RenderTexture(16, 256, 0, GraphicsFormat.R16G16B16A16_SFloat);
+                profileRT       = new RenderTexture(256, 256, 0, RenderTextureFormat.DefaultHDR);
+                transmittanceRT = new RenderTexture(16, 256, 0, RenderTextureFormat.DefaultHDR);
             }
 
             internal void Release()
@@ -101,7 +101,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 EditorGUILayout.PropertyField(profile.scatteringDistance, s_Styles.profileScatteringDistance);
 
                 using (new EditorGUI.DisabledScope(true))
-                    EditorGUILayout.FloatField(s_Styles.profileMaxRadius, profile.objReference.filterRadius);
+                    EditorGUILayout.FloatField(s_Styles.profileMaxRadius, profile.objReference.maxRadius);
 
                 EditorGUILayout.Slider(profile.ior, 1.0f, 2.0f, s_Styles.profileIor);
                 EditorGUILayout.PropertyField(profile.worldScale, s_Styles.profileWorldScale);
@@ -131,9 +131,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 serializedObject.ApplyModifiedProperties();
 
-                // NOTE: We cannot change only upon scope changed since there is no callback when Reset is triggered for Editor and the scope is not changed when Reset is called.
-                // The following operations are not super cheap, but are not overly expensive, so we instead trigger the change every time inspector is drawn.
-                //    if (scope.changed)
+                if (scope.changed)
                 {
                     // Validate and update the cache for this profile only
                     profile.objReference.Validate();
@@ -152,10 +150,12 @@ namespace UnityEditor.Rendering.HighDefinition
         void RenderPreview(Profile profile)
         {
             var obj = profile.objReference;
-            float r = obj.filterRadius;
-            var   S = obj.shapeParam;
+            float r = obj.maxRadius;
+            var S = obj.shapeParam;
+            var T = (Vector4)profile.transmissionTint.colorValue;
+            var R = profile.thicknessRemap.vector2Value;
 
-            m_ProfileMaterial.SetFloat(HDShaderIDs._MaxRadius,  r);
+            m_ProfileMaterial.SetFloat(HDShaderIDs._MaxRadius, r);
             m_ProfileMaterial.SetVector(HDShaderIDs._ShapeParam, S);
 
             // Draw the profile.
@@ -167,9 +167,9 @@ namespace UnityEditor.Rendering.HighDefinition
             EditorGUILayout.LabelField(s_Styles.transmittancePreview2, EditorStyles.centeredGreyMiniLabel);
             EditorGUILayout.Space();
 
-            m_TransmittanceMaterial.SetVector(HDShaderIDs._ShapeParam,       S);
-            m_TransmittanceMaterial.SetVector(HDShaderIDs._TransmissionTint, obj.transmissionTint);
-            m_TransmittanceMaterial.SetVector(HDShaderIDs._ThicknessRemap,   obj.thicknessRemap);
+            m_TransmittanceMaterial.SetVector(HDShaderIDs._ShapeParam, S);
+            m_TransmittanceMaterial.SetVector(HDShaderIDs._TransmissionTint, T);
+            m_TransmittanceMaterial.SetVector(HDShaderIDs._ThicknessRemap, R);
 
             // Draw the transmittance graph.
             EditorGUI.DrawPreviewTexture(GUILayoutUtility.GetRect(16f, 16f), profile.transmittanceRT, m_TransmittanceMaterial, ScaleMode.ScaleToFit, 16f);

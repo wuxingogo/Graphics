@@ -10,20 +10,9 @@ using UnityEditor.VFX.UI;
 using UnityEditor.ProjectWindowCallback;
 
 using UnityObject = UnityEngine.Object;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 
 namespace UnityEditor
 {
-    class VFXBuildPreprocessor : IPreprocessBuildWithReport
-    {
-        int IOrderedCallback.callbackOrder => 0;
-
-        void IPreprocessBuildWithReport.OnPreprocessBuild(BuildReport report)
-        {
-            VFXManagerEditor.CheckVFXManager();
-        }
-    }
     [InitializeOnLoad]
     static class VisualEffectAssetEditorUtility
     {
@@ -50,22 +39,16 @@ namespace UnityEditor
         static VisualEffectAssetEditorUtility()
         {
             EditorApplication.update += CheckVFXManagerOnce;
-
-
-            UnityEngine.VFX.VFXManager.activateVFX = true;
         }
 
-        public const string templateAssetName = "SimpleParticleSystem.vfx";
-        public const string templateBlockSubgraphAssetName = "DefaultSubgraphBlock.vfxblock";
-        public const string templateOperatorSubgraphAssetName = "DefaultSubgraphOperator.vfxoperator";
+        public const string templateAssetName = "Simple Particle System.vfx";
+        public const string templateBlockSubgraphAssetName = "Default Subgraph Block.vfxblock";
+        public const string templateOperatorSubgraphAssetName = "Default Subgraph Operator.vfxoperator";
 
-        public const string editorResourcesFolder = "Editor/UIResources";
-        public static string editorResourcesPath => VisualEffectGraphPackageInfo.assetPackagePath + "/" + editorResourcesFolder;
-
-        [MenuItem("GameObject/Visual Effects/Visual Effect", priority = 12)]
+        [MenuItem("GameObject/Visual Effects/Visual Effect", false, 10)]
         public static void CreateVisualEffectGameObject(MenuCommand menuCommand)
         {
-            GameObject go = new GameObject(GameObjectUtility.GetUniqueNameForSibling(null, "Visual Effect"));
+            GameObject go = new GameObject(GameObjectUtility.GetUniqueNameForSibling(null,"Visual Effect"));
             GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
             var vfxComp = go.AddComponent<VisualEffect>();
 
@@ -87,16 +70,7 @@ namespace UnityEditor
 
         public static T CreateNew<T>(string path) where T : UnityObject
         {
-            string emptyAsset =
-@"%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &114350483966674976
-MonoBehaviour:
-  m_Script: {fileID: 11500000, guid: 7d4c867f6b72b714dbb5fd1780afe208, type: 3}
---- !u!2058629511 &1
-VisualEffectResource:
-  m_Graph: {fileID: 114350483966674976}
-";
+            string emptyAsset = "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!2058629511 &1\nVisualEffectResource:\n";
 
             File.WriteAllText(path, emptyAsset);
 
@@ -124,44 +98,27 @@ VisualEffectResource:
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, action, "New VFX.vfx", texture, null);
         }
 
-        [MenuItem("Assets/Create/Visual Effects/Visual Effect Defaults", false, 307)]
-        public static void CreateVisualEffectDefaults()
-        {
-            var obj = VFXResources.CreateInstance<VFXResources>();
-            obj.SetDefaults();
-            AssetDatabase.CreateAsset(obj, "Assets/Visual Effects Defaults.asset");
-            Selection.activeObject = obj;
-        }
-
-        [MenuItem("Assets/Create/Visual Effects/Visual Effect Defaults", true)]
-        public static bool IsCreateVisualEffectDefaultsActive()
-        {
-            var resources = Resources.FindObjectsOfTypeAll<VFXResources>();
-            return resources == null || resources.Length == 0;
-        }
-
-        public static void CreateTemplateAsset(string pathName)
-        {
-            try
-            {
-                var templateString = System.IO.File.ReadAllText(templatePath + templateAssetName);
-                System.IO.File.WriteAllText(pathName, templateString);
-            }
-            catch (FileNotFoundException)
-            {
-                CreateNewAsset(pathName);
-            }
-
-            AssetDatabase.ImportAsset(pathName);
-        }
-
         internal class DoCreateNewVFX : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
-                CreateTemplateAsset(pathName);
-                var resource = VisualEffectResource.GetResourceAtPath(pathName);
-                ProjectWindowUtil.FrameObjectInProjectWindow(resource.asset.GetInstanceID());
+                try
+                {
+                    var templateString = System.IO.File.ReadAllText(templatePath + templateAssetName);
+                    System.IO.File.WriteAllText(pathName, templateString);
+                }
+                catch (FileNotFoundException)
+                {
+                    CreateNewAsset(pathName);
+                }
+
+                AssetDatabase.ImportAsset(pathName);
+                VisualEffectAsset vfxAsset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(pathName);
+                var graph = vfxAsset.GetResource().GetOrCreateGraph();
+                graph.SetExpressionGraphDirty();
+                graph.RecompileIfNeeded();
+
+                ProjectWindowUtil.FrameObjectInProjectWindow(vfxAsset.GetInstanceID());
             }
         }
 

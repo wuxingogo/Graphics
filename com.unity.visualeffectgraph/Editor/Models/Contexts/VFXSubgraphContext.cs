@@ -37,13 +37,6 @@ namespace UnityEditor.VFX
         {
         }
 
-        public override void GetImportDependentAssets(HashSet<int> dependencies)
-        {
-            base.GetImportDependentAssets(dependencies);
-            if (!object.ReferenceEquals(m_Subgraph, null))
-                dependencies.Add(m_Subgraph.GetInstanceID());
-        }
-
         void GraphParameterChanged(VFXGraph graph)
         {
             VisualEffectAsset asset = graph != null && graph.GetResource() != null ? graph.GetResource().asset : null;
@@ -56,25 +49,10 @@ namespace UnityEditor.VFX
 
         public sealed override string name { get { return m_Subgraph != null ? m_Subgraph.name : "Subgraph"; } }
 
-        void RefreshSubgraphObject()
-        {
-            if (m_Subgraph == null && !object.ReferenceEquals(m_Subgraph, null))
-            {
-                string assetPath = AssetDatabase.GetAssetPath(m_Subgraph.GetInstanceID());
-
-                var newSubgraph = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(assetPath);
-                if (newSubgraph != null)
-                {
-                    m_Subgraph = newSubgraph;
-                }
-            }
-        }
-
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
         {
             get
             {
-                RefreshSubgraphObject();
                 if (m_SubChildren == null && m_Subgraph != null) // if the subasset exists but the subchildren has not been recreated yet, return the existing slots
                 {
                     foreach (var slot in inputSlots)
@@ -171,7 +149,6 @@ namespace UnityEditor.VFX
         public void RecreateCopy()
         {
             DetachFromOriginal();
-            RefreshSubgraphObject();
 
             if (m_Subgraph == null)
             {
@@ -391,7 +368,7 @@ namespace UnityEditor.VFX
                                 m_Subgraph = null; // prevent cyclic dependencies.
                         }
                     }
-                    if (m_Subgraph != null || object.ReferenceEquals(m_Subgraph, null) || m_UsedSubgraph == null || (m_Subgraph != null && m_UsedSubgraph != m_Subgraph.GetResource().GetOrCreateGraph()))  // do not recreate subchildren if the subgraph is not available but is not null
+                    if (m_Subgraph != null || object.ReferenceEquals(m_Subgraph, null) || m_UsedSubgraph == null || m_UsedSubgraph != m_Subgraph.GetResource().GetOrCreateGraph())  // do not recreate subchildren if the subgraph is not available but is not null
                         RecreateCopy();
                 }
 
@@ -400,14 +377,6 @@ namespace UnityEditor.VFX
             }
             else
                 base.OnInvalidate(model, cause);
-        }
-
-        public override void CheckGraphBeforeImport()
-        {
-            base.CheckGraphBeforeImport();
-            // If the graph is reimported it can be because one of its depedency such as the subgraphs, has been changed.
-
-            ResyncSlots(true);
         }
 
         public override void CollectDependencies(HashSet<ScriptableObject> objs, bool ownedOnly = true)
@@ -419,7 +388,6 @@ namespace UnityEditor.VFX
 
             if (m_Subgraph != null && m_SubChildren == null)
                 RecreateCopy();
-
             if (m_SubChildren != null)
             {
                 foreach (var child in m_SubChildren)

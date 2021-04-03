@@ -1,41 +1,83 @@
-using System.Collections;
 using NUnit.Framework;
+using System.Collections;
 using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.TestTools;
 
 namespace UnityEngine.Rendering.Universal.Tests
 {
     [TestFixture]
-    class MultipleObjectLight2DTests
+    class SingleObjectLight2DTests
     {
-        GameObject m_TestObject1;
-        GameObject m_TestObject2;
-        GameObject m_TestObject3;
-        GameObject m_TestObject4;
-        GameObject m_TestObjectCached;
+        Light2DManager m_LightManager;
+        GameObject m_TestObject;
+        Light2D m_TestLight;
 
         [SetUp]
         public void Setup()
         {
-            m_TestObject1 = new GameObject("Test Object 1");
-            m_TestObject2 = new GameObject("Test Object 2");
-            m_TestObject3 = new GameObject("Test Object 3");
-            m_TestObject4 = new GameObject("Test Object 4");
-            m_TestObjectCached = new GameObject("Test Object Cached");
+            m_LightManager = new Light2DManager();
+            m_TestObject = new GameObject("Test Object");
+            m_TestLight = m_TestObject.AddComponent<Light2D>();
         }
 
         [TearDown]
         public void Cleanup()
         {
-            Object.DestroyImmediate(m_TestObjectCached);
-            Object.DestroyImmediate(m_TestObject4);
-            Object.DestroyImmediate(m_TestObject3);
-            Object.DestroyImmediate(m_TestObject2);
-            Object.DestroyImmediate(m_TestObject1);
+            Object.DestroyImmediate(m_TestObject);
+            m_LightManager.Dispose();
         }
 
         [Test]
-        public void LightsAreSortedByLightOrder()
+        public void SetupCullingSetsBoundingSpheresAndCullingIndices()
+        {
+            Light2D.SetupCulling(default(ScriptableRenderContext), Camera.main);
+
+            Assert.NotNull(Light2DManager.boundingSpheres);
+            Assert.AreEqual(1024, Light2DManager.boundingSpheres.Length);
+            Assert.AreEqual(0, m_TestLight.lightCullingIndex);
+        }
+
+        [UnityTest]
+        public IEnumerator ChangingBlendStyleMovesTheLightToTheCorrectListInLightManager()
+        {
+            m_TestLight.blendStyleIndex = 1;
+
+            // LightManager update happens in LateUpdate(). So we must test the result in the next frame.
+            yield return null;
+
+            Assert.AreEqual(0, Light2DManager.lights[0].Count);
+            Assert.AreSame(m_TestLight, Light2DManager.lights[1][0]);
+        }
+    }
+
+    [TestFixture]
+    class MultipleObjectLight2DTests
+    {
+        Light2DManager m_LightManager;
+        GameObject m_TestObject1;
+        GameObject m_TestObject2;
+        GameObject m_TestObject3;
+
+        [SetUp]
+        public void Setup()
+        {
+            m_LightManager = new Light2DManager();
+            m_TestObject1 = new GameObject("Test Object 1");
+            m_TestObject2 = new GameObject("Test Object 2");
+            m_TestObject3 = new GameObject("Test Object 3");
+        }
+
+        [TearDown]
+        public void Cleanup()
+        {
+            Object.DestroyImmediate(m_TestObject3);
+            Object.DestroyImmediate(m_TestObject2);
+            Object.DestroyImmediate(m_TestObject1);
+            m_LightManager.Dispose();
+        }
+
+        [UnityTest]
+        public IEnumerator LightsAreSortedByLightOrder()
         {
             var light1 = m_TestObject1.AddComponent<Light2D>();
             var light2 = m_TestObject2.AddComponent<Light2D>();
@@ -45,111 +87,58 @@ namespace UnityEngine.Rendering.Universal.Tests
             light2.lightOrder = 2;
             light3.lightOrder = 0;
 
-            var camera = m_TestObject4.AddComponent<Camera>();
-            var cameraPos = camera.transform.position;
-            light1.transform.position = cameraPos;
-            light2.transform.position = cameraPos;
-            light3.transform.position = cameraPos;
+            // Sorting happens in LateUpdate() after light order has changed.
+            // So we must test the result in the next frame.
+            yield return null;
 
-            light1.UpdateMesh(true);
-            light1.UpdateBoundingSphere();
-            light2.UpdateMesh(true);
-            light2.UpdateBoundingSphere();
-            light3.UpdateMesh(true);
-            light3.UpdateBoundingSphere();
-
-            var cullResult = new Light2DCullResult();
-            var cullingParams = new ScriptableCullingParameters();
-            camera.TryGetCullingParameters(out cullingParams);
-            cullResult.SetupCulling(ref cullingParams, camera);
-
-            Assert.AreSame(light3, cullResult.visibleLights[0]);
-            Assert.AreSame(light1, cullResult.visibleLights[1]);
-            Assert.AreSame(light2, cullResult.visibleLights[2]);
+            Assert.AreSame(light3, Light2DManager.lights[0][0]);
+            Assert.AreSame(light1, Light2DManager.lights[0][1]);
+            Assert.AreSame(light2, Light2DManager.lights[0][2]);
         }
 
         [Test]
-        public void LightIsInVisibleListIfInCameraView()
+        public void IsLightVisibleReturnsTrueIfInCameraView()
         {
             var camera = m_TestObject1.AddComponent<Camera>();
             var light = m_TestObject2.AddComponent<Light2D>();
             light.transform.position = camera.transform.position;
-            light.UpdateMesh(true);
-            light.UpdateBoundingSphere();
+            Light2D.SetupCulling(default(ScriptableRenderContext), camera);
 
-            var cullResult = new Light2DCullResult();
-            var cullingParams = new ScriptableCullingParameters();
-            camera.TryGetCullingParameters(out cullingParams);
-            cullResult.SetupCulling(ref cullingParams, camera);
+            // We can only verify the results after culling is done on this camera.
+            camera.Render();
 
-            Assert.Contains(light, cullResult.visibleLights);
+            Assert.IsTrue(light.IsLightVisible(camera));
         }
 
         [Test]
-        public void LightIsNotInVisibleListIfNotInCameraView()
+        public void IsLightVisibleReturnsFalseIfNotInCameraView()
         {
             var camera = m_TestObject1.AddComponent<Camera>();
             var light = m_TestObject2.AddComponent<Light2D>();
             light.transform.position = camera.transform.position + new Vector3(9999.0f, 0.0f, 0.0f);
-            light.UpdateMesh(true);
-            light.UpdateBoundingSphere();
+            Light2D.SetupCulling(default(ScriptableRenderContext), camera);
 
-            var cullResult = new Light2DCullResult();
-            var cullingParams = new ScriptableCullingParameters();
-            camera.TryGetCullingParameters(out cullingParams);
-            cullResult.SetupCulling(ref cullingParams, camera);
+            // We can only verify the results after culling is done on this camera.
+            camera.Render();
 
-            Assert.IsFalse(cullResult.visibleLights.Contains(light));
+            Assert.IsFalse(light.IsLightVisible(camera));
         }
 
         [Test]
-        public void CachedMeshDataIsUpdatedOnChange()
+        public void DestroyingLastLightAlsoDestroysCullingGroup()
         {
-            var shapePath = new Vector3[4] { new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0) };
-            var light = m_TestObjectCached.AddComponent<Light2D>();
-            light.lightType = Light2D.LightType.Freeform;
+            var light1 = m_TestObject1.AddComponent<Light2D>();
+            var light2 = m_TestObject2.AddComponent<Light2D>();
 
-            light.SetShapePath(shapePath);
-            light.UpdateMesh(true);
+            Assert.IsNotNull(Light2DManager.cullingGroup);
 
-            Assert.AreEqual(true, light.hasCachedMesh);
-        }
+            Object.Destroy(light2);
 
-        [Test]
-        public void CachedMeshDataIsOverriddenByRuntimeChanges()
-        {
-            var shapePath = new Vector3[4] { new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0) };
-            var light = m_TestObjectCached.AddComponent<Light2D>();
-            light.lightType = Light2D.LightType.Freeform;
-            light.SetShapePath(shapePath);
-            light.UpdateMesh(true);
+            Assert.IsNotNull(Light2DManager.cullingGroup);
 
-            int vertexCount = 0, triangleCount = 0;
+            Object.Destroy(light1);
 
-            // Check if Cached Data and the actual data are the same.
-            Assert.AreEqual(true, light.hasCachedMesh);
-            vertexCount = light.lightMesh.triangles.Length;
-            triangleCount = light.lightMesh.vertices.Length;
-
-            // Simulate Runtime Behavior.
-            var shapePathChanged = new Vector3[5] { new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0.5f, 1.5f, 0), new Vector3(0, 1, 0) };
-            light.SetShapePath(shapePathChanged);
-            light.UpdateMesh(true);
-
-            // Check if Cached Data and the actual data are no longer the same. (We don't save cache on Runtime)
-            Assert.AreNotEqual(vertexCount, light.lightMesh.triangles.Length);
-            Assert.AreNotEqual(triangleCount, light.lightMesh.vertices.Length);
-        }
-
-        [Test]
-        public void EnsureShapeMeshGenerationDoesNotOverflowAllocation()
-        {
-            var shapePath = new Vector3[4] { new Vector3(-76.04548f, 7.522535f, 0f), new Vector3(-66.52518f, 18.88778f, 0f), new Vector3(-66.35441f, 24.34475f, 0), new Vector3(-75.15407f, 33.0358f, 0) };
-            var light = m_TestObjectCached.AddComponent<Light2D>();
-            light.lightType = Light2D.LightType.Freeform;
-            LightUtility.GenerateShapeMesh(light, shapePath, 180.0f);
-
-            Assert.AreEqual(true, light.hasCachedMesh);
+            Assert.IsNull(Light2DManager.cullingGroup);
         }
     }
 }

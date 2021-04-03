@@ -2,13 +2,13 @@
 
 ## Description
 
-Defines a **Float** of a mathematical constant value in the shader.
+Defines a **Vector 1** of a mathematical constant value in the shader.
 
 ## Ports
 
 | Name        | Direction           | Type  | Binding | Description |
 |:------------ |:-------------|:-----|:---|:---|
-| Out | Output      |    Float    | None | Output value |
+| Out | Output      |    Vector 1 | None | Output value |
 
 ## Controls
 

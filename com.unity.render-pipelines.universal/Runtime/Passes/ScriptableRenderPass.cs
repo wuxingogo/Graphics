@@ -1,24 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering.Universal
 {
-    /// <summary>
-    /// Input requirements for <c>ScriptableRenderPass</c>.
-    /// </summary>
-    /// <seealso cref="ConfigureInput"/>
-    [Flags]
-    public enum ScriptableRenderPassInput
-    {
-        None = 0,
-        Depth = 1 << 0,
-        Normal = 1 << 1,
-        Color = 1 << 2,
-    }
-
     // Note: Spaced built-in events so we can add events in between them
     // We need to leave room as we sort render passes based on event.
     // Users can also inject render pass events in a specific point by doing RenderPassEvent + offset
@@ -50,37 +35,13 @@ namespace UnityEngine.Rendering.Universal
         /// Executes a <c>ScriptableRenderPass</c> before rendering prepasses, f.ex, depth prepass.
         /// Camera matrices and stereo rendering are already setup at this point.
         /// </summary>
-        BeforeRenderingPrePasses = 150,
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Obsolete, to match the capital from 'Prepass' to 'PrePass' (UnityUpgradable) -> BeforeRenderingPrePasses")]
-        BeforeRenderingPrepasses = 151,
+        BeforeRenderingPrepasses = 150,
 
         /// <summary>
         /// Executes a <c>ScriptableRenderPass</c> after rendering prepasses, f.ex, depth prepass.
         /// Camera matrices and stereo rendering are already setup at this point.
         /// </summary>
         AfterRenderingPrePasses = 200,
-
-        /// <summary>
-        /// Executes a <c>ScriptableRenderPass</c> before rendering gbuffer pass.
-        /// </summary>
-        BeforeRenderingGbuffer = 210,
-
-        /// <summary>
-        /// Executes a <c>ScriptableRenderPass</c> after rendering gbuffer pass.
-        /// </summary>
-        AfterRenderingGbuffer = 220,
-
-        /// <summary>
-        /// Executes a <c>ScriptableRenderPass</c> before rendering deferred shading pass.
-        /// </summary>
-        BeforeRenderingDeferredLights = 230,
-
-        /// <summary>
-        /// Executes a <c>ScriptableRenderPass</c> after rendering deferred shading pass.
-        /// </summary>
-        AfterRenderingDeferredLights = 240,
 
         /// <summary>
         /// Executes a <c>ScriptableRenderPass</c> before rendering opaque objects.
@@ -131,7 +92,7 @@ namespace UnityEngine.Rendering.Universal
     /// <summary>
     /// <c>ScriptableRenderPass</c> implements a logical rendering pass that can be used to extend Universal RP renderer.
     /// </summary>
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public abstract partial class ScriptableRenderPass
+    [MovedFrom("UnityEngine.Rendering.LWRP")] public abstract class ScriptableRenderPass
     {
         public RenderPassEvent renderPassEvent { get; set; }
 
@@ -150,15 +111,6 @@ namespace UnityEngine.Rendering.Universal
             get => m_DepthAttachment;
         }
 
-        /// <summary>
-        /// The input requirements for the <c>ScriptableRenderPass</c>, which has been set using <c>ConfigureInput</c>
-        /// </summary>
-        /// <seealso cref="ConfigureInput"/>
-        public ScriptableRenderPassInput input
-        {
-            get => m_Input;
-        }
-
         public ClearFlag clearFlag
         {
             get => m_ClearFlag;
@@ -169,64 +121,26 @@ namespace UnityEngine.Rendering.Universal
             get => m_ClearColor;
         }
 
-        /// <summary>
-        /// A ProfilingSampler for the entire render pass. Used as a profiling name by <c>ScriptableRenderer</c> when executing the pass.
-        /// Default is <c>Unnamed_ScriptableRenderPass</c>.
-        /// Set <c>base.profilingSampler</c> from the sub-class constructor to set a profiling name for a custom <c>ScriptableRenderPass</c>.
-        /// </summary>
-        protected internal ProfilingSampler profilingSampler { get; set; }
+        internal int eyeIndex { get; set; }
+
         internal bool overrideCameraTarget { get; set; }
         internal bool isBlitRenderPass { get; set; }
 
-        internal bool useNativeRenderPass { get; set; }
-
-        internal int renderTargetWidth { get; set; }
-        internal int renderTargetHeight { get; set; }
-        internal int renderTargetSampleCount { get; set; }
-
-        internal bool depthOnly { get; set; }
-        // this flag is updated each frame to keep track of which pass is the last for the current camera
-        internal bool isLastPass { get; set; }
-
-
-        internal GraphicsFormat[] renderTargetFormat { get; set; }
-        RenderTargetIdentifier[] m_ColorAttachments = new RenderTargetIdentifier[] {BuiltinRenderTextureType.CameraTarget};
+        RenderTargetIdentifier[] m_ColorAttachments = new RenderTargetIdentifier[]{BuiltinRenderTextureType.CameraTarget};
         RenderTargetIdentifier m_DepthAttachment = BuiltinRenderTextureType.CameraTarget;
-        ScriptableRenderPassInput m_Input = ScriptableRenderPassInput.None;
         ClearFlag m_ClearFlag = ClearFlag.None;
         Color m_ClearColor = Color.black;
 
         public ScriptableRenderPass()
         {
             renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
-            m_ColorAttachments = new RenderTargetIdentifier[] {BuiltinRenderTextureType.CameraTarget, 0, 0, 0, 0, 0, 0, 0};
+            m_ColorAttachments = new RenderTargetIdentifier[]{BuiltinRenderTextureType.CameraTarget, 0, 0, 0, 0, 0, 0, 0};
             m_DepthAttachment = BuiltinRenderTextureType.CameraTarget;
             m_ClearFlag = ClearFlag.None;
             m_ClearColor = Color.black;
             overrideCameraTarget = false;
             isBlitRenderPass = false;
-            profilingSampler = new ProfilingSampler($"Unnamed_{nameof(ScriptableRenderPass)}");
-            useNativeRenderPass = true;
-            renderTargetWidth = -1;
-            renderTargetHeight = -1;
-            renderTargetSampleCount = -1;
-            renderTargetFormat = new GraphicsFormat[]
-            {
-                GraphicsFormat.None, GraphicsFormat.None, GraphicsFormat.None,
-                GraphicsFormat.None, GraphicsFormat.None, GraphicsFormat.None, GraphicsFormat.None, GraphicsFormat.None
-            };
-            depthOnly = false;
-        }
-
-        /// <summary>
-        /// Configures Input Requirements for this render pass.
-        /// This method should be called inside <c>ScriptableRendererFeature.AddRenderPasses</c>.
-        /// </summary>
-        /// <param name="passInput">ScriptableRenderPassInput containing information about what requirements the pass needs.</param>
-        /// <seealso cref="ScriptableRendererFeature.AddRenderPasses"/>
-        public void ConfigureInput(ScriptableRenderPassInput passInput)
-        {
-            m_Input = passInput;
+            eyeIndex = 0;
         }
 
         /// <summary>
@@ -242,12 +156,6 @@ namespace UnityEngine.Rendering.Universal
             ConfigureTarget(colorAttachment);
         }
 
-        internal void ConfigureTarget(RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment, GraphicsFormat format)
-        {
-            m_DepthAttachment = depthAttachment;
-            ConfigureTarget(colorAttachment, format);
-        }
-
         /// <summary>
         /// Configures render targets for this render pass. Call this instead of CommandBuffer.SetRenderTarget.
         /// This method should be called inside Configure.
@@ -260,18 +168,11 @@ namespace UnityEngine.Rendering.Universal
             overrideCameraTarget = true;
 
             uint nonNullColorBuffers = RenderingUtils.GetValidColorBufferCount(colorAttachments);
-            if (nonNullColorBuffers > SystemInfo.supportedRenderTargetCount)
+            if( nonNullColorBuffers > SystemInfo.supportedRenderTargetCount)
                 Debug.LogError("Trying to set " + nonNullColorBuffers + " renderTargets, which is more than the maximum supported:" + SystemInfo.supportedRenderTargetCount);
 
             m_ColorAttachments = colorAttachments;
             m_DepthAttachment = depthAttachment;
-        }
-
-        internal void ConfigureTarget(RenderTargetIdentifier[] colorAttachments, RenderTargetIdentifier depthAttachment, GraphicsFormat[] formats)
-        {
-            ConfigureTarget(colorAttachments, depthAttachment);
-            for (int i = 0; i < formats.Length; ++i)
-                renderTargetFormat[i] = formats[i];
         }
 
         /// <summary>
@@ -287,19 +188,6 @@ namespace UnityEngine.Rendering.Universal
             m_ColorAttachments[0] = colorAttachment;
             for (int i = 1; i < m_ColorAttachments.Length; ++i)
                 m_ColorAttachments[i] = 0;
-        }
-
-        internal void ConfigureTarget(RenderTargetIdentifier colorAttachment, GraphicsFormat format, int width = -1, int height = -1, int sampleCount = -1, bool depth = false)
-        {
-            ConfigureTarget(colorAttachment);
-            for (int i = 1; i < m_ColorAttachments.Length; ++i)
-                renderTargetFormat[i] = GraphicsFormat.None;
-
-            renderTargetWidth = width;
-            renderTargetHeight = height;
-            renderTargetSampleCount = sampleCount;
-            depthOnly = depth;
-            renderTargetFormat[0] = format;
         }
 
         /// <summary>
@@ -326,19 +214,6 @@ namespace UnityEngine.Rendering.Universal
         }
 
         /// <summary>
-        /// This method is called by the renderer before rendering a camera
-        /// Override this method if you need to to configure render targets and their clear state, and to create temporary render target textures.
-        /// If a render pass doesn't override this method, this render pass renders to the active Camera's render target.
-        /// You should never call CommandBuffer.SetRenderTarget. Instead call <c>ConfigureTarget</c> and <c>ConfigureClear</c>.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer to enqueue rendering commands. This will be executed by the pipeline.</param>
-        /// <param name="renderingData">Current rendering state information</param>
-        /// <seealso cref="ConfigureTarget"/>
-        /// <seealso cref="ConfigureClear"/>
-        public virtual void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {}
-
-        /// <summary>
         /// This method is called by the renderer before executing the render pass.
         /// Override this method if you need to to configure render targets and their clear state, and to create temporary render target textures.
         /// If a render pass doesn't override this method, this render pass renders to the active Camera's render target.
@@ -351,7 +226,6 @@ namespace UnityEngine.Rendering.Universal
         public virtual void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {}
 
-
         /// <summary>
         /// Called upon finish rendering a camera. You can use this callback to release any resources created
         /// by this render
@@ -359,9 +233,8 @@ namespace UnityEngine.Rendering.Universal
         /// This method be called for all cameras in a camera stack.
         /// </summary>
         /// <param name="cmd">Use this CommandBuffer to cleanup any generated data</param>
-        public virtual void OnCameraCleanup(CommandBuffer cmd)
-        {
-        }
+        public virtual void FrameCleanup(CommandBuffer cmd)
+        {}
 
         /// <summary>
         /// Called upon finish rendering a camera stack. You can use this callback to release any resources created
@@ -371,7 +244,8 @@ namespace UnityEngine.Rendering.Universal
         /// In that case the Base camera is the first and last camera in the stack.
         /// </summary>
         /// <param name="cmd">Use this CommandBuffer to cleanup any generated data</param>
-        public virtual void OnFinishCameraStackRendering(CommandBuffer cmd)
+        /// NB: We are not so sure about this API. Thus, why internal.
+        internal virtual void OnFinishCameraStackRendering(CommandBuffer cmd)
         {}
 
         /// <summary>
@@ -395,6 +269,27 @@ namespace UnityEngine.Rendering.Universal
         {
             ScriptableRenderer.SetRenderTarget(cmd, destination, BuiltinRenderTextureType.CameraTarget, clearFlag, clearColor);
             cmd.Blit(source, destination, material, passIndex);
+        }
+
+        /// <summary>
+        /// Adds a Render Post-processing command for execution. This changes the active render target in the ScriptableRenderer to destination.
+        /// This method is only used for compatibility with the Post-processing V2 package.
+        /// </summary>
+        /// <param name="cmd">Command buffer to record command for execution.</param>
+        /// <param name="cameraData">Camera rendering data.</param>
+        /// <param name="sourceDescriptor">Render texture descriptor for source.</param>
+        /// <param name="source">Source texture or render target identifier.</param>
+        /// <param name="destination">Destination texture or render target identifier.</param>
+        /// <param name="opaqueOnly">If true, only renders opaque post-processing effects. Otherwise, renders before and after stack post-processing effects.</param>
+        /// <param name="flip">If true, flips image vertically.</param>
+
+        [Obsolete("RenderPostProcessing only works with Post-processing v2. The use of the Post-processing Stack V2 is deprecated in the Universal Render Pipeline.")]
+        public void RenderPostProcessing(CommandBuffer cmd, ref CameraData cameraData, RenderTextureDescriptor sourceDescriptor, RenderTargetIdentifier source, RenderTargetIdentifier destination, bool opaqueOnly, bool flip)
+        {
+#if POST_PROCESSING_STACK_2_0_0_OR_NEWER
+            ScriptableRenderer.ConfigureActiveTarget(destination, BuiltinRenderTextureType.CameraTarget);
+            RenderingUtils.RenderPostProcessingCompat(cmd, ref cameraData, sourceDescriptor, source, destination, opaqueOnly, flip);
+#endif
         }
 
         /// <summary>
@@ -444,14 +339,30 @@ namespace UnityEngine.Rendering.Universal
             return settings;
         }
 
-        public static bool operator<(ScriptableRenderPass lhs, ScriptableRenderPass rhs)
+        public static bool operator <(ScriptableRenderPass lhs, ScriptableRenderPass rhs)
         {
             return lhs.renderPassEvent < rhs.renderPassEvent;
         }
 
-        public static bool operator>(ScriptableRenderPass lhs, ScriptableRenderPass rhs)
+        public static bool operator >(ScriptableRenderPass lhs, ScriptableRenderPass rhs)
         {
             return lhs.renderPassEvent > rhs.renderPassEvent;
+        }
+
+        // TODO: Remove this. Currently only used by FinalBlit pass.
+        internal void SetRenderTarget(
+            CommandBuffer cmd,
+            RenderTargetIdentifier colorAttachment,
+            RenderBufferLoadAction colorLoadAction,
+            RenderBufferStoreAction colorStoreAction,
+            ClearFlag clearFlags,
+            Color clearColor,
+            TextureDimension dimension)
+        {
+            if (dimension == TextureDimension.Tex2DArray)
+                CoreUtils.SetRenderTarget(cmd, colorAttachment, clearFlags, clearColor, 0, CubemapFace.Unknown, -1);
+            else
+                CoreUtils.SetRenderTarget(cmd, colorAttachment, colorLoadAction, colorStoreAction, clearFlags, clearColor);
         }
     }
 }

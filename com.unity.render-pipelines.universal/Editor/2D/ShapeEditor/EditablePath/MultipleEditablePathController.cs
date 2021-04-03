@@ -9,6 +9,7 @@ namespace UnityEditor.Experimental.Rendering.Universal.Path2D
         private IEditablePathController m_Controller = new EditablePathController();
         private List<IEditablePath> m_Paths = new List<IEditablePath>();
         private float m_ClosestDistance = float.MaxValue;
+        private IEditablePath m_ClosestPath;
 
         public IEditablePath editablePath
         {
@@ -67,7 +68,7 @@ namespace UnityEditor.Experimental.Rendering.Universal.Path2D
             {
                 editablePath = s;
                 m_Controller.ClearSelection();
-            });
+            });   
 
             editablePath = current;
         }
@@ -140,7 +141,7 @@ namespace UnityEditor.Experimental.Rendering.Universal.Path2D
 
         private void ForEach(Action<IEditablePath> action)
         {
-            foreach (var path in m_Paths)
+            foreach(var path in m_Paths)
             {
                 if (path == null)
                     continue;

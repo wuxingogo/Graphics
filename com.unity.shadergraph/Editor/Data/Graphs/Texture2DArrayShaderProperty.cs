@@ -5,8 +5,7 @@ namespace UnityEditor.ShaderGraph.Internal
 {
     [Serializable]
     [FormerName("UnityEditor.ShaderGraph.Texture2DArrayShaderProperty")]
-    [BlackboardInputInfo(51)]
-    public class Texture2DArrayShaderProperty : AbstractShaderProperty<SerializableTextureArray>
+    public sealed class Texture2DArrayShaderProperty : AbstractShaderProperty<SerializableTextureArray>
     {
         internal Texture2DArrayShaderProperty()
         {
@@ -16,6 +15,7 @@ namespace UnityEditor.ShaderGraph.Internal
 
         public override PropertyType propertyType => PropertyType.Texture2DArray;
 
+        internal override bool isBatchable => false;
         internal override bool isExposable => true;
         internal override bool isRenamable => true;
 
@@ -23,33 +23,17 @@ namespace UnityEditor.ShaderGraph.Internal
 
         internal override string GetPropertyBlockString()
         {
-            return $"{hideTagString}{modifiableTagString}[NoScaleOffset]{referenceName}(\"{displayName}\", 2DArray) = \"\" {{}}";
+            return $"{hideTagString}{modifiableTagString}[NoScaleOffset]{referenceName}(\"{displayName}\", 2DArray) = \"white\" {{}}";
         }
 
-        internal override bool AllowHLSLDeclaration(HLSLDeclaration decl) => false; // disable UI, nothing to choose
-
-        internal override void ForeachHLSLProperty(Action<HLSLProperty> action)
+        internal override string GetPropertyDeclarationString(string delimiter = ";")
         {
-            action(new HLSLProperty(HLSLType._Texture2DArray, referenceName, HLSLDeclaration.Global));
-            action(new HLSLProperty(HLSLType._SamplerState, "sampler" + referenceName, HLSLDeclaration.Global));
+            return $"TEXTURE2D_ARRAY({referenceName}){delimiter} SAMPLER(sampler{referenceName}){delimiter}";
         }
 
-        internal override string GetPropertyAsArgumentString(string precisionString)
+        internal override string GetPropertyAsArgumentString()
         {
-            return "UnityTexture2DArray " + referenceName;
-        }
-
-        internal override string GetPropertyAsArgumentStringForVFX(string precisionString)
-        {
-            return "TEXTURE2D_ARRAY(" + referenceName + ")";
-        }
-
-        internal override string GetHLSLVariableName(bool isSubgraphProperty)
-        {
-            if (isSubgraphProperty)
-                return referenceName;
-            else
-                return $"UnityBuildTexture2DArrayStruct({referenceName})";
+            return $"TEXTURE2D_ARRAY_PARAM({referenceName}, sampler{referenceName})";
         }
 
         [SerializeField]
@@ -80,7 +64,8 @@ namespace UnityEditor.ShaderGraph.Internal
             return new Texture2DArrayShaderProperty()
             {
                 displayName = displayName,
-                value = value,
+                hidden = hidden,
+                value = value
             };
         }
     }

@@ -3,42 +3,55 @@
 //--------------------------------------------------------------------------------------------------
 
 // #pragma enable_d3d11_debug_symbols
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+#pragma only_renderers d3d11 playstation xboxone vulkan metal switch
 
-#pragma kernel VolumetricLighting
+#pragma kernel VolumetricLightingBruteforceMQ            VolumetricLighting=VolumetricLightingBruteforceMQ            LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=0 VL_PRESET_MQ
+#pragma kernel VolumetricLightingTiledMQ                 VolumetricLighting=VolumetricLightingTiledMQ                 ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=0 VL_PRESET_MQ
+#pragma kernel VolumetricLightingBruteforceReprojMQ      VolumetricLighting=VolumetricLightingBruteforceReprojMQ      LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=0 VL_PRESET_MQ
+#pragma kernel VolumetricLightingTiledReprojMQ           VolumetricLighting=VolumetricLightingTiledReprojMQ           ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=0 VL_PRESET_MQ
 
-#pragma multi_compile _ LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
-#pragma multi_compile _ ENABLE_REPROJECTION
-#pragma multi_compile _ ENABLE_ANISOTROPY
-#pragma multi_compile _ VL_PRESET_OPTIMAL
-#pragma multi_compile _ SUPPORT_LOCAL_LIGHTS
-#pragma multi_compile PROBE_VOLUMES_OFF PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
+#pragma kernel VolumetricLightingBruteforceAnisoMQ       VolumetricLighting=VolumetricLightingBruteforceAnisoMQ       LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=1 VL_PRESET_MQ
+#pragma kernel VolumetricLightingTiledAnisoMQ            VolumetricLighting=VolumetricLightingTiledAnisoMQ            ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=1 VL_PRESET_MQ
+#pragma kernel VolumetricLightingBruteforceReprojAnisoMQ VolumetricLighting=VolumetricLightingBruteforceReprojAnisoMQ LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=1 VL_PRESET_MQ
+#pragma kernel VolumetricLightingTiledReprojAnisoMQ      VolumetricLighting=VolumetricLightingTiledReprojAnisoMQ      ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=1 VL_PRESET_MQ
 
-// Don't want contact shadows
-#define LIGHT_EVALUATION_NO_CONTACT_SHADOWS // To define before LightEvaluation.hlsl
-// #define LIGHT_EVALUATION_NO_HEIGHT_FOG
+#pragma kernel VolumetricLightingBruteforceHQ            VolumetricLighting=VolumetricLightingBruteforceHQ            LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=0 VL_PRESET_HQ
+#pragma kernel VolumetricLightingTiledHQ                 VolumetricLighting=VolumetricLightingTiledHQ                 ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=0 VL_PRESET_HQ
+#pragma kernel VolumetricLightingBruteforceReprojHQ      VolumetricLighting=VolumetricLightingBruteforceReprojHQ      LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=0 VL_PRESET_HQ
+#pragma kernel VolumetricLightingTiledReprojHQ           VolumetricLighting=VolumetricLightingTiledReprojHQ           ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=0 VL_PRESET_HQ
+
+#pragma kernel VolumetricLightingBruteforceAnisoHQ       VolumetricLighting=VolumetricLightingBruteforceAnisoHQ       LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=1 VL_PRESET_HQ
+#pragma kernel VolumetricLightingTiledAnisoHQ            VolumetricLighting=VolumetricLightingTiledAnisoHQ            ENABLE_REPROJECTION=0 ENABLE_ANISOTROPY=1 VL_PRESET_HQ
+#pragma kernel VolumetricLightingBruteforceReprojAnisoHQ VolumetricLighting=VolumetricLightingBruteforceReprojAnisoHQ LIGHTLOOP_DISABLE_TILE_AND_CLUSTER ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=1 VL_PRESET_HQ
+#pragma kernel VolumetricLightingTiledReprojAnisoHQ      VolumetricLighting=VolumetricLightingTiledReprojAnisoHQ      ENABLE_REPROJECTION=1 ENABLE_ANISOTROPY=1 VL_PRESET_HQ
+
+#pragma kernel FilterVolumetricLightingX FilterVolumetricLighting=FilterVolumetricLightingX LIGHTLOOP_DISABLE_TILE_AND_CLUSTER VL_PRESET_HQ
+#pragma kernel FilterVolumetricLightingY FilterVolumetricLighting=FilterVolumetricLightingY LIGHTLOOP_DISABLE_TILE_AND_CLUSTER VL_PRESET_HQ VERTICAL_PASS
 
 #ifndef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
     #define USE_BIG_TILE_LIGHTLIST
 #endif
 
-#ifdef VL_PRESET_OPTIMAL
-    // E.g. for 1080p: (1920/8)x(1080/8)x(64) = 2,073,600 voxels
-    #define VBUFFER_VOXEL_SIZE 8
+// Don't want contact shadows
+#define LIGHT_EVALUATION_NO_CONTACT_SHADOWS // To define before LightEvaluation.hlsl
+
+#ifdef VL_PRESET_MQ
+    // E.g. for 1080p: (1920/8)x(1080/8)x(64)  =  2,073,600 voxels
+    // Same texel count as in a 1080p frame buffer.
+    #define VBUFFER_TILE_SIZE 8
+#endif
+#ifdef VL_PRESET_HQ
+    // E.g. for 1080p: (1920/4)x(1080/4)x(128) = 16,588,800 voxels
+    // Double the texel count of a 4K frame buffer!
+    #define VBUFFER_TILE_SIZE 4
 #endif
 
-#define PREFER_HALF             0
-#define GROUP_SIZE_1D           8
-#define SHADOW_USE_DEPTH_BIAS   0 // Too expensive, not particularly effective
-#define SHADOW_ULTRA_LOW          // Different options are too expensive.
-#define SHADOW_AUTO_FLIP_NORMAL 0 // No normal information, so no need to flip
-#define SHADOW_VIEW_BIAS        1 // Prevents light leaking through thin geometry. Not as good as normal bias at grazing angles, but cheaper and independent from the geometry.
-#define USE_DEPTH_BUFFER        1 // Accounts for opaque geometry along the camera ray
-#define SAMPLE_PROBE_VOLUMES    1 && (defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2))
+#define GROUP_SIZE_1D                      8
+#define SUPPORT_LOCAL_LIGHTS               1 // Local lights contribute to fog lighting
 
-// Filter out lights that are not meant to be affecting volumetric once per thread rather than per voxel. This has the downside that it limits the max processable lights to MAX_SUPPORTED_LIGHTS
-// which might be lower than the max number of lights that might be in the big tile.
-#define PRE_FILTER_LIGHT_LIST   1 && defined(USE_BIG_TILE_LIGHTLIST)
+#define SHADOW_USE_DEPTH_BIAS              0
+
+#define PREFER_HALF 0
 
 //--------------------------------------------------------------------------------------------------
 // Included headers
@@ -62,38 +75,41 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/VolumetricLighting/VBuffer.hlsl"
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Sky/PhysicallyBasedSky/PhysicallyBasedSkyCommon.hlsl"
-
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightEvaluation.hlsl"
-
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/BuiltinGIUtilities.hlsl"
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs
 //--------------------------------------------------------------------------------------------------
 
-RW_TEXTURE3D(float4, _VBufferLighting);
-RW_TEXTURE3D(float4, _VBufferFeedback);
-TEXTURE3D(_VBufferHistory);
+RW_TEXTURE3D(float4, _VBufferLightingIntegral);
+RW_TEXTURE3D(float4, _VBufferLightingFeedback);
+TEXTURE3D(_VBufferLightingHistory);
 TEXTURE3D(_VBufferDensity);                     // RGB = scattering, A = extinction
-TEXTURE2D_X(_MaxZMaskTexture);
+
+// TODO: avoid creating another Constant Buffer...
+CBUFFER_START(UnityVolumetricLighting)
+    float4x4 _VBufferCoordToViewDirWS[SHADEROPTIONS_XR_MAX_VIEWS];
+
+    float    _VBufferUnitDepthTexelSpacing;
+    uint     _NumVisibleDensityVolumes;         // Not used by this shader
+    float    _CornetteShanksConstant;
+    uint     _VBufferLightingHistoryIsValid;
+
+    float4   _VBufferSampleOffset;
+    float4   _VolumeMaskDimensions;             // Not used by this shader
+
+    // BigTile...
+    uint _NumTileBigTileX;
+    uint _NumTileBigTileY;
+    uint _EnvLightIndexShift;
+    uint _DensityVolumeIndexShift;
+CBUFFER_END
 
 //--------------------------------------------------------------------------------------------------
 // Implementation
 //--------------------------------------------------------------------------------------------------
-
-#if PRE_FILTER_LIGHT_LIST
-
-#if MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE > 48
-#define MAX_SUPPORTED_LIGHTS 48
-#else
-#define MAX_SUPPORTED_LIGHTS MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE
-#endif
-
-groupshared int gs_localLightList[GROUP_SIZE_1D*GROUP_SIZE_1D][MAX_SUPPORTED_LIGHTS];
-
-#endif
 
 // Jittered ray with screen-space derivatives.
 struct JitteredRay
@@ -103,9 +119,6 @@ struct JitteredRay
     float3 jitterDirWS;
     float3 xDirDerivWS;
     float3 yDirDerivWS;
-    float  geomDist;
-
-    float maxDist;
 };
 
 struct VoxelLighting
@@ -113,11 +126,6 @@ struct VoxelLighting
     float3 radianceComplete;
     float3 radianceNoPhase;
 };
-
-bool IsInRange(float x, float2 range)
-{
-    return clamp(x, range.x, range.y) == x;
-}
 
 float ComputeHistoryWeight()
 {
@@ -177,13 +185,9 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
         // Is it worth sampling the shadow map?
         if ((light.volumetricLightDimmer > 0) && (light.volumetricShadowDimmer > 0))
         {
-            #if SHADOW_VIEW_BIAS
-                // Our shadows only support normal bias. Volumetrics has no access to the surface normal.
-                // We fake view bias by invoking the normal bias code with the view direction.
-                float3 shadowN = -ray.jitterDirWS;
-            #else
-                float3 shadowN = 0; // No bias
-            #endif // SHADOW_VIEW_BIAS
+            // Pass the light direction as the normal to avoid issues with shadow biasing code.
+            // TODO: does it make sense?
+            float3 shadowN = L;
 
             context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
                                                                   posInput.positionSS, posInput.positionWS, shadowN,
@@ -214,16 +218,12 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
             lightColor.a *= light.volumetricLightDimmer;
             lightColor.rgb *= lightColor.a; // Composite
 
-            #if SHADOW_VIEW_BIAS
-                // Our shadows only support normal bias. Volumetrics has no access to the surface normal.
-                // We fake view bias by invoking the normal bias code with the view direction.
-                float3 shadowN = -ray.jitterDirWS;
-            #else
-                float3 shadowN = 0; // No bias
-            #endif // SHADOW_VIEW_BIAS
+            // Pass the light direction as the normal to avoid issues with shadow biasing code.
+            // TODO: does it make sense?
+            float3 shadowN = L;
 
             // This code works for both surface reflection and thin object transmission.
-            SHADOW_TYPE shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
+            DirectionalShadowType shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
             lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
             // Important:
@@ -252,7 +252,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
 
 // Computes the light integral (in-scattered radiance) within the voxel.
 // Multiplication by the scattering coefficient and the phase function is performed outside.
-VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx, uint featureFlags, PositionInputs posInput,
+VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint featureFlags, PositionInputs posInput,
                                          uint lightCount, uint lightStart, float3 centerWS,
                                          JitteredRay ray, float t0, float t1, float dt, float rndVal, float extinction, float anisotropy)
 {
@@ -271,13 +271,8 @@ VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx
         // This loop does not process box lights.
         for (; lightOffset < lightCount; lightOffset++)
         {
-#if PRE_FILTER_LIGHT_LIST
-            uint lightIndex = gs_localLightList[groupIdx][lightOffset];
-#else
             uint lightIndex = FetchIndex(lightStart, lightOffset);
-#endif
             LightData light = _LightDatas[lightIndex];
-
 
             if (light.lightType >= GPULIGHTTYPE_PROJECTOR_BOX) { break; }
 
@@ -339,15 +334,11 @@ VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx
                 lightColor.a *= light.volumetricLightDimmer;
                 lightColor.rgb *= lightColor.a; // Composite
 
-            #if SHADOW_VIEW_BIAS
-                // Our shadows only support normal bias. Volumetrics has no access to the surface normal.
-                // We fake view bias by invoking the normal bias code with the view direction.
-                float3 shadowN = -ray.jitterDirWS;
-            #else
-                float3 shadowN = 0; // No bias
-            #endif // SHADOW_VIEW_BIAS
+                // Pass the light direction as the normal to avoid issues with shadow biasing code.
+                // TODO: does it make sense?
+                float3 shadowN = L;
 
-                SHADOW_TYPE shadow = EvaluateShadow_Punctual(context, posInput, light, unused, shadowN, L, distances);
+                float shadow = EvaluateShadow_Punctual(context, posInput, light, unused, shadowN, L, distances);
                 lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
 
@@ -378,11 +369,7 @@ VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx
         // This loop only processes box lights.
         for (; lightOffset < lightCount; lightOffset++)
         {
-#if PRE_FILTER_LIGHT_LIST
-            uint lightIndex = gs_localLightList[groupIdx][lightOffset];
-#else
             uint lightIndex = FetchIndex(lightStart, lightOffset);
-#endif
             LightData light = _LightDatas[lightIndex];
 
             if (light.lightType != GPULIGHTTYPE_PROJECTOR_BOX) { break; }
@@ -428,15 +415,11 @@ VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx
                 lightColor.a *= light.volumetricLightDimmer;
                 lightColor.rgb *= lightColor.a; // Composite
 
-            #if SHADOW_VIEW_BIAS
-                // Our shadows only support normal bias. Volumetrics has no access to the surface normal.
-                // We fake view bias by invoking the normal bias code with the view direction.
-                float3 shadowN = -ray.jitterDirWS;
-            #else
-                float3 shadowN = 0; // No bias
-            #endif // SHADOW_VIEW_BIAS
+                // Pass the light direction as the normal to avoid issues with shadow biasing code.
+                // TODO: does it make sense?
+                float3 shadowN = L;
 
-                SHADOW_TYPE shadow = EvaluateShadow_Punctual(context, posInput, light, unused, shadowN, L, distances);
+                float shadow = EvaluateShadow_Punctual(context, posInput, light, unused, shadowN, L, distances);
                 lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
 
@@ -466,37 +449,9 @@ VoxelLighting EvaluateVoxelLightingLocal(LightLoopContext context, uint groupIdx
     return lighting;
 }
 
-float3 EvaluateVoxelDiffuseGI(PositionInputs posInput, JitteredRay ray, float t0, float dt, float rndVal, float extinction)
-{
-#if SAMPLE_PROBE_VOLUMES
-    float tOffset, weight;
-    ImportanceSampleHomogeneousMedium(rndVal, extinction, dt, tOffset, weight);
-
-    float t = t0 + tOffset;
-    posInput.positionWS = ray.originWS + t * ray.jitterDirWS;
-
-    float3 apvDiffuseGI;
-    // Note here we don't need undo the convolution by the cosine kernel as we only sample L0 and don't support anisotropy yet, so undoing cosine and convolve with phase function
-    // for L0 term it'd just cancel out as both are just constant factors.
-    EvaluateAdaptiveProbeVolume(GetAbsolutePositionWS(posInput.positionWS), apvDiffuseGI);
-
-    // It is possible that some invalid probes are sampled due to how APV is laying the probes
-    // For now the safest way is to ignore the NaN data when sampled.
-    if (AnyIsNaN(apvDiffuseGI))
-    {
-        // We don't early out here as otherwise the compiler issues warnings on some platforms.
-        weight = 0;
-    }
-
-    return apvDiffuseGI * weight;
-#else
-    return 0;
-#endif
-}
-
 // Computes the in-scattered radiance along the ray.
 void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
-                                  PositionInputs posInput, uint tileIndex, int groupIdx, JitteredRay ray, float tStart)
+                                  PositionInputs posInput, uint tileIndex, JitteredRay ray)
 {
     uint lightCount, lightStart;
 
@@ -508,8 +463,6 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
     // list of object indices. Note that while objects are already sorted by type, we don't know the
     // number of each type of objects (e.g. lights), so we should remember to break out of the loop.
     lightCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
-    // On Metal for unknow reasons it seems we have bad value sometimes causing freeze / crash. This min here prevent it.
-    lightCount = min(lightCount, MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE);
     lightStart = MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex + 1;
 
     // For now, iterate through all the objects to determine the correct range.
@@ -517,20 +470,10 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
     {
         uint offset = 0;
 
-        int validLightCount = 0;
-
         for (; offset < lightCount; offset++)
         {
             uint objectIndex = FetchIndex(lightStart, offset);
-#if PRE_FILTER_LIGHT_LIST
-            LightData light = _LightDatas[objectIndex];
-            if (light.volumetricLightDimmer > 0 && validLightCount < MAX_SUPPORTED_LIGHTS && objectIndex < _EnvLightIndexShift)
-            {
-                gs_localLightList[groupIdx][validLightCount++] = objectIndex;
-            }
-#else
-            validLightCount++;
-#endif
+
             if (objectIndex >= _EnvLightIndexShift)
             {
                 // We have found the last local analytical light.
@@ -538,7 +481,7 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
             }
         }
 
-        lightCount = validLightCount;
+        lightCount = offset;
     }
 
 #else  // USE_BIG_TILE_LIGHTLIST
@@ -548,7 +491,7 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
 
 #endif // USE_BIG_TILE_LIGHTLIST
 
-    float t0 = max(tStart, DecodeLogarithmicDepthGeneralized(0, _VBufferDistanceDecodingParams));
+    float t0 = DecodeLogarithmicDepthGeneralized(0, _VBufferDistanceDecodingParams);
     float de = _VBufferRcpSliceCount; // Log-encoded distance between slices
 
     // The contribution of the ambient probe does not depend on the position,
@@ -560,37 +503,14 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
 
     float3 totalRadiance = 0;
     float  opticalDepth  = 0;
-    uint slice = 0;
-    for (; slice < _VBufferSliceCount; slice++)
+
+    for (uint slice = 0; slice < _VBufferSliceCount; slice++)
     {
         uint3 voxelCoord = uint3(posInput.positionSS, slice + _VBufferSliceCount * unity_StereoEyeIndex);
 
         float e1 = slice * de + de; // (slice + 1) / sliceCount
-        float t1 = max(tStart, DecodeLogarithmicDepthGeneralized(e1, _VBufferDistanceDecodingParams));
-        float tNext = t1;
-
-    #if USE_DEPTH_BUFFER
-        bool containsOpaqueGeometry = IsInRange(ray.geomDist, float2(t0, t1));
-
-        if (containsOpaqueGeometry)
-        {
-            // Only integrate up to the opaque surface (make the voxel shorter, but not completely flat).
-            // Note that we can NOT completely stop integrating when the ray reaches geometry, since
-            // otherwise we get flickering at geometric discontinuities if reprojection is enabled.
-            // In this case, a temporally stable light leak is better than flickering.
-            t1 = max(t0 * 1.0001, ray.geomDist);
-        }
-    #endif
-        float dt = t1 - t0; // Is geometry-aware
-        if(dt <= 0.0)
-        {
-            _VBufferLighting[voxelCoord] = 0;
-#ifdef ENABLE_REPROJECTION
-            _VBufferFeedback[voxelCoord] = 0;
-#endif
-            t0 = t1;
-            continue;
-        }
+        float t1 = DecodeLogarithmicDepthGeneralized(e1, _VBufferDistanceDecodingParams);
+        float dt = t1 - t0;
 
         // Accurately compute the center of the voxel in the log space. It's important to perform
         // the inversion exactly, since the accumulated value of the integral is stored at the center.
@@ -606,12 +526,15 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         float  extinction = density.a;
         float  anisotropy = _GlobalFogAnisotropy;
 
+        // Prevent division by 0.
+        extinction = max(extinction, FLT_MIN);
+
         // Perform per-pixel randomization by adding an offset and then sampling uniformly
         // (in the log space) in a vein similar to Stochastic Universal Sampling:
         // https://en.wikipedia.org/wiki/Stochastic_universal_sampling
         float perPixelRandomOffset = GenerateHashedRandomFloat(posInput.positionSS);
 
-    #ifdef ENABLE_REPROJECTION
+    #if ENABLE_REPROJECTION
         // This is a time-based sequence of 7 equidistant numbers from 1/14 to 13/14.
         // Each of them is the centroid of the interval of length 2/14.
         float rndVal = frac(perPixelRandomOffset + _VBufferSampleOffset.z);
@@ -621,9 +544,6 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
 
         VoxelLighting aggregateLighting;
         ZERO_INITIALIZE(VoxelLighting, aggregateLighting);
-
-        // Prevent division by 0.
-        extinction = max(extinction, FLT_MIN);
 
         if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
         {
@@ -635,9 +555,9 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
             aggregateLighting.radianceComplete += lighting.radianceComplete;
         }
 
-        #ifdef SUPPORT_LOCAL_LIGHTS
+        #if (SUPPORT_LOCAL_LIGHTS != 0)
         {
-            VoxelLighting lighting = EvaluateVoxelLightingLocal(context, groupIdx, featureFlags, posInput,
+            VoxelLighting lighting = EvaluateVoxelLightingLocal(context, featureFlags, posInput,
                                                                 lightCount, lightStart,
                                                                 centerWS, ray, t0, t1, dt, rndVal,
                                                                 extinction, anisotropy);
@@ -647,16 +567,7 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         }
         #endif
 
-        #if SAMPLE_PROBE_VOLUMES
-        {
-            float3 apvDiffuseGI = EvaluateVoxelDiffuseGI(posInput, ray, t0, dt, rndVal, extinction);
-            aggregateLighting.radianceNoPhase += apvDiffuseGI;
-            aggregateLighting.radianceComplete += apvDiffuseGI;
-
-        }
-        #endif
-
-    #ifdef ENABLE_REPROJECTION
+    #if ENABLE_REPROJECTION
         // Clamp here to prevent generation of NaNs.
         float4 voxelValue           = float4(aggregateLighting.radianceNoPhase, extinction * dt);
         float4 linearizedVoxelValue = LinearizeRGBD(voxelValue);
@@ -669,18 +580,18 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
     #endif
 
         // Reproject the history at 'centerWS'.
-        float4 reprojValue = SampleVBuffer(TEXTURE3D_ARGS(_VBufferHistory, s_linear_clamp_sampler),
+        float4 reprojValue = SampleVBuffer(TEXTURE3D_ARGS(_VBufferLightingHistory, s_linear_clamp_sampler),
                                            centerWS,
-                                           _PrevCamPosRWS.xyz,
+                                           _PrevCamPosRWS,
                                            UNITY_MATRIX_PREV_VP,
                                            _VBufferPrevViewportSize,
-                                           _VBufferHistoryViewportScale.xyz,
-                                           _VBufferHistoryViewportLimit.xyz,
-                                           _VBufferPrevDistanceEncodingParams,
-                                           _VBufferPrevDistanceDecodingParams,
-                                           false, false, true) * float4(GetInversePreviousExposureMultiplier().xxx, 1);
+                                           _VBufferHistoryPrevUvScaleAndLimit.xy,
+                                           _VBufferHistoryPrevUvScaleAndLimit.zw,
+                                           _VBufferPrevDepthEncodingParams,
+                                           _VBufferPrevDepthDecodingParams,
+                                           false, true) * float4(GetInversePreviousExposureMultiplier().xxx, 1);
 
-        bool reprojSuccess = (_VBufferHistoryIsValid != 0) && (reprojValue.a != 0);
+        bool reprojSuccess = (_VBufferLightingHistoryIsValid != 0) && (reprojValue.a != 0);
 
         if (reprojSuccess)
         {
@@ -692,12 +603,12 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         // TODO: dynamic lights (which update their position, rotation, cookie or shadow at runtime)
         // do not support reprojection and should neither read nor write to the history buffer.
         // This will cause them to alias, but it is the only way to prevent ghosting.
-        _VBufferFeedback[voxelCoord] = normalizedBlendValue * float4(GetCurrentExposureMultiplier().xxx, 1);
+        _VBufferLightingFeedback[voxelCoord] = normalizedBlendValue * float4(GetCurrentExposureMultiplier().xxx, 1);
 
         float4 linearizedBlendValue = normalizedBlendValue * dt;
         float4 blendValue = DelinearizeRGBD(linearizedBlendValue);
 
-    #ifdef ENABLE_ANISOTROPY
+    #if ENABLE_ANISOTROPY
         // Estimate the influence of the phase function on the results of the current frame.
         float3 phaseCurrFrame;
 
@@ -717,9 +628,9 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         blendValue.rgb *= phaseCurrFrame;
     #endif // ENABLE_ANISOTROPY
 
-    #else // NO REPROJECTION
+    #else // ENABLE_REPROJECTION
 
-    #ifdef ENABLE_ANISOTROPY
+    #if ENABLE_ANISOTROPY
         float4 blendValue = float4(aggregateLighting.radianceComplete, extinction * dt);
     #else
         float4 blendValue = float4(aggregateLighting.radianceNoPhase,  extinction * dt);
@@ -730,7 +641,7 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         // Compute the transmittance from the camera to 't0'.
         float transmittance = TransmittanceFromOpticalDepth(opticalDepth);
 
-    #ifdef ENABLE_ANISOTROPY
+    #if ENABLE_ANISOTROPY
         float phase = _CornetteShanksConstant;
     #else
         float phase = IsotropicPhaseFunction();
@@ -740,7 +651,6 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         // Integral{a, b}{Transmittance(0, t) * L_s(t) dt} = Transmittance(0, a) * Integral{a, b}{Transmittance(0, t - a) * L_s(t) dt}.
         float3 probeRadiance = probeInScatteredRadiance * TransmittanceIntegralHomogeneousMedium(extinction, dt);
 
-        // Accumulate radiance along the ray.
         totalRadiance += transmittance * scattering * (phase * blendValue.rgb + probeRadiance);
 
         // Compute the optical depth up to the center of the interval.
@@ -751,40 +661,29 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         // This means storing the tone mapped radiance and transmittance instead of optical depth.
         // See "A Fresh Look at Generalized Sampling", p. 51.
         // TODO: re-enable tone mapping after implementing pre-exposure.
-        _VBufferLighting[voxelCoord] = LinearizeRGBD(float4(/*FastTonemap*/(totalRadiance), opticalDepth)) * float4(GetCurrentExposureMultiplier().xxx, 1);
+        _VBufferLightingIntegral[voxelCoord] = LinearizeRGBD(float4(/*FastTonemap*/(totalRadiance), opticalDepth)) * float4(GetCurrentExposureMultiplier().xxx, 1);
 
         // Compute the optical depth up to the end of the interval.
         opticalDepth += 0.5 * blendValue.a;
 
-        if (t0 * 0.99 > ray.maxDist)
-        {
-            break;
-        }
-
-        t0 = tNext;
-    }
-
-    for (; slice < _VBufferSliceCount; slice++)
-    {
-        uint3 voxelCoord = uint3(posInput.positionSS, slice + _VBufferSliceCount * unity_StereoEyeIndex);
-        _VBufferLighting[voxelCoord] = 0;
-#ifdef ENABLE_REPROJECTION
-        _VBufferFeedback[voxelCoord] = 0;
-#endif
-
+        t0 = t1;
     }
 }
 
 [numthreads(GROUP_SIZE_1D, GROUP_SIZE_1D, 1)]
 void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
                         uint2 groupId          : SV_GroupID,
-                        uint2 groupThreadId    : SV_GroupThreadID,
-                        int   groupIndex       : SV_GroupIndex)
+                        uint2 groupThreadId    : SV_GroupThreadID)
 {
+    // Perform compile-time checks.
+    if (!IsPower2(VBUFFER_TILE_SIZE) || !IsPower2(TILE_SIZE_BIG_TILE)) return;
+
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
 
     uint2 groupOffset = groupId * GROUP_SIZE_1D;
     uint2 voxelCoord  = groupOffset + groupThreadId;
+    uint2 tileCoord   = groupOffset * VBUFFER_TILE_SIZE / TILE_SIZE_BIG_TILE;
+    uint  tileIndex   = tileCoord.x + _NumTileBigTileX * tileCoord.y;
 
     // Reminder: our voxels are sphere-capped right frustums (truncated right pyramids).
     // The curvature of the front and back faces is quite gentle, so we can use
@@ -796,7 +695,6 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
 
     float3 F = GetViewForwardDir();
     float3 U = GetViewUpDir();
-    float3 R = cross(F, U);
 
     float2 centerCoord = voxelCoord + float2(0.5, 0.5);
 
@@ -816,55 +714,14 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     ray.xDirDerivWS = rightDirWS * (rcpLenRightDir * unitDistFaceSize); // Normalize & rescale
     ray.yDirDerivWS = cross(ray.xDirDerivWS, ray.centerDirWS); // Will have the length of 'unitDistFaceSize' by construction
 
-#ifdef ENABLE_REPROJECTION
-    float2 sampleOffset = _VBufferSampleOffset.xy;
+#if ENABLE_REPROJECTION
+    ray.jitterDirWS = normalize(ray.centerDirWS + _VBufferSampleOffset.x * ray.xDirDerivWS
+                                                + _VBufferSampleOffset.y * ray.yDirDerivWS);
 #else
-    float2 sampleOffset = 0;
+    ray.jitterDirWS = ray.centerDirWS;
 #endif
 
-    ray.jitterDirWS = normalize(ray.centerDirWS + sampleOffset.x * ray.xDirDerivWS
-                                                + sampleOffset.y * ray.yDirDerivWS);
-    float tStart = g_fNearPlane / dot(ray.jitterDirWS, F);
-
-    // We would like to determine the screen pixel (at the full resolution) which
-    // the jittered ray corresponds to. The exact solution can be obtained by intersecting
-    // the ray with the screen plane, e.i. (ViewSpace(jitterDirWS).z = 1). That's a little expensive.
-    // So, as an approximation, we ignore the curvature of the frustum.
-    uint2 pixelCoord = (uint2)((voxelCoord + 0.5 + sampleOffset) * _VBufferVoxelSize);
-
-#ifdef VL_PRESET_OPTIMAL
-    // The entire thread group is within the same light tile.
-    uint2 tileCoord = groupOffset * VBUFFER_VOXEL_SIZE / TILE_SIZE_BIG_TILE;
-#else
-    // No compile-time optimizations, no scalarization.
-    uint2 tileCoord = pixelCoord / TILE_SIZE_BIG_TILE;
-#endif
-    uint  tileIndex = tileCoord.x + _NumTileBigTileX * tileCoord.y;
-    // This clamp is important as _VBufferVoxelSize can have float value which can cause en overflow (Crash on Vulkan and Metal)
-    tileIndex = min(tileIndex, _NumTileBigTileX * _NumTileBigTileY);
-
-    // Do not jitter 'voxelCoord' else. It's expected to correspond to the center of the voxel.
     PositionInputs posInput = GetPositionInput(voxelCoord, _VBufferViewportSize.zw, tileCoord);
-
-    ray.geomDist = FLT_INF;
-    ray.maxDist = FLT_INF;
-#if USE_DEPTH_BUFFER
-    float deviceDepth = LoadCameraDepth(pixelCoord);
-
-    if (deviceDepth > 0) // Skip the skybox
-    {
-        // Convert it to distance along the ray. Doesn't work with tilt shift, etc.
-        float linearDepth = LinearEyeDepth(deviceDepth, _ZBufferParams);
-        ray.geomDist = linearDepth * rcp(dot(ray.jitterDirWS, F));
-
-        float2 UV = posInput.positionNDC * _RTHandleScale.xy;
-
-        // This should really be using a max sampler here. This is a bit overdilating given that it is already dilated.
-        // Better to be safer though.
-        float4 d = GATHER_RED_TEXTURE2D_X(_MaxZMaskTexture, s_point_clamp_sampler, UV) * rcp(dot(ray.jitterDirWS, F));
-        ray.maxDist = max(Max3(d.x, d.y, d.z), d.w);
-    }
-#endif
 
     // TODO
     LightLoopContext context;
@@ -873,5 +730,74 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
 
     ApplyCameraRelativeXR(ray.originWS);
 
-    FillVolumetricLightingBuffer(context, featureFlags, posInput, tileIndex, groupIndex, ray, tStart);
+    FillVolumetricLightingBuffer(context, featureFlags, posInput, tileIndex, ray);
+}
+
+#define SIGMA_FILTER 2.0
+
+float Gaussian(float radius, float sigma)
+{
+    float v = radius / sigma;
+    return exp(-(v*v));
+}
+
+[numthreads(GROUP_SIZE_1D, GROUP_SIZE_1D, 1)]
+void FilterVolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
+                                uint2 groupId          : SV_GroupID,
+                                uint2 groupThreadId    : SV_GroupThreadID)
+{
+    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+
+    // Compute the coordinate that this thread needs to process
+    uint2 currentCoord  = groupId * GROUP_SIZE_1D + groupThreadId;
+
+    // Compute the half size of the slices, used to define the filtering radius
+    uint halfSliceCount = _VBufferSliceCount / 2;
+
+    // Loop through the slices that this thread needs to process
+    for (uint currentSlice = 0; currentSlice < _VBufferSliceCount; currentSlice++)
+    {
+        // Compute the output voxel coordinate
+        uint3 voxelCoord = uint3(currentCoord, currentSlice + _VBufferSliceCount * unity_StereoEyeIndex);
+
+        // Values used for accumulation
+        float sumW = 0.0;
+        float4 value = float4(0.0, 0.0, 0.0, 0.0);
+        #ifdef VERTICAL_PASS
+        int3 vec = int3(0, 1, 0);
+        #else
+        int3 vec = int3(1, 0, 0);
+        #endif
+
+        // Compute the radius for this slice
+        int radius =  currentSlice > halfSliceCount ? 2 : 1;
+        // Loop through the values required for our kernel
+        for (int idx = -radius; idx <= radius; ++idx)
+        {
+            // Compute the next tapping coordinate
+            int3 tapCoord = int3(voxelCoord.x, voxelCoord.y, voxelCoord.z) + vec * idx;
+            // Tap the value we should be tapping from
+            float4 currentValue = _VBufferLightingFeedback[tapCoord];
+            // Compute the weight for this tap
+            float weight = Gaussian(abs(idx), SIGMA_FILTER);
+
+            // If this is outside of the image, force the weight to 0
+            #ifdef VERTICAL_PASS
+            if (tapCoord.y < 0.0 || tapCoord.y >= _VBufferViewportSize.y)
+            #else
+            if (tapCoord.x < 0.0 || tapCoord.x >= _VBufferViewportSize.x)
+            #endif
+            {
+                // To avoid NaNs, we have to override this value
+                currentValue = 0.0f;
+                weight = 0.0f;
+            }
+
+            // Accumulate the value and weight
+            value += currentValue * weight;
+            sumW += weight;
+        }
+        // Normalize and output
+        _VBufferLightingIntegral[voxelCoord] = value / sumW;
+    }
 }

@@ -7,10 +7,18 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.VFX
 {
-    class VFXTexture2DValue : VFXObjectValue
+    class VFXTexture2DValue : VFXValue<Texture>
     {
-        public VFXTexture2DValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.Texture2D)
+        public VFXTexture2DValue(Texture content = null, Mode mode = Mode.FoldableVariable) : base(content, mode)
         {
+        }
+
+        sealed protected override int[] additionnalOperands
+        {
+            get
+            {
+                return new int[] { (int)VFXValueType.Texture2D };
+            }
         }
 
         sealed public override VFXValue CopyExpression(Mode mode)
@@ -20,10 +28,18 @@ namespace UnityEditor.VFX
         }
     }
 
-    class VFXTexture3DValue : VFXObjectValue
+    class VFXTexture3DValue : VFXValue<Texture>
     {
-        public VFXTexture3DValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.Texture3D)
+        public VFXTexture3DValue(Texture content = null, Mode mode = Mode.FoldableVariable) : base(content, mode)
         {
+        }
+
+        sealed protected override int[] additionnalOperands
+        {
+            get
+            {
+                return new int[] { (int)VFXValueType.Texture3D };
+            }
         }
 
         sealed public override VFXValue CopyExpression(Mode mode)
@@ -33,10 +49,18 @@ namespace UnityEditor.VFX
         }
     }
 
-    class VFXTextureCubeValue : VFXObjectValue
+    class VFXTextureCubeValue : VFXValue<Texture>
     {
-        public VFXTextureCubeValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.TextureCube)
+        public VFXTextureCubeValue(Texture content = null, Mode mode = Mode.FoldableVariable) : base(content, mode)
         {
+        }
+
+        sealed protected override int[] additionnalOperands
+        {
+            get
+            {
+                return new int[] { (int)VFXValueType.TextureCube };
+            }
         }
 
         sealed public override VFXValue CopyExpression(Mode mode)
@@ -46,10 +70,18 @@ namespace UnityEditor.VFX
         }
     }
 
-    class VFXTexture2DArrayValue : VFXObjectValue
+    class VFXTexture2DArrayValue : VFXValue<Texture>
     {
-        public VFXTexture2DArrayValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.Texture2DArray)
+        public VFXTexture2DArrayValue(Texture content = null, Mode mode = Mode.FoldableVariable) : base(content, mode)
         {
+        }
+
+        sealed protected override int[] additionnalOperands
+        {
+            get
+            {
+                return new int[] { (int)VFXValueType.Texture2DArray };
+            }
         }
 
         sealed public override VFXValue CopyExpression(Mode mode)
@@ -59,83 +91,23 @@ namespace UnityEditor.VFX
         }
     }
 
-    class VFXTextureCubeArrayValue : VFXObjectValue
+    class VFXTextureCubeArrayValue : VFXValue<Texture>
     {
-        public VFXTextureCubeArrayValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.TextureCubeArray)
+        public VFXTextureCubeArrayValue(Texture content = null, Mode mode = Mode.FoldableVariable) : base(content, mode)
         {
+        }
+
+        sealed protected override int[] additionnalOperands
+        {
+            get
+            {
+                return new int[] { (int)VFXValueType.TextureCubeArray };
+            }
         }
 
         sealed public override VFXValue CopyExpression(Mode mode)
         {
             var copy = new VFXTextureCubeArrayValue(Get(), mode);
-            return copy;
-        }
-    }
-
-    class VFXCameraBufferValue : VFXValue<int>
-    {
-        public VFXCameraBufferValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode)
-        {
-        }
-
-        public override VFXValue CopyExpression(Mode mode)
-        {
-            var copy = new VFXCameraBufferValue(Get(), mode);
-            return copy;
-        }
-
-        public override VFXValueType valueType { get { return VFXValueType.CameraBuffer; } }
-
-        sealed protected override int[] additionnalOperands { get { return new int[] { (int)valueType }; } }
-
-        public override T Get<T>()
-        {
-            CameraBuffer cameraBuffer = base.Get();
-
-            object value = cameraBuffer;
-
-            if (typeof(T) == typeof(int))
-                value = (int)cameraBuffer;
-
-            if (typeof(T).IsAssignableFrom(typeof(Texture)))
-                value = (Texture)cameraBuffer;
-
-            return (T)value;
-        }
-
-        public override object GetContent()
-        {
-            return Get();
-        }
-
-        public override void SetContent(object value)
-        {
-            m_Content = (int)(CameraBuffer)value;
-        }
-    }
-
-    class VFXMeshValue : VFXObjectValue
-    {
-        public VFXMeshValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.Mesh)
-        {
-        }
-
-        sealed public override VFXValue CopyExpression(Mode mode)
-        {
-            var copy = new VFXMeshValue(Get(), mode);
-            return copy;
-        }
-    }
-
-    class VFXSkinnedMeshRendererValue : VFXObjectValue
-    {
-        public VFXSkinnedMeshRendererValue(int instanceID = 0, Mode mode = Mode.FoldableVariable) : base(instanceID, mode, VFXValueType.SkinnedMeshRenderer)
-        {
-        }
-
-        sealed public override VFXValue CopyExpression(Mode mode)
-        {
-            var copy = new VFXSkinnedMeshRendererValue(Get(), mode);
             return copy;
         }
     }

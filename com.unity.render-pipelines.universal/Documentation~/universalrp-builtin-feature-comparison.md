@@ -1,15 +1,14 @@
 # Feature comparison table
 
-This table provides an overview of the current features supported in the Universal Render Pipeline (URP), compared to the Unity Built-in render pipeline.
+This table provides an overview of the current features supported in the Universal Render Pipeline (URP), compared to the Unity Built-in render pipeline. 
 
-**Note:** If a feature is marked __In research__, the URP team is still researching how and when to implement the feature. If a feature is marked as __Not supported__, it's because Unity is not planning to support it in any release.
+**Note:** If a feature is marked __In research__, the URP team is still researching how and when to implement the feature. If a feature is marked as __Not supported__, it's because Unity is not planning to support it in any release. 
 
 
-| Feature | Built-in Render Pipeline<br/>Unity 2018.x, 2019.x, 2020.x. | Universal Render Pipeline |
+| Feature | Built-in Render Pipeline<br/>Unity 2019.x. | Universal Render Pipeline |
 | --- | --- | --- |
 | ***Camera***                                                 |                                                              |                                                              |
-| HDR rendering                                                | Yes                                                          | Yes                                                          |
-| HDR output                                                   | Yes                                                          | In research                                                  |
+| HDR                                                          | Yes                                                          | Yes                                                          |
 | MSAA                                                         | Yes                                                          | Yes                                                          |
 | Physical Camera                                              | Yes                                                          | Yes                                                          |
 | Dynamic Resolution                                           | Yes                                                          | Yes                                                          |
@@ -39,10 +38,10 @@ This table provides an overview of the current features supported in the Univers
 | Vertex Lights                                                | Yes                                                          | Yes                                                          |
 | SH Lights                                                    | Yes                                                          | In research                                                  |
 | ***Realtime Shadows***                                       |                                                              |                                                              |
-| *Light Types*<br/>Directional<br/>Spot<br/>Point<br/>Area    | <br/>Yes<br/>Yes<br/>Yes<br/>Not supported                   | <br/>Yes - only 1<br/>Yes<br/>Yes<br/>Not supported |
+| *Light Types*<br/>Directional<br/>Spot<br/>Point<br/>Area    | <br/>Yes<br/>Yes<br/>Yes<br/>Not supported                   | <br/>Yes - only 1<br/>Yes<br/>In research<br/>Not supported |
 | *Shadow Projection*<br/>Stable Fit<br/>Close Fit             | <br/>Yes<br/>Yes                                             | <br/>Yes<br>In research                                      |
-| *Shadow Cascades*<br/>Number of Cascades<br/>Control by Percentage<br/>Control by Distance | <br/>1, 2 or 4<br/>Yes<br/>Not supported | <br/>1–4<br/>Yes<br/>Yes |
-| *Shadow Resolve Type*<br/>Lighting Pass<br/>Screen Space Pass | <br/>Yes<br/>Yes     | <br/>Yes<br/>No                       |
+| *Shadow Cascades*<br/>Number of Cascades<br/>Control by Percentage<br/>Control by Distance | <br/>1, 2 or 4<br/>Yes<br/>Not supported                     | <br/>1, 2 or 4<br/>Yes<br/>Not supported                       |
+| *Shadow Resolve Type*<br/>Lighting Pass<br/>Screen Space Pass | <br/>Yes<br/>Yes                                             | <br/>Yes<br/>No                                             |
 | Shadow Bias                                                  | Constant clip space offset + normal bias                     | Offsets shadowmap texels in the light direction + normal bias|
 | ***Lightmapping***                 |                                                              |                                                              |
 | Enlighten                                                    | Yes                                                          | Not supported                                                          |
@@ -53,8 +52,8 @@ This table provides an overview of the current features supported in the Univers
 | ***Mixed Lighting Mode***                                         |                                                              |                                                              |
 | Subtractive                                                  | Yes                                                          | Yes                                                          |
 | Baked Indirect                                               | Yes                                                          | Yes                                                          |
-| Shadowmask                         | Yes                              | Yes (Forward Rendering Path) |
-| Distance Shadowmask                | Yes                              | Yes (Forward Rendering Path) |
+| Shadow Mask                                                  | Yes                                                          | No                                                  |
+| Distance Shadow Mask                                         | Yes                                                          | No                                                  |
 | ***Light Probes***                     |                                                              |                                                              |
 | Blending                                                     | Yes                                                          | Yes                                                          |
 | Proxy Volume (LPPV)                                          | Yes                                                          | Not supported                                                 |
@@ -92,9 +91,9 @@ This table provides an overview of the current features supported in the Univers
 | Camera-relative Rendering                                    | Not supported                                                | In research                                                  |
 | *Built-in Lit Uber Shader*<br/>Metallic Workflow<br/>Specular Workflow | Standard Shader<br/>Yes<br/>Yes                                             | [Lit Shader](lit-shader.md)<br/>Yes<br/>Yes           |
 | *Surface Type and Blend Mode*<br/>Opaque<br/>Faded (Alpha Blend)<br/>Transparent<br/>Cutout<br/>Additive<br/>Multiply | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Not supported<br/>Not supported | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes             |
-| *Surface Inputs*<br/>Albedo (Base Map)<br/>Specular<br/>Metallic<br/>Smoothness<br/>Ambient Occlusion<br/>Normal Map<br/>Detail Map<br/>Detail Normal Map<br/>Heightmap | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes |
+| *Surface Inputs*<br/>Albedo (Base Map)<br/>Specular<br/>Metallic<br/>Smoothness<br/>Ambient Occlusion<br/>Normal Map<br/>Detail Map<br/>Detail Normal Map<br/>Heightmap | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes | <br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>Yes<br/>No<br/>No<br/>No |
 | Light Cookies                                                | Yes                                                          | In research                                                  |
-| Parallax Mapping | Yes                         | Yes                        |
+| Parallax Mapping                                             | Yes                                                          | Not supported                                                |
 | Light Distance Fade                                          | Not supported                                                | In research                                                  |
 | Shadow Distance Fade                                         | Yes                                                          | In research                                                  |
 | Shadow Cascade Blending                                      | Not supported                                                | In research                                                  |
@@ -123,7 +122,7 @@ This table provides an overview of the current features supported in the Univers
 | UniversalRenderPipeline.RenderSingleCamera                   | Not supported                                                | Yes                                                          |
 | ScriptableRenderPass                                         | Not supported                                                | Yes                                                          |
 | Custom Renderers                                             | Not supported                                                | Yes                                                          |
-| ***Post-processing***                                        | Uses Post-Processing Version 2 package                      | Uses integrated [post-processing solution](integration-with-post-processing.md) |
+| ***Post-processing***                                        | Uses Post-Processing Stack v2 package                      | Uses integrated [post-processing solution](integration-with-post-processing.md), supports PPv2 package for backwards compatibility with existing Projects |
 | Ambient Occlusion (MSVO)                                     | Yes                                                          | In research                                                  |
 | Auto Exposure                                                | Yes                                                          | Not supported                                                          |
 | Bloom                                                        | Yes                                                          | Yes                                                          |

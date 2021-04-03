@@ -1,4 +1,5 @@
 using System;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering.HighDefinition
 {
@@ -7,7 +8,6 @@ namespace UnityEngine.Rendering.HighDefinition
     /// This component setups recursive rendering.
     /// </summary>
     [Serializable, VolumeComponentMenu("Ray Tracing/Recursive Rendering (Preview)")]
-    [HDRPHelpURLAttribute("Ray-Tracing-Recursive-Rendering")]
     public sealed class RecursiveRendering : VolumeComponent
     {
         /// <summary>
@@ -31,19 +31,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <summary>
         /// This defines the maximal travel distance of rays.
         /// </summary>
-        public MinFloatParameter rayLength = new MinFloatParameter(10.0f, 0.0f);
-
-        /// <summary>
-        /// Minmal smoothness for reflection rays. If the surface has a smoothness value below this threshold, a reflection ray will not be case and it will fallback on other techniques.
-        /// </summary>
-        [Tooltip("Minmal Smoothness for Reflection. If the surface has a smoothness value below this threshold, a reflection ray will not be case and it will fallback on other techniques.")]
-        public ClampedFloatParameter minSmoothness = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
-        /// <summary>
-        /// Default constructor for the recursive rendering volume component.
-        /// </summary>
-        public RecursiveRendering()
-        {
-            displayName = "Recursive Rendering (Preview)";
-        }
+        [Tooltip("Ray Length. This defines the maximal travel distance of rays.")]
+        public ClampedFloatParameter rayLength = new ClampedFloatParameter(10f, 0f, 50f);
     }
 }

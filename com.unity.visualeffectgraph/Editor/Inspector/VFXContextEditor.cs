@@ -62,7 +62,7 @@ class VFXContextEditor : VFXSlotContainerEditor
             EditorGUILayout.PropertyField(spaceProperty);
     }
 
-    public override SerializedProperty DoInspectorGUI()
+    public override void DoInspectorGUI()
     {
         if (!subOutputObjectInitialized)
         {
@@ -72,7 +72,7 @@ class VFXContextEditor : VFXSlotContainerEditor
         }
 
         DisplaySpace();
-        return base.DoInspectorGUI();
+        base.DoInspectorGUI();
     }
 
     void DoAttributeLayoutGUI(string label, StructureOfArrayProvider.BucketInfo[] layout)

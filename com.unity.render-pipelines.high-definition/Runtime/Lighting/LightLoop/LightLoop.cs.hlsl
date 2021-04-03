@@ -1,5 +1,5 @@
 //
-// This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
+// This file was automatically generated. Please don't edit by hand.
 //
 
 #ifndef LIGHTLOOP_CS_HLSL
@@ -19,7 +19,7 @@
 #define LIGHTCATEGORY_AREA (1)
 #define LIGHTCATEGORY_ENV (2)
 #define LIGHTCATEGORY_DECAL (3)
-#define LIGHTCATEGORY_LOCAL_VOLUMETRIC_FOG (4)
+#define LIGHTCATEGORY_DENSITY_VOLUME (4)
 #define LIGHTCATEGORY_COUNT (5)
 
 //
@@ -32,7 +32,6 @@
 #define LIGHTFEATUREFLAGS_SKY (65536)
 #define LIGHTFEATUREFLAGS_SSREFRACTION (131072)
 #define LIGHTFEATUREFLAGS_SSREFLECTION (262144)
-#define LIGHTFEATUREFLAGS_PROBE_VOLUME (524288)
 
 //
 // UnityEngine.Rendering.HighDefinition.LightDefinitions:  static fields
@@ -55,16 +54,9 @@
 #define LIGHT_FEATURE_MASK_FLAGS_OPAQUE (16642048)
 #define LIGHT_FEATURE_MASK_FLAGS_TRANSPARENT (16510976)
 #define MATERIAL_FEATURE_MASK_FLAGS (4095)
-#define RAY_TRACED_SCREEN_SPACE_SHADOW_FLAG (4096)
 #define SCREEN_SPACE_COLOR_SHADOW_FLAG (256)
 #define INVALID_SCREEN_SPACE_SHADOW (255)
 #define SCREEN_SPACE_SHADOW_INDEX_MASK (255)
-
-//
-// UnityEngine.Rendering.HighDefinition.ClusterDebugMode:  static fields
-//
-#define CLUSTERDEBUGMODE_VISUALIZE_OPAQUE (0)
-#define CLUSTERDEBUGMODE_VISUALIZE_SLICE (1)
 
 // Generated from UnityEngine.Rendering.HighDefinition.SFiniteLightBound
 // PackingRules = Exact
@@ -74,7 +66,7 @@ struct SFiniteLightBound
     float3 boxAxisY;
     float3 boxAxisZ;
     float3 center;
-    float scaleXY;
+    float2 scaleXY;
     float radius;
 };
 
@@ -96,27 +88,6 @@ struct LightVolumeData
     float unused2;
 };
 
-// Generated from UnityEngine.Rendering.HighDefinition.ShaderVariablesLightList
-// PackingRules = Exact
-CBUFFER_START(ShaderVariablesLightList)
-    float4x4 g_mInvScrProjectionArr[2];
-    float4x4 g_mScrProjectionArr[2];
-    float4x4 g_mInvProjectionArr[2];
-    float4x4 g_mProjectionArr[2];
-    float4 g_screenSize;
-    int2 g_viDimensions;
-    int g_iNrVisibLights;
-    uint g_isOrthographic;
-    uint g_BaseFeatureFlags;
-    int g_iNumSamplesMSAA;
-    uint _EnvLightIndexShift;
-    uint _DecalIndexShift;
-    uint _LocalVolumetricFogIndexShift;
-    uint _Pad0_SVLL;
-    uint _Pad1_SVLL;
-    uint _Pad2_SVLL;
-CBUFFER_END
-
 //
 // Accessors for UnityEngine.Rendering.HighDefinition.SFiniteLightBound
 //
@@ -136,7 +107,7 @@ float3 GetCenter(SFiniteLightBound value)
 {
     return value.center;
 }
-float GetScaleXY(SFiniteLightBound value)
+float2 GetScaleXY(SFiniteLightBound value)
 {
     return value.scaleXY;
 }

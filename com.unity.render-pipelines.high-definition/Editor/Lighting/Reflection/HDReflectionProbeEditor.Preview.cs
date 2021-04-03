@@ -5,7 +5,7 @@ namespace UnityEditor.Rendering.HighDefinition
 {
     sealed partial class HDReflectionProbeEditor
     {
-        Editor m_CubemapEditor;
+        HDCubemapInspector m_CubemapEditor;
 
         public override bool HasPreviewGUI()
         {
@@ -22,7 +22,8 @@ namespace UnityEditor.Rendering.HighDefinition
             if (ValidPreviewSetup() && m_CubemapEditor == null)
             {
                 Editor editor = m_CubemapEditor;
-                m_CubemapEditor = CreateEditor(GetTexture(this, target));
+                CreateCachedEditor(GetTexture(this, target), typeof(HDCubemapInspector), ref editor);
+                m_CubemapEditor = editor as HDCubemapInspector;
             }
 
             // If having one probe selected we always want preview (to prevent preview window from popping)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 
@@ -8,7 +8,7 @@ namespace UnityEditor.ShaderGraph
     {
         public static SlotValueType ToSlotValueType(this ConcreteSlotValueType concreteValueType)
         {
-            switch (concreteValueType)
+            switch(concreteValueType)
             {
                 case ConcreteSlotValueType.SamplerState:
                     return SlotValueType.SamplerState;
@@ -38,8 +38,6 @@ namespace UnityEditor.ShaderGraph
                     return SlotValueType.Vector1;
                 case ConcreteSlotValueType.Boolean:
                     return SlotValueType.Boolean;
-                case ConcreteSlotValueType.VirtualTexture:
-                    return SlotValueType.VirtualTexture;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -77,8 +75,6 @@ namespace UnityEditor.ShaderGraph
                     return ConcreteSlotValueType.Vector1;
                 case SlotValueType.Boolean:
                     return ConcreteSlotValueType.Boolean;
-                case SlotValueType.VirtualTexture:
-                    return ConcreteSlotValueType.VirtualTexture;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -113,11 +109,9 @@ namespace UnityEditor.ShaderGraph
                 case ConcreteSlotValueType.Vector2:
                     return PropertyType.Vector2;
                 case ConcreteSlotValueType.Vector1:
-                    return PropertyType.Float;
+                    return PropertyType.Vector1;
                 case ConcreteSlotValueType.Boolean:
                     return PropertyType.Boolean;
-                case ConcreteSlotValueType.VirtualTexture:
-                    return PropertyType.VirtualTexture;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -134,7 +128,7 @@ namespace UnityEditor.ShaderGraph
             switch (type)
             {
                 case ConcreteSlotValueType.SamplerState:
-                    return "UnitySamplerState";
+                    return "SamplerState";
                 case ConcreteSlotValueType.Matrix4:
                     return precisionToken + "4x4";
                 case ConcreteSlotValueType.Matrix3:
@@ -142,13 +136,13 @@ namespace UnityEditor.ShaderGraph
                 case ConcreteSlotValueType.Matrix2:
                     return precisionToken + "2x2";
                 case ConcreteSlotValueType.Texture2D:
-                    return "UnityTexture2D";
+                    return "Texture2D";
                 case ConcreteSlotValueType.Texture2DArray:
-                    return "UnityTexture2DArray";
+                    return "Texture2DArray";
                 case ConcreteSlotValueType.Texture3D:
-                    return "UnityTexture3D";
+                    return "Texture3D";
                 case ConcreteSlotValueType.Cubemap:
-                    return "UnityTextureCube";
+                    return "TextureCube";
                 case ConcreteSlotValueType.Gradient:
                     return "Gradient";
                 case ConcreteSlotValueType.Vector4:
@@ -186,8 +180,7 @@ namespace UnityEditor.ShaderGraph
             "typeFloat3",
             "typeFloat2",
             "typeFloat1",
-            "typeBoolean",
-            "typeVirtualTexture"
+            "typeBoolean"
         };
     }
 }

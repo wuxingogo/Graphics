@@ -4,7 +4,6 @@
         "Unity.RenderPipelines.HighDefinition.Runtime",
         "Unity.Postprocessing.Runtime",
         "Unity.RenderPipelines.Core.Runtime",
-        "Unity.Testing.XR.Runtime",
         "UnityEngine.TestTools.Graphics"
     ],
     "optionalUnityReferences": [

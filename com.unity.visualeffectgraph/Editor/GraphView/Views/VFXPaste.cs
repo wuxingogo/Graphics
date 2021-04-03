@@ -39,7 +39,7 @@ namespace UnityEditor.VFX.UI
             s_Instance.DoPaste(viewController, center, data, view, groupNode, nodesInTheSameOrder);
         }
 
-        public static void PasteBlocks(VFXViewController viewController, object data, VFXContext targetModelContext, int targetIndex, List<VFXBlockController> blocksInTheSameOrder = null)
+        public static void PasteBlocks(VFXViewController viewController, object data, VFXContext targetModelContext, int targetIndex, List<VFXBlockController> blocksInTheSameOrder)
         {
             if (s_Instance == null)
                 s_Instance = new VFXPaste();
@@ -55,7 +55,7 @@ namespace UnityEditor.VFX.UI
             {
                 if (view != null)
                 {
-                    PasteBlocks(view, ref serializableGraph, nodesInTheSameOrder);
+                    PasteBlocks(view, ref serializableGraph);
                 }
             }
             else
@@ -66,7 +66,7 @@ namespace UnityEditor.VFX.UI
 
         static readonly GUIContent m_BlockPasteError = EditorGUIUtility.TextContent("To paste blocks, please select one target block or one target context.");
 
-        void PasteBlocks(VFXView view, ref SerializableGraph serializableGraph, List<VFXNodeController> nodesInTheSameOrder)
+        void PasteBlocks(VFXView view, ref SerializableGraph serializableGraph)
         {
             var selectedContexts = view.selection.OfType<VFXContextUI>();
             var selectedBlocks = view.selection.OfType<VFXBlockUI>();
@@ -97,13 +97,7 @@ namespace UnityEditor.VFX.UI
                 targetIndex = targetModelContext.GetIndex(targetBlock.controller.model) + 1;
             }
 
-
-            List<VFXBlockController> blockControllers = nodesInTheSameOrder != null ? new List<VFXBlockController>() : null;
-
-            targetIndex = PasteBlocks(view.controller, serializableGraph.operators, targetModelContext, targetIndex, blockControllers);
-
-            if (nodesInTheSameOrder != null)
-                nodesInTheSameOrder.AddRange(blockControllers.Cast<VFXNodeController>());
+            targetIndex = PasteBlocks(view.controller, serializableGraph.operators, targetModelContext, targetIndex);
 
             targetModelContext.Invalidate(VFXModel.InvalidationCause.kStructureChanged);
 
@@ -137,8 +131,6 @@ namespace UnityEditor.VFX.UI
                 ++cpt;
             }
 
-
-            targetModelContext.Invalidate(VFXModel.InvalidationCause.kStructureChanged);
 
             var targetContextController = viewController.GetRootNodeController(targetModelContext, 0) as VFXContextController;
             targetContextController.ApplyChanges();
@@ -281,7 +273,6 @@ namespace UnityEditor.VFX.UI
             }
 
             newContext.label = context.label;
-            VFXSystemNames.SetSystemName(newContext, context.systemName);
 
             if (newContext is VFXAbstractRenderedOutput)
                 PasteSubOutputs((VFXAbstractRenderedOutput)newContext, ref context);
@@ -748,15 +739,11 @@ namespace UnityEditor.VFX.UI
                         {
                             p = viewController.AddVFXParameter(Vector2.zero, desc);
                             p.value = parameter.value.Get();
-                            p.valueFilter = parameter.valueFilter;
-                            if (parameter.valueFilter == VFXValueFilter.Range)
+                            p.hasRange = parameter.range;
+                            if (parameter.range)
                             {
-                                p.min = parameter.min.Get();
-                                p.max = parameter.max.Get();
-                            }
-                            else if (parameter.valueFilter == VFXValueFilter.Enum)
-                            {
-                                p.enumValues = parameter.enumValue.ToList();
+                                p.m_Min = parameter.min;
+                                p.m_Max = parameter.max;
                             }
                             p.SetSettingValue("m_Exposed", parameter.exposed);
                             if (viewController.model.visualEffectObject is VisualEffectSubgraphOperator)

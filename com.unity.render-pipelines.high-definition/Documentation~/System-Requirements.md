@@ -26,18 +26,11 @@ For more information, see [System requirements for Unity](https://docs.unity3d.c
 HRDP is only compatible with the following platforms:
 
 - Windows and Windows Store, with DirectX 11 or DirectX 12 and Shader Model 5.0
-- Google
-  - Stadia
-- Sony
-  - PlayStation 4
-  - PlayStation 5
-- Microsoft
-  - Xbox One
-  - Xbox Series X and Xbox Series S
+- Modern consoles (Sony PS4 and Microsoft Xbox One)
 - MacOS (minimum version 10.13) using Metal graphics
 - Linux and Windows platforms with Vulkan
 
-**Note: HDRP only works on these platforms if the device used supports Compute Shaders. HDRP does not support OpenGL or OpenGL ES devices. On Linux, Vulkan may not be installed by default. In that case you need to install it manually to run HDRP.**
+**Note: HDRP only works on these platforms if the device used supports Compute Shaders. HDRP does not support OpenGL or OpenGL ES devices.**
 
 ### Ray tracing
 

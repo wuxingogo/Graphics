@@ -22,7 +22,6 @@ namespace UnityEngine.VFX.Utility
 
         public override void UpdateBinding(VisualEffect component)
         {
-#if ENABLE_LEGACY_INPUT_MANAGER
             float axis = Input.GetAxisRaw(AxisName);
 
             if (Accumulate)
@@ -32,7 +31,6 @@ namespace UnityEngine.VFX.Utility
             }
             else
                 component.SetFloat(m_AxisProperty, axis);
-#endif
         }
 
         public override string ToString()

@@ -57,7 +57,6 @@ namespace  UnityEditor.VFX.UI
         VFXView m_View;
 
         Button m_AddButton;
-        VisualElement m_LockedElement;
 
         public VFXBlackboard(VFXView view)
         {
@@ -69,7 +68,7 @@ namespace  UnityEditor.VFX.UI
 
             SetPosition(BoardPreferenceHelper.LoadPosition(BoardPreferenceHelper.Board.blackboard, defaultRect));
 
-            m_DefaultCategory = new VFXBlackboardCategory() { title = "parameters" };
+            m_DefaultCategory = new VFXBlackboardCategory() { title = "parameters"};
             Add(m_DefaultCategory);
             m_DefaultCategory.headerVisible = false;
 
@@ -87,7 +86,6 @@ namespace  UnityEditor.VFX.UI
 
             m_DragIndicator = new VisualElement();
 
-
             m_DragIndicator.name = "dragIndicator";
             m_DragIndicator.style.position = PositionType.Absolute;
             hierarchy.Add(m_DragIndicator);
@@ -96,7 +94,7 @@ namespace  UnityEditor.VFX.UI
 
             Resizer resizer = this.Query<Resizer>();
 
-            hierarchy.Add(new UnityEditor.Experimental.GraphView.ResizableElement());
+            hierarchy.Add(new ResizableElement());
 
             style.position = PositionType.Absolute;
 
@@ -113,74 +111,7 @@ namespace  UnityEditor.VFX.UI
             if (s_LayoutManual != null)
                 s_LayoutManual.SetValue(this, false);
 
-            m_LockedElement = new Label("Asset is locked");
-            m_LockedElement.style.color = Color.white * 0.75f;
-            m_LockedElement.style.position = PositionType.Absolute;
-            m_LockedElement.style.left = 0f;
-            m_LockedElement.style.right = new StyleLength(0f);
-            m_LockedElement.style.top = new StyleLength(0f);
-            m_LockedElement.style.bottom = new StyleLength(0f);
-            m_LockedElement.style.unityTextAlign = TextAnchor.MiddleCenter;
-            var fontSize = 54f;
-            m_LockedElement.style.fontSize = new StyleLength(fontSize);
-            m_LockedElement.style.paddingBottom = fontSize / 2f;
-            m_LockedElement.style.paddingTop = fontSize / 2f;
-            m_LockedElement.style.display = DisplayStyle.None;
-            m_LockedElement.focusable = true;
-            m_LockedElement.RegisterCallback<KeyDownEvent>(e => e.StopPropagation());
-            Add(m_LockedElement);
-
             m_AddButton.SetEnabled(false);
-
-            this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
-        }
-
-        public void LockUI()
-        {
-            m_LockedElement.style.display = DisplayStyle.Flex;
-            m_AddButton.SetEnabled(false);
-        }
-
-        public void UnlockUI()
-        {
-            m_LockedElement.style.display = DisplayStyle.None;
-            m_AddButton.SetEnabled(m_Controller != null);
-        }
-
-        DropdownMenuAction.Status GetContextualMenuStatus()
-        {
-            //Use m_AddButton state which relies on locked & controller status
-            if (m_AddButton.enabledSelf)
-                return DropdownMenuAction.Status.Normal;
-            return DropdownMenuAction.Status.Disabled;
-        }
-
-        void BuildContextualMenu(ContextualMenuPopulateEvent evt)
-        {
-            evt.menu.AppendAction("Select All", (a) => SelectAll(), (a) => GetContextualMenuStatus());
-            evt.menu.AppendAction("Select Unused", (a) => SelectUnused(), (a) => GetContextualMenuStatus());
-        }
-
-        void SelectAll()
-        {
-            m_View.ClearSelection();
-            this.Query<BlackboardField>().ForEach(t => m_View.AddToSelection(t));
-        }
-
-        void SelectUnused()
-        {
-            m_View.ClearSelection();
-
-            var unused = unusedParameters.ToList();
-            this.Query<BlackboardField>().Where(t => unused.Contains(t.GetFirstAncestorOfType<VFXBlackboardRow>().controller.model)).ForEach(t => m_View.AddToSelection(t));
-        }
-
-        IEnumerable<VFXParameter> unusedParameters
-        {
-            get
-            {
-                return controller.graph.children.OfType<VFXParameter>().Where(t => !(t.isOutput ? t.inputSlots : t.outputSlots).Any(s => s.HasLink(true)));
-            }
         }
 
         Label m_PathLabel;
@@ -431,18 +362,6 @@ namespace  UnityEditor.VFX.UI
             newParam.SetSettingValue("m_Exposed", true);
         }
 
-        void OnAddOutputParameter(object parameter)
-        {
-            var selectedCategory = m_View.selection.OfType<VFXBlackboardCategory>().FirstOrDefault();
-            VFXParameter newParam = m_Controller.AddVFXParameter(Vector2.zero, (VFXModelDescriptorParameters)parameter);
-            newParam.isOutput = true;
-        }
-
-        private static IEnumerable<VFXModelDescriptor> GetSortedParameters()
-        {
-            return VFXLibrary.GetParameters().OrderBy(o => o.name);
-        }
-
         void OnAddItem(Blackboard bb)
         {
             GenericMenu menu = new GenericMenu();
@@ -453,12 +372,12 @@ namespace  UnityEditor.VFX.UI
                 menu.AddSeparator(string.Empty);
             }
 
-            foreach (var parameter in GetSortedParameters())
+            foreach (var parameter in VFXLibrary.GetParameters())
             {
                 VFXParameter model = parameter.model as VFXParameter;
 
                 var type = model.type;
-                if (type == typeof(GPUEvent) || type == typeof(CameraBuffer))
+                if (type == typeof(GPUEvent))
                     continue;
 
                 menu.AddItem(EditorGUIUtility.TextContent(type.UserFriendlyName()), false, OnAddParameter, parameter);
@@ -485,17 +404,9 @@ namespace  UnityEditor.VFX.UI
         {
             string newCategoryName = EditorGUIUtility.TrTextContent("new category").text;
             int cpt = 1;
-
-            if (controller.graph.UIInfos.categories != null)
+            while (controller.graph.UIInfos.categories.Any(t => t.name == newCategoryName))
             {
-                while (controller.graph.UIInfos.categories.Any(t => t.name == newCategoryName))
-                {
-                    newCategoryName = string.Format(EditorGUIUtility.TrTextContent("new category {0}").text, cpt++);
-                }
-            }
-            else
-            {
-                controller.graph.UIInfos.categories = new List<VFXUI.CategoryInfo>();
+                newCategoryName = string.Format(EditorGUIUtility.TrTextContent("new category {0}").text, cpt++);
             }
 
             controller.graph.UIInfos.categories.Add(new VFXUI.CategoryInfo() { name = newCategoryName });
@@ -555,24 +466,6 @@ namespace  UnityEditor.VFX.UI
             return row;
         }
 
-        void OnAddOutputParameterMenu()
-        {
-            GenericMenu menu = new GenericMenu();
-
-            foreach (var parameter in GetSortedParameters())
-            {
-                VFXParameter model = parameter.model as VFXParameter;
-
-                var type = model.type;
-                if (type == typeof(GPUEvent))
-                    continue;
-
-                menu.AddItem(EditorGUIUtility.TextContent(type.UserFriendlyName()), false, OnAddOutputParameter, parameter);
-            }
-
-            menu.ShowAsContext();
-        }
-
         Dictionary<string, bool> m_ExpandedStatus = new Dictionary<string, bool>();
         void IControlledElement.OnControllerChanged(ref ControllerChangedEvent e)
         {
@@ -591,15 +484,6 @@ namespace  UnityEditor.VFX.UI
                 m_OutputCategory.headerVisible = true;
                 m_OutputCategory.expanded = PlayerPrefs.GetInt("VFX.blackboard.outputexpanded", 0) != 0;
                 Add(m_OutputCategory);
-
-                var addOutputButton = new Button() { name = "addOutputButton", text = "+" };
-                addOutputButton.clicked += OnAddOutputParameterMenu;
-                var sectionHeader = m_OutputCategory.Q("sectionHeader");
-                var spacer = new VisualElement();
-                spacer.style.flexGrow = 1;
-                sectionHeader.Add(spacer);
-                sectionHeader.Add(addOutputButton);
-
                 m_OutputCategory.AddToClassList("output");
             }
             else if (!(controller.model.subgraph is VisualEffectSubgraphOperator) && m_OutputCategory != null)

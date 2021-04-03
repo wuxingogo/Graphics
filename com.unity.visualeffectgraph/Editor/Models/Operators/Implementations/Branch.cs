@@ -6,8 +6,25 @@ using UnityEngine.VFX;
 
 namespace UnityEditor.VFX.Operator
 {
-    abstract class VFXOperatorDynamicBranch : VFXOperatorDynamicType
+    abstract class VFXOperatorDynamicBranch : VFXOperatorDynamicOperand, IVFXOperatorUniform
     {
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.None), SerializeField]
+        SerializableType m_Type;
+
+        public Type GetOperandType()
+        {
+            return m_Type;
+        }
+
+        public void SetOperandType(Type type)
+        {
+            if (!validTypes.Contains(type))
+                throw new InvalidOperationException();
+
+            m_Type = type;
+            Invalidate(InvalidationCause.kSettingChanged);
+        }
+
         public override sealed IEnumerable<Type> validTypes
         {
             get
@@ -22,6 +39,18 @@ namespace UnityEditor.VFX.Operator
             get
             {
                 yield return new VFXPropertyWithValue(new VFXProperty(m_Type, string.Empty));
+            }
+        }
+
+        protected override IEnumerable<VFXPropertyWithValue> inputProperties
+        {
+            get
+            {
+                if (m_Type == null) // Lazy init at this stage is suitable because inputProperties access is done with SyncSlot
+                {
+                    m_Type = defaultValueType;
+                }
+                return base.inputProperties;
             }
         }
 
@@ -62,6 +91,8 @@ namespace UnityEditor.VFX.Operator
             }
             return branchResult;
         }
+
+        abstract public IEnumerable<int> staticSlotIndex { get; }
     }
 
     [VFXInfo(category = "Logic")]

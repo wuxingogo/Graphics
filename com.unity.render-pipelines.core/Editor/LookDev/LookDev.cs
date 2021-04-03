@@ -28,18 +28,7 @@ namespace UnityEditor.Rendering.LookDev
         internal static Context currentContext
         {
             //Lazy init: load it when needed instead in static even if you do not support lookdev
-            get
-            {
-                if (s_CurrentContext == null || s_CurrentContext.Equals(null))
-                {
-                    s_CurrentContext = LoadConfigInternal();
-                    if (s_CurrentContext == null)
-                        s_CurrentContext = defaultContext;
-
-                    ReloadStage(false);
-                }
-                return s_CurrentContext;
-            }
+            get => s_CurrentContext ?? (s_CurrentContext = LoadConfigInternal() ?? defaultContext);
             private set => s_CurrentContext = value;
         }
 
@@ -56,14 +45,6 @@ namespace UnityEditor.Rendering.LookDev
         //[TODO: not compatible with multiple displayer. To rework if needed]
         internal static IViewDisplayer currentViewDisplayer => s_ViewDisplayer;
         internal static IEnvironmentDisplayer currentEnvironmentDisplayer => s_EnvironmentDisplayer;
-
-        [MenuItem("Window/Rendering/Look Dev", false, 10001)]
-        static void OpenLookDev() => Open();
-
-        [MenuItem("Window/Rendering/Look Dev", true, 10001)]
-        static bool LookDevAvailable() => supported;
-
-        internal static bool waitingConfigure { get; private set; } = true;
 
         /// <summary>State of the LookDev window</summary>
         public static bool open { get; private set; }
@@ -112,7 +93,10 @@ namespace UnityEditor.Rendering.LookDev
         /// <summary>Open the LookDev window</summary>
         public static void Open()
         {
-            EditorWindow.GetWindow<DisplayWindow>();
+            var Window = EditorWindow.GetWindow<DisplayWindow>();
+            s_ViewDisplayer = Window;
+            s_EnvironmentDisplayer = Window;
+            ConfigureLookDev(reloadWithTemporaryID: false);
         }
 
         /// <summary>Close the LookDev window</summary>
@@ -122,17 +106,6 @@ namespace UnityEditor.Rendering.LookDev
             s_ViewDisplayer = null;
             (s_EnvironmentDisplayer as EditorWindow)?.Close();
             s_EnvironmentDisplayer = null;
-        }
-
-        internal static void Initialize(DisplayWindow window)
-        {
-            s_ViewDisplayer = window;
-            s_EnvironmentDisplayer = window;
-            open = true;
-
-            // Lookdev Initialize can be called when the window is re-created by the editor layout system.
-            // In that case, the current context won't be null and there might be objects to reload from the temp ID
-            ConfigureLookDev(reloadWithTemporaryID: s_CurrentContext != null);
         }
 
         [Callbacks.DidReloadScripts]
@@ -149,7 +122,6 @@ namespace UnityEditor.Rendering.LookDev
         static void ConfigureLookDev(bool reloadWithTemporaryID)
         {
             open = true;
-            waitingConfigure = true;
             if (s_CurrentContext == null || s_CurrentContext.Equals(null))
                 LoadConfig();
             WaitingSRPReloadForConfiguringRenderer(5, reloadWithTemporaryID: reloadWithTemporaryID);
@@ -159,7 +131,6 @@ namespace UnityEditor.Rendering.LookDev
         {
             if (supported)
             {
-                waitingConfigure = false;
                 ConfigureRenderer(reloadWithTemporaryID);
                 LinkViewDisplayer();
                 LinkEnvironmentDisplayer();
@@ -169,19 +140,26 @@ namespace UnityEditor.Rendering.LookDev
                 EditorApplication.delayCall +=
                     () => WaitingSRPReloadForConfiguringRenderer(maxAttempt, reloadWithTemporaryID, ++attemptNumber);
             else
-                waitingConfigure = false;
+            {
+                Close();
+
+                throw new System.Exception("LookDev is not supported by this Scriptable Render Pipeline: "
+                    + (RenderPipelineManager.currentPipeline == null ? "No SRP in use" : RenderPipelineManager.currentPipeline.ToString()));
+            }
         }
 
         static void ConfigureRenderer(bool reloadWithTemporaryID)
         {
             s_Stages?.Dispose(); //clean previous occurrence on reloading
-            s_Stages = new StageCache(dataProvider);
+            s_Stages = new StageCache(dataProvider, currentContext);
             s_Compositor?.Dispose(); //clean previous occurrence on reloading
-            s_Compositor = new Compositer(s_ViewDisplayer, dataProvider, s_Stages);
+            s_Compositor = new Compositer(s_ViewDisplayer, currentContext, dataProvider, s_Stages);
         }
 
         static void LinkViewDisplayer()
         {
+            EditorApplication.playModeStateChanged += state => Close();
+
             s_ViewDisplayer.OnClosed += () =>
             {
                 s_Compositor?.Dispose();
@@ -190,6 +168,10 @@ namespace UnityEditor.Rendering.LookDev
                 s_Stages = null;
                 s_ViewDisplayer = null;
                 //currentContext = null;
+
+                //release editorInstanceIDs
+                currentContext.GetViewContent(ViewIndex.First).CleanTemporaryObjectIndexes();
+                currentContext.GetViewContent(ViewIndex.Second).CleanTemporaryObjectIndexes();
 
                 SaveConfig();
 
@@ -237,12 +219,7 @@ namespace UnityEditor.Rendering.LookDev
 
         static void LinkEnvironmentDisplayer()
         {
-            s_EnvironmentDisplayer.OnChangingEnvironmentLibrary += UpdateEnvironmentLibrary;
-        }
-
-        static void UpdateEnvironmentLibrary(EnvironmentLibrary library)
-        {
-            LookDev.currentContext.UpdateEnvironmentLibrary(library);
+            s_EnvironmentDisplayer.OnChangingEnvironmentLibrary += currentContext.UpdateEnvironmentLibrary;
         }
 
         static void ReloadStage(bool reloadWithTemporaryID)

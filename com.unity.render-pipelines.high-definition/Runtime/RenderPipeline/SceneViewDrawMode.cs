@@ -11,7 +11,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
         static private bool RejectDrawMode(SceneView.CameraMode cameraMode)
         {
-            if (cameraMode.drawMode == DrawCameraMode.ShadowCascades ||
+            if (cameraMode.drawMode == DrawCameraMode.TexturedWire ||
+                cameraMode.drawMode == DrawCameraMode.ShadowCascades ||
                 cameraMode.drawMode == DrawCameraMode.RenderPaths ||
                 cameraMode.drawMode == DrawCameraMode.AlphaChannel ||
                 cameraMode.drawMode == DrawCameraMode.Overdraw ||
@@ -22,7 +23,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 cameraMode.drawMode == DrawCameraMode.DeferredNormal ||
                 cameraMode.drawMode == DrawCameraMode.ValidateAlbedo ||
                 cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular
-            )
+                )
                 return false;
 
             return true;
@@ -34,7 +35,7 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 if (sceneViewHaveValidateFunction.Contains(sceneView))
                     continue;
-
+                
 
                 sceneView.onValidateCameraMode += RejectDrawMode;
                 sceneViewHaveValidateFunction.Add(sceneView);
@@ -50,7 +51,7 @@ namespace UnityEngine.Rendering.HighDefinition
         static public void ResetDrawMode()
         {
             EditorApplication.update -= UpdateSceneViewStates;
-
+            
             foreach (var sceneView in sceneViewHaveValidateFunction)
                 sceneView.onValidateCameraMode -= RejectDrawMode;
             sceneViewHaveValidateFunction.Clear();

@@ -26,6 +26,8 @@ namespace UnityEngine.Rendering.HighDefinition
         // Recursive tracing
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingRenderer.raytrace")]
         public RayTracingShader forwardRaytracing;
+        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingFlagMask.shader")]
+        public Shader raytracingFlagMask;
 
         // Light cluster
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingLightCluster.compute")]
@@ -43,15 +45,11 @@ namespace UnityEngine.Rendering.HighDefinition
 
         // Ambient Occlusion
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingAmbientOcclusion.raytrace")]
-        public RayTracingShader aoRaytracingRT;
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RaytracingAmbientOcclusion.compute")]
-        public ComputeShader aoRaytracingCS;
+        public RayTracingShader aoRaytracing;
 
         // Sub-Surface Scattering
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/RayTracingSubSurface.raytrace")]
-        public RayTracingShader subSurfaceRayTracingRT;
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/SubSurface/RayTracingSubSurface.compute")]
-        public ComputeShader subSurfaceRayTracingCS;
+        public RayTracingShader subSurfaceRayTracing;
 
         // Denoising
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Denoising/TemporalFilter.compute")]
@@ -62,8 +60,6 @@ namespace UnityEngine.Rendering.HighDefinition
         public ComputeShader diffuseDenoiserCS;
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Denoising/ReflectionDenoiser.compute")]
         public ComputeShader reflectionDenoiserCS;
-        [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Denoising/DiffuseShadowDenoiser.compute")]
-        public ComputeShader diffuseShadowDenoiserCS;
 
         // Deferred Lighting
         [Reload("Runtime/RenderPipeline/Raytracing/Shaders/Deferred/RaytracingGBuffer.raytrace")]

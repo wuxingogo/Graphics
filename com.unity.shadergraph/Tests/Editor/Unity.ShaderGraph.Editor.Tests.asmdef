@@ -18,11 +18,5 @@
     "defineConstraints": [
         "UNITY_INCLUDE_TESTS"
     ],
-    "versionDefines": [
-        {
-            "name": "com.unity.visualeffectgraph",
-            "expression": "10.0.0-preview.15",
-            "define": "VFX_GRAPH_10_0_0_OR_NEWER"
-        }
-    ]
+    "versionDefines": []
 }

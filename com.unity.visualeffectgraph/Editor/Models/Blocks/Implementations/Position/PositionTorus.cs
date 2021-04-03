@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace UnityEditor.VFX.Block
 {
-    [VFXInfo(category = "Position", variantProvider = typeof(PositionBaseProvider))]
+    [VFXInfo(category = "Position")]
     class PositionTorus : PositionBase
     {
-        public override string name { get { return string.Format(base.name, "Torus"); } }
+        public override string name { get { return "Position (Torus)"; } }
         protected override float thicknessDimensions { get { return 2.0f; } }
 
         public class InputProperties
@@ -26,19 +26,21 @@ namespace UnityEditor.VFX.Block
         {
             get
             {
-                var allSlots = GetExpressionsFromSlots(this);
-                foreach (var p in allSlots.Where(e => e.name != "Thickness"))
+                foreach (var p in GetExpressionsFromSlots(this).Where(e => e.name != "Thickness"))
                     yield return p;
 
-                var thickness = allSlots.FirstOrDefault(o => o.name == "Thickness").exp;
-                var majorRadius = allSlots.FirstOrDefault(o => o.name == "ArcTorus_majorRadius").exp;
-
-                yield return new VFXNamedExpression(CalculateVolumeFactor(positionMode, majorRadius, thickness), "volumeFactor");
+                yield return new VFXNamedExpression(CalculateVolumeFactor(positionMode, 0, 1), "volumeFactor");
                 yield return new VFXNamedExpression(VFXOperatorUtility.Saturate(inputSlots[0][2].GetExpression() / inputSlots[0][1].GetExpression()), "r"); // Saturate can be removed once degenerated torus are correctly handled
             }
         }
 
-        protected override bool needDirectionWrite => true;
+        protected override bool needDirectionWrite
+        {
+            get
+            {
+                return true;
+            }
+        }
 
         public override string source
         {
@@ -81,10 +83,11 @@ else
 
 float s,c;
 sincos(phi,c,s);
-float3 t2 = float3(c * t.x - s * t.y,c * t.y + s * t.x,t.z);";
+float3 t2 = float3(c * t.x - s * t.y,c * t.y + s * t.x,t.z);
 
-                outSource += string.Format(composePositionFormatString, "ArcTorus_center + ArcTorus_majorRadius * t2");
-                outSource += string.Format(composeDirectionFormatString, "t2");
+position += ArcTorus_center + ArcTorus_majorRadius * t2;
+direction = t2;
+";
 
                 return outSource;
             }

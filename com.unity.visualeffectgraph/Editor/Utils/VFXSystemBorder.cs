@@ -96,7 +96,6 @@ namespace UnityEditor.VFX.UI
             Add(content);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
-            visible = false;
         }
 
         public void BuildContextualMenu(ContextualMenuPopulateEvent evt)
@@ -152,6 +151,8 @@ namespace UnityEditor.VFX.UI
             title = m_TitleField.value;
             m_TitleField.style.display = DisplayStyle.None;
 
+            VFXView view = GetFirstAncestorOfType<VFXView>();
+
             controller.title = title;
         }
 
@@ -180,7 +181,6 @@ namespace UnityEditor.VFX.UI
                 if (m_Title.text != value)
                 {
                     m_Title.text = value;
-                    RecomputeBounds();
                 }
             }
         }
@@ -191,7 +191,6 @@ namespace UnityEditor.VFX.UI
         {
             if (m_WaitingRecompute)
                 return;
-            visible = true;
             //title width should be at least as wide as a context to be valid.
             float titleWidth = m_Title.layout.width;
             bool invalidTitleWidth = float.IsNaN(titleWidth) || titleWidth < 50;
@@ -258,7 +257,7 @@ namespace UnityEditor.VFX.UI
                 {
                     foreach (var context in m_Contexts)
                     {
-                        context?.UnregisterCallback<GeometryChangedEvent>(OnContextChanged);
+                        context.UnregisterCallback<GeometryChangedEvent>(OnContextChanged);
                     }
                 }
                 m_Contexts = value;
@@ -266,7 +265,7 @@ namespace UnityEditor.VFX.UI
                 {
                     foreach (var context in m_Contexts)
                     {
-                        context?.RegisterCallback<GeometryChangedEvent>(OnContextChanged);
+                        context.RegisterCallback<GeometryChangedEvent>(OnContextChanged);
                     }
                 }
                 RecomputeBounds();
@@ -433,7 +432,7 @@ namespace UnityEditor.VFX.UI
                 return;
             contexts = controller.contexts.Select(t => view.GetGroupNodeElement(t) as VFXContextUI).ToArray();
 
-            title = controller.contexts[0].model.GetGraph().systemNames.GetUniqueSystemName(controller.contexts[0].model.GetData());
+            title = controller.title;
         }
 
         public void OnControllerChanged(ref ControllerChangedEvent e)

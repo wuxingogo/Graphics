@@ -5,8 +5,6 @@ using UnityEditor.VFX;
 using UnityEngine;
 using UnityEngine.VFX;
 
-using UnityObject = UnityEngine.Object;
-
 namespace UnityEditor.VFX
 {
     static class VFXReflectionHelper
@@ -76,15 +74,13 @@ namespace UnityEditor.VFX
         [Flags]
         public enum Flags
         {
-            None =            0,
-            Value =           1 << 0, // Expression is a value, get/set can be called on it
-            Foldable =        1 << 1, // Expression is not a constant but can be folded anyway
-            Constant =        1 << 2, // Expression is a constant, it can be folded
-            InvalidOnGPU =    1 << 3, // Expression can be evaluated on GPU
-            InvalidOnCPU =    1 << 4, // Expression can be evaluated on CPU
-            InvalidConstant = 1 << 5, // Expression can be folded (for UI) but constant folding is forbidden
-            PerElement =      1 << 6, // Expression is per element
-            PerSpawn =        1 << 7, // Expression relies on event attribute or spawn context
+            None =          0,
+            Value =         1 << 0, // Expression is a value, get/set can be called on it
+            Foldable =      1 << 1, // Expression is not a constant but can be folded anyway
+            Constant =      1 << 2, // Expression is a constant, it can be folded
+            InvalidOnGPU =  1 << 3, // Expression can be evaluated on GPU
+            InvalidOnCPU =  1 << 4, // Expression can be evaluated on CPU
+            PerElement =    1 << 5, // Expression is per element
             NotCompilableOnCPU = InvalidOnCPU | PerElement //Helper to filter out invalid expression on CPU
         }
 
@@ -131,14 +127,9 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D: return "Texture3D";
                 case VFXValueType.TextureCube: return "TextureCube";
                 case VFXValueType.TextureCubeArray: return "TextureCubeArray";
-                case VFXValueType.CameraBuffer: return "CameraBuffer";
                 case VFXValueType.Matrix4x4: return "float4x4";
-                case VFXValueType.Mesh:
-                case VFXValueType.SkinnedMeshRenderer:
-                case VFXValueType.Buffer: return "ByteAddressBuffer";
                 case VFXValueType.Boolean: return "bool";
             }
-
             throw new NotImplementedException(type.ToString());
         }
 
@@ -174,7 +165,6 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D: return typeof(Texture);
                 case VFXValueType.TextureCube: return typeof(Texture);
                 case VFXValueType.TextureCubeArray: return typeof(Texture);
-                case VFXValueType.CameraBuffer: return typeof(CameraBuffer);
                 case VFXValueType.Matrix4x4: return typeof(Matrix4x4);
                 case VFXValueType.Mesh: return typeof(Mesh);
                 case VFXValueType.Curve: return typeof(AnimationCurve);
@@ -199,33 +189,12 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D:
                 case VFXValueType.TextureCube:
                 case VFXValueType.TextureCubeArray:
-                case VFXValueType.CameraBuffer:
                 case VFXValueType.Matrix4x4:
                 case VFXValueType.Boolean:
                     return true;
             }
 
             return false;
-        }
-
-        public static bool IsTypeConstantFoldable(VFXValueType type)
-        {
-            switch (type)
-            {
-                //Mesh API can modify the vertex count & layout.
-                //Thus, all mesh related expression should never been constant folded while generating code.
-                // The same goes for textures
-                case VFXValueType.Texture2D:
-                case VFXValueType.Texture2DArray:
-                case VFXValueType.Texture3D:
-                case VFXValueType.TextureCube:
-                case VFXValueType.TextureCubeArray:
-                case VFXValueType.CameraBuffer:
-                case VFXValueType.Mesh:
-                case VFXValueType.SkinnedMeshRenderer:
-                    return false;
-            }
-            return true;
         }
 
         public static bool IsTexture(VFXValueType type)
@@ -237,16 +206,10 @@ namespace UnityEditor.VFX
                 case VFXValueType.Texture3D:
                 case VFXValueType.TextureCube:
                 case VFXValueType.TextureCubeArray:
-                case VFXValueType.CameraBuffer:
                     return true;
             }
 
             return false;
-        }
-
-        public static bool IsBufferOnGPU(VFXValueType type)
-        {
-            return type == VFXValueType.Mesh || type == VFXValueType.Buffer;
         }
 
         public static bool IsUniform(VFXValueType type)
@@ -306,12 +269,10 @@ namespace UnityEditor.VFX
             if (type == typeof(Texture3D)) return VFXValueType.Texture3D;
             if (type == typeof(Cubemap)) return VFXValueType.TextureCube;
             if (type == typeof(CubemapArray)) return VFXValueType.TextureCubeArray;
-            if (type == typeof(CameraBuffer)) return VFXValueType.CameraBuffer;
             if (type == typeof(Matrix4x4)) return VFXValueType.Matrix4x4;
             if (type == typeof(AnimationCurve)) return VFXValueType.Curve;
             if (type == typeof(Gradient)) return VFXValueType.ColorGradient;
             if (type == typeof(Mesh)) return VFXValueType.Mesh;
-            if (type == typeof(SkinnedMeshRenderer)) return VFXValueType.SkinnedMeshRenderer;
             if (type == typeof(List<Vector3>)) return VFXValueType.Spline;
             if (type == typeof(bool)) return VFXValueType.Boolean;
             return VFXValueType.None;
@@ -344,10 +305,6 @@ namespace UnityEditor.VFX
 
         protected VFXExpression(Flags flags, params VFXExpression[] parents)
         {
-            if (parents.Length > 4)
-            {
-                throw new System.ArgumentException("An expression can only take up to 4 parent expressions");
-            }
             m_Parents = parents;
             SimplifyWithCacheParents();
 
@@ -358,10 +315,6 @@ namespace UnityEditor.VFX
         // Only do that when constructing an instance if needed
         private void Initialize(VFXExpression[] parents)
         {
-            if (parents.Length > 4)
-            {
-                throw new System.ArgumentException("An expression can only take up to 4 parent expressions");
-            }
             m_Parents = parents;
             SimplifyWithCacheParents();
 
@@ -420,7 +373,7 @@ namespace UnityEditor.VFX
         {
             var addOperands = additionnalOperands;
             if (parents.Length + addOperands.Length > 4)
-                throw new Exception("Too many parameters for expression : " + this);
+                throw new Exception("Too much parameter for expression : " + this);
 
             var data = new Operands(-1);
             if (graph != null)
@@ -560,14 +513,9 @@ namespace UnityEditor.VFX
                 foreach (var parent in m_Parents)
                 {
                     foldable &= parent.Is(Flags.Foldable);
-
-                    const Flags propagatedFlags = Flags.NotCompilableOnCPU | Flags.InvalidConstant | Flags.PerSpawn;
-                    m_Flags |= parent.m_Flags & propagatedFlags;
-
+                    m_Flags |= (parent.m_Flags & (Flags.NotCompilableOnCPU));
                     if (parent.IsAny(Flags.NotCompilableOnCPU) && parent.Is(Flags.InvalidOnGPU))
                         m_Flags |= Flags.InvalidOnGPU; // Only propagate GPU validity for per element expressions
-                    if (parent.Is(Flags.InvalidConstant))
-                        m_Flags |= Flags.InvalidConstant;
                 }
                 if (foldable)
                     m_Flags |= Flags.Foldable;

@@ -8,43 +8,51 @@ using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-using UnityObject = UnityEngine.Object;
-
 
 namespace UnityEditor.VFX
 {
-    class VFXShaderGraphParticleOutput : VFXAbstractParticleOutput
+    class VFXShaderGraphParticleOutput : VFXAbstractParticleOutput, ISerializationCallbackReceiver
     {
         //"protected" is only to be listed by VFXModel.GetSettings, we should always use GetOrRefreshShaderGraphObject
         [SerializeField, VFXSetting]
         protected ShaderGraphVfxAsset shaderGraph;
 
-        public override void OnEnable()
+        [SerializeField]
+        string shadergraphGUID;
+
+        public void OnBeforeSerialize()
         {
-            base.OnEnable();
+            var shaderGraph = GetOrRefreshShaderGraphObject();
+            if (shaderGraph != null)
+                shadergraphGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(shaderGraph));
+            else
+                shadergraphGUID = null;
         }
 
         public ShaderGraphVfxAsset GetOrRefreshShaderGraphObject()
         {
             //This is the only place where shaderGraph property is updated or read
-            if (shaderGraph == null && !object.ReferenceEquals(shaderGraph, null))
+            if (shaderGraph == null)
             {
-                string assetPath = AssetDatabase.GetAssetPath(shaderGraph.GetInstanceID());
-
-                var newShaderGraph = AssetDatabase.LoadAssetAtPath<ShaderGraphVfxAsset>(assetPath);
-                if (newShaderGraph != null)
+                if (!object.ReferenceEquals(shaderGraph, null)) //Invalid reference object, force reimport.
                 {
-                    shaderGraph = newShaderGraph;
+                    string assetPath = AssetDatabase.GetAssetPath(shaderGraph.GetInstanceID());
+                    var newShaderGraph = AssetDatabase.LoadAssetAtPath<ShaderGraphVfxAsset>(assetPath);
+                    if (newShaderGraph != null)
+                    {
+                        shaderGraph = newShaderGraph;
+                    }
+                }
+                else if(!string.IsNullOrEmpty(shadergraphGUID)) //shaderGraph really null, load from save guid.
+                {
+                    shaderGraph = AssetDatabase.LoadAssetAtPath<ShaderGraphVfxAsset>(AssetDatabase.GUIDToAssetPath(shadergraphGUID));
                 }
             }
             return shaderGraph;
         }
 
-        public override void GetImportDependentAssets(HashSet<int> dependencies)
+        public void OnAfterDeserialize()
         {
-            base.GetImportDependentAssets(dependencies);
-            if (!object.ReferenceEquals(shaderGraph, null))
-                dependencies.Add(shaderGraph.GetInstanceID());
         }
 
         protected VFXShaderGraphParticleOutput(bool strip = false) : base(strip) {}
@@ -66,7 +74,7 @@ namespace UnityEditor.VFX
                     return null;
                 case PropertyType.Boolean:
                     return typeof(bool);
-                case PropertyType.Float:
+                case PropertyType.Vector1:
                     return typeof(float);
                 case PropertyType.Vector2:
                     return typeof(Vector2);
@@ -158,19 +166,12 @@ namespace UnityEditor.VFX
             }
         }
 
-        public override void CheckGraphBeforeImport()
-        {
-            base.CheckGraphBeforeImport();
-            // If the graph is reimported it can be because one of its depedency such as the shadergraphs, has been changed.
-
-            ResyncSlots(true);
-        }
-
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
         {
             get
             {
                 IEnumerable<VFXPropertyWithValue> properties = base.inputProperties;
+
                 var shaderGraph = GetOrRefreshShaderGraphObject();
                 if (shaderGraph != null)
                 {
@@ -180,18 +181,16 @@ namespace UnityEditor.VFX
                              .Select(t => new { property = t, type = GetSGPropertyType(t) })
                              .Where(t => t.type != null))
                     {
-                        if (property.property.propertyType == PropertyType.Float)
+                        if (property.property.propertyType == PropertyType.Vector1)
                         {
                             var prop = property.property as Vector1ShaderProperty;
-                            if (prop != null)
-                            {
-                                if (prop.floatType == FloatType.Slider)
-                                    shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(property.type, property.property.referenceName, new RangeAttribute(prop.rangeValues.x, prop.rangeValues.y)), GetSGPropertyValue(property.property)));
-                                else if (prop.floatType == FloatType.Integer)
-                                    shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(typeof(int), property.property.referenceName), VFXConverter.ConvertTo(GetSGPropertyValue(property.property), typeof(int))));
-                                else
-                                    shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(property.type, property.property.referenceName), GetSGPropertyValue(property.property)));
-                            }
+
+                            if (prop.floatType == FloatType.Slider)
+                                shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(property.type, property.property.referenceName, new VFXPropertyAttribute(VFXPropertyAttribute.Type.kRange, prop.rangeValues.x, prop.rangeValues.y)), GetSGPropertyValue(property.property)));
+                            else if (prop.floatType == FloatType.Integer)
+                                shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(typeof(int), property.property.referenceName), VFXConverter.ConvertTo(GetSGPropertyValue(property.property), typeof(int))));
+                            else
+                                shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(property.type, property.property.referenceName), GetSGPropertyValue(property.property)));
                         }
                         else
                             shaderGraphProperties.Add(new VFXPropertyWithValue(new VFXProperty(property.type, property.property.referenceName), GetSGPropertyValue(property.property)));
@@ -239,7 +238,7 @@ namespace UnityEditor.VFX
         {
             passInfos = new Dictionary<string, PassInfo>()
             {
-                { "Forward", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.ColorSlotId, ShaderGraphVfxAsset.EmissiveSlotId, ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } },
+                { "Forward", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.ColorSlotId, ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } },
                 { "DepthOnly", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } }
             }
         };
@@ -249,7 +248,7 @@ namespace UnityEditor.VFX
             {
                 { "GBuffer", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.BaseColorSlotId, ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.MetallicSlotId, ShaderGraphVfxAsset.SmoothnessSlotId, ShaderGraphVfxAsset.EmissiveSlotId, ShaderGraphVfxAsset.NormalSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } },
                 { "Forward", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.BaseColorSlotId, ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.MetallicSlotId, ShaderGraphVfxAsset.SmoothnessSlotId, ShaderGraphVfxAsset.EmissiveSlotId, ShaderGraphVfxAsset.NormalSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } },
-                { "DepthOnly", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId } } }
+                { "DepthOnly", new PassInfo()  { vertexPorts = new int[] {}, pixelPorts = new int[] { ShaderGraphVfxAsset.AlphaSlotId, ShaderGraphVfxAsset.AlphaThresholdSlotId, ShaderGraphVfxAsset.NormalSlotId } } }
             }
         };
 
@@ -263,8 +262,7 @@ namespace UnityEditor.VFX
             {
                 foreach (var sgProperty in shaderGraph.properties)
                 {
-                    if (inputSlots.Any(t => t.property.name == sgProperty.referenceName))
-                        yield return slotExpressions.First(o => o.name == sgProperty.referenceName);
+                    yield return slotExpressions.First(o => o.name == sgProperty.referenceName);
                 }
             }
         }
@@ -341,25 +339,24 @@ namespace UnityEditor.VFX
                     var shaderGraph = GetOrRefreshShaderGraphObject();
                     if (shaderGraph != null)
                     {
-                        foreach (var tex in shaderGraph.textureInfos)
+                        foreach (var tex in shaderGraph.textureInfos.Where(t => t.texture != null).OrderBy(t => t.name))
                         {
-                            switch (tex.dimension)
+                            switch (tex.texture.dimension)
                             {
-                                default:
                                 case TextureDimension.Tex2D:
-                                    mapper.AddExpression(new VFXTexture2DValue(tex.instanceID, VFXValue.Mode.Variable), tex.name, -1);
+                                    mapper.AddExpression(new VFXTexture2DValue(tex.texture, VFXValue.Mode.Variable), tex.name, -1);
                                     break;
                                 case TextureDimension.Tex3D:
-                                    mapper.AddExpression(new VFXTexture3DValue(tex.instanceID, VFXValue.Mode.Variable), tex.name, -1);
+                                    mapper.AddExpression(new VFXTexture3DValue(tex.texture, VFXValue.Mode.Variable), tex.name, -1);
                                     break;
                                 case TextureDimension.Cube:
-                                    mapper.AddExpression(new VFXTextureCubeValue(tex.instanceID, VFXValue.Mode.Variable), tex.name, -1);
+                                    mapper.AddExpression(new VFXTextureCubeValue(tex.texture, VFXValue.Mode.Variable), tex.name, -1);
                                     break;
                                 case TextureDimension.Tex2DArray:
-                                    mapper.AddExpression(new VFXTexture2DArrayValue(tex.instanceID, VFXValue.Mode.Variable), tex.name, -1);
+                                    mapper.AddExpression(new VFXTexture2DArrayValue(tex.texture, VFXValue.Mode.Variable), tex.name, -1);
                                     break;
                                 case TextureDimension.CubeArray:
-                                    mapper.AddExpression(new VFXTextureCubeArrayValue(tex.instanceID, VFXValue.Mode.Variable), tex.name, -1);
+                                    mapper.AddExpression(new VFXTextureCubeArrayValue(tex.texture, VFXValue.Mode.Variable), tex.name, -1);
                                     break;
                             }
                         }
@@ -403,6 +400,7 @@ namespace UnityEditor.VFX
         public override bool SetupCompilation()
         {
             if (!base.SetupCompilation()) return false;
+
             var shaderGraph = GetOrRefreshShaderGraphObject();
             if (shaderGraph != null)
             {
@@ -566,7 +564,7 @@ namespace UnityEditor.VFX
                         callSG.builder.Append($"\n{shaderGraph.outputStructName} OUTSG = {shaderGraph.evaluationFunctionName}(INSG");
 
                         if (graphCode.properties.Any())
-                            callSG.builder.Append("," + graphCode.properties.Select(t => t.GetHLSLVariableName(true)).Aggregate((s, t) => s + ", " + t));
+                            callSG.builder.Append("," + graphCode.properties.Select(t => IsTexture(t.propertyType) ? (t.propertyType == PropertyType.Texture2D ? $"{t.referenceName}, sampler{t.referenceName}, {t.referenceName}_TexelSize" : $"{t.referenceName}, sampler{t.referenceName}") : t.referenceName).Aggregate((s, t) => s + ", " + t));
 
                         callSG.builder.AppendLine(");");
 
@@ -574,8 +572,8 @@ namespace UnityEditor.VFX
                         if (pixelPorts.Any(t => t == ShaderGraphVfxAsset.AlphaThresholdSlotId) && shaderGraph.alphaClipping)
                         {
                             callSG.builder.AppendLine(
-@"#if (USE_ALPHA_TEST || VFX_FEATURE_MOTION_VECTORS_FORWARD) && defined(VFX_VARYING_ALPHATHRESHOLD)
-i.VFX_VARYING_ALPHATHRESHOLD = OUTSG.AlphaClipThreshold_7;
+@"#if (USE_ALPHA_TEST || WRITE_MOTION_VECTOR_IN_FORWARD) && defined(VFX_VARYING_ALPHATHRESHOLD)
+i.VFX_VARYING_ALPHATHRESHOLD = OUTSG.AlphaThreshold_7;
 #endif");
                         }
 

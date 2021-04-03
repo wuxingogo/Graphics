@@ -11,21 +11,12 @@
 #define FRONT_FACE_TYPE bool
 #define IS_FRONT_VFACE(VAL, FRONT, BACK) ((VAL) ? (FRONT) : (BACK))
 
-// Only for d3d11 we need to have specific sv_position qualifiers in the case of a conservative depth offset
-#ifdef _CONSERVATIVE_DEPTH_OFFSET
-#undef SV_POSITION_QUALIFIERS
-#define SV_POSITION_QUALIFIERS linear noperspective centroid
-#undef DEPTH_OFFSET_SEMANTIC
-#define DEPTH_OFFSET_SEMANTIC SV_DepthLessEqual
-#endif
-
 #define CBUFFER_START(name) cbuffer name {
 #define CBUFFER_END };
 
 #define PLATFORM_SUPPORTS_EXPLICIT_BINDING
 #define PLATFORM_NEEDS_UNORM_UAV_SPECIFIER
 #define PLATFORM_SUPPORTS_BUFFER_ATOMICS_IN_PIXEL_SHADER
-#define PLATFORM_SUPPORTS_PRIMITIVE_ID_IN_PIXEL_SHADER
 
 
 // flow control attributes
@@ -75,7 +66,6 @@
 
 #define SAMPLER(samplerName)                  SamplerState samplerName
 #define SAMPLER_CMP(samplerName)              SamplerComparisonState samplerName
-#define ASSIGN_SAMPLER(samplerName, samplerValue) samplerName = samplerValue
 
 #define TEXTURE2D_PARAM(textureName, samplerName)                 TEXTURE2D(textureName),         SAMPLER(samplerName)
 #define TEXTURE2D_ARRAY_PARAM(textureName, samplerName)           TEXTURE2D_ARRAY(textureName),   SAMPLER(samplerName)

@@ -18,9 +18,36 @@ namespace UnityEditor.VFX.Test
 {
     public class VFXSpawnerTest
     {
+        string tempFilePath = "Assets/Temp_vfxTest.vfx";
+
+        VFXGraph MakeTemporaryGraph()
+        {
+            if (System.IO.File.Exists(tempFilePath))
+            {
+                AssetDatabase.DeleteAsset(tempFilePath);
+            }
+
+            var asset = VisualEffectAssetEditorUtility.CreateNewAsset(tempFilePath);
+
+            VisualEffectResource resource = asset.GetResource(); // force resource creation
+
+            VFXGraph graph = ScriptableObject.CreateInstance<VFXGraph>();
+
+            graph.visualEffectResource = resource;
+
+            return graph;
+        }
+
+        int m_previousCaptureFrameRate;
+        float m_previousFixedTimeStep;
+        float m_previousMaxDeltaTime;
+
         [OneTimeSetUp]
         public void Init()
         {
+            m_previousCaptureFrameRate = Time.captureFramerate;
+            m_previousFixedTimeStep = UnityEngine.VFX.VFXManager.fixedTimeStep;
+            m_previousMaxDeltaTime = UnityEngine.VFX.VFXManager.maxDeltaTime;
             Time.captureFramerate = 10;
             UnityEngine.VFX.VFXManager.fixedTimeStep = 0.1f;
             UnityEngine.VFX.VFXManager.maxDeltaTime = 0.1f;
@@ -29,15 +56,17 @@ namespace UnityEditor.VFX.Test
         [OneTimeTearDown]
         public void CleanUp()
         {
-            Time.captureFramerate = 0;
-            UnityEngine.VFX.VFXManager.fixedTimeStep = 1.0f / 60.0f;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = 1.0f / 20.0f;
-            VFXTestCommon.DeleteAllTemporaryGraph();
+            Time.captureFramerate = m_previousCaptureFrameRate;
+            UnityEngine.VFX.VFXManager.fixedTimeStep = m_previousFixedTimeStep;
+            UnityEngine.VFX.VFXManager.maxDeltaTime = m_previousMaxDeltaTime;
+            AssetDatabase.DeleteAsset(tempFilePath);
         }
 
         private void CreateAssetAndComponent(float spawnCountValue, string playEventName, out VFXGraph graph, out VisualEffect vfxComponent, out GameObject gameObj, out GameObject cameraObj)
         {
-            graph = VFXTestCommon.MakeTemporaryGraph();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+
+            graph = MakeTemporaryGraph();
 
             var eventStart = ScriptableObject.CreateInstance<VFXBasicEvent>();
             eventStart.eventName = playEventName;
@@ -48,11 +77,6 @@ namespace UnityEditor.VFX.Test
 
             var spawnerInit = ScriptableObject.CreateInstance<VFXBasicInitialize>();
             var spawnerOutput = ScriptableObject.CreateInstance<VFXPlanarPrimitiveOutput>();
-
-            var blockAttributeDesc = VFXLibrary.GetBlocks().FirstOrDefault(o => o.modelType == typeof(Block.SetAttribute));
-            var blockAttribute = blockAttributeDesc.CreateInstance();
-            blockAttribute.SetSettingValue("attribute", "position");
-            spawnerInit.AddChild(blockAttribute);
 
             slotCount.value = spawnCountValue;
 
@@ -66,7 +90,7 @@ namespace UnityEditor.VFX.Test
             spawnerInit.LinkFrom(spawnerContext);
             spawnerOutput.LinkFrom(spawnerInit);
 
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             gameObj = new GameObject("CreateAssetAndComponentSpawner");
             vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -79,348 +103,67 @@ namespace UnityEditor.VFX.Test
         }
 
         [UnityTest]
-        public IEnumerator Sanitize_VFXSpawnerCustomCallback_Namespace()
-        {
-            string kSourceAsset = "Assets/AllTests/Editor/Tests/VFXSpawnerCustomCallbackBuiltin.vfx_";
-            var graph = VFXTestCommon.CopyTemporaryGraph(kSourceAsset);
-
-            Assert.AreEqual(1, graph.children.OfType<VFXBasicSpawner>().Count());
-            var basicSpawner = graph.children.OfType<VFXBasicSpawner>().FirstOrDefault();
-            Assert.AreEqual(4, basicSpawner.GetNbChildren());
-            Assert.IsNotNull(basicSpawner.children.FirstOrDefault(o => o.name == ObjectNames.NicifyVariableName("SpawnOverDistance")));
-            Assert.IsNotNull(basicSpawner.children.FirstOrDefault(o => o.name == ObjectNames.NicifyVariableName("SetSpawnTime")));
-            Assert.IsNotNull(basicSpawner.children.FirstOrDefault(o => o.name == ObjectNames.NicifyVariableName("LoopAndDelay")));
-            Assert.IsNotNull(basicSpawner.children.FirstOrDefault(o => o.name == ObjectNames.NicifyVariableName("IncrementStripIndexOnStart")));
-
-            foreach (var sanitizeSpawn in basicSpawner.children)
-            {
-                Assert.IsFalse(sanitizeSpawn.inputSlots.Any(o => !o.HasLink()));
-                Assert.IsNotNull(sanitizeSpawn.GetSettingValue("m_customScript"));
-                Assert.IsNotNull((sanitizeSpawn as VFXSpawnerCustomWrapper).customBehavior);
-            }
-
-            yield return null;
-        }
-
-        //Cover case 1122404
-        [UnityTest]
-        public IEnumerator Create_Asset_And_Set_Really_High_SpawnRate()
-        {
-            yield return new EnterPlayMode();
-
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-
-            var reallyBigFloat = 3e+38f;
-            CreateAssetAndComponent(reallyBigFloat, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var init = graph.children.OfType<VFXBasicInitialize>().First();
-            var setLifetime = ScriptableObject.CreateInstance<SetAttribute>();
-            setLifetime.SetSettingValue("attribute", "lifetime"); //Issue 1122404 only occurs when hasKill
-            setLifetime.inputSlots[0].value = 1.0f;
-            init.AddChild(setLifetime);
-
-            var update = ScriptableObject.CreateInstance<VFXBasicUpdate>();
-            graph.AddChild(update);
-
-            init.LinkTo(update);
-            update.LinkTo(graph.children.OfType<VFXPlanarPrimitiveOutput>().First());
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            int maxFrame = 256;
-            while (vfxComponent.culled && --maxFrame > 0)
-                yield return null;
-            Assert.IsTrue(maxFrame > 0);
-
-            //Assertion failed on expression: 'nbGroups.x > 0 && nbGroups.y > 0' is logged before 1122404 resolution.
-            yield return null;
-
-            var spawnSystems = new List<string>();
-            vfxComponent.GetSpawnSystemNames(spawnSystems);
-            var spawnState = vfxComponent.GetSpawnSystemInfo(spawnSystems[0]);
-            Assert.IsTrue(spawnState.spawnCount >= reallyBigFloat * 0.01f);
-
-            var spawnCountCastInt = (int)spawnState.spawnCount; //expecting an overflow
-            Assert.IsTrue(spawnCountCastInt < 0);
-
-            yield return new ExitPlayMode();
-
-        }
-
-        static string[] k_Create_Asset_And_Check_Event_ListCases = new[] { "OnPlay", "Test_Event" };
-
-        [UnityTest]
-        public IEnumerator Create_Asset_And_Check_Event_List([ValueSource("k_Create_Asset_And_Check_Event_ListCases")] string playEventName)
-        {
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(123.0f, playEventName, out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var visualEffectAsset = vfxComponent.visualEffectAsset;
-            Assert.IsNotNull(visualEffectAsset);
-
-            var vfxEvents = new List<string>();
-            visualEffectAsset.GetEvents(vfxEvents);
-
-            Assert.IsTrue(vfxEvents.Contains(playEventName));
-            Assert.IsTrue(vfxEvents.Contains("OnStop"));
-            Assert.AreEqual(2, vfxEvents.Count);
-
-            yield return null;
-        }
-
-        [Retry(3)]
-        [UnityTest]
         public IEnumerator Create_Asset_And_Component_Spawner_Check_Initial_Event()
         {
-            yield return new EnterPlayMode();
-
-            var spawnCountValue = 666.0f;
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-
-            var initialEventName = "CustomInitialEvent";
-            CreateAssetAndComponent(spawnCountValue, initialEventName, out graph, out vfxComponent, out gameObj, out cameraObj);
-            gameObj.name = "Create_Asset_And_Component_Spawner_Check_Initial_Event";
-
-            int maxFrame = 512;
-            while (vfxComponent.culled && --maxFrame > 0)
+            var propertyInitialEventName = typeof(VisualEffect).GetProperty("initialEventName");
+            if (propertyInitialEventName != null)
             {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-            yield return null; //wait for exactly one more update if visible
+                var setPropertyInitialEventName = propertyInitialEventName.GetSetMethod();
+                var spawnCountValue = 666.0f;
+                VisualEffect vfxComponent;
+                GameObject cameraObj, gameObj;
+                VFXGraph graph;
 
-            //Default event state is supposed to be "OnPlay"
-            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            Assert.AreEqual(0.0, spawnerState.spawnCount);
+                var initialEventName = "CustomInitialEvent";
+                CreateAssetAndComponent(spawnCountValue, initialEventName, out graph, out vfxComponent, out gameObj, out cameraObj);
 
-            var editor = Editor.CreateEditor(graph.GetResource().asset);
-            editor.serializedObject.Update();
-            var initialEventProperty = editor.serializedObject.FindProperty("m_Infos.m_InitialEventName");
-            initialEventProperty.stringValue = initialEventName;
-            editor.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-            GameObject.DestroyImmediate(editor);
-
-            yield return null;
-            spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            var spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
-            Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
-
-            //Now, do it on vfxComponent (override automatically taken into account)
-            vfxComponent.initialEventName = "OnPlay";
-            vfxComponent.Reinit(); //Automatic while changing it through serialized property, here, it's a runtime behavior
-            yield return null;
-
-            spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            Assert.AreEqual(0.0f, spawnerState.spawnCount);
-
-            //Try setting the correct value
-            vfxComponent.initialEventName = initialEventName;
-            vfxComponent.Reinit();
-            yield return null;
-
-            spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
-            Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
-
-            yield return new ExitPlayMode();
-        }
-
-
-        static List<Vector3> s_RecordedPositions = new List<Vector3>();
-        static void OnEventReceived_SavePosition(VFXOutputEventArgs evt)
-        {
-            s_RecordedPositions.Add(evt.eventAttribute.GetVector3("position"));
-        }
-
-        static bool[] s_Verify_Reseed_OnPlay_Behavior_options = new bool[] { false, true };
-
-        [UnityTest]
-        public IEnumerator Verify_Reseed_OnPlay_Behavior([ValueSource("s_Verify_Reseed_OnPlay_Behavior_options")] bool reseed, [ValueSource("s_Verify_Reseed_OnPlay_Behavior_options")] bool useSendEvent)
-        {
-            yield return new EnterPlayMode();
-
-            var spawnCountValue = 1.0f;
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(spawnCountValue, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var outputEvent = ScriptableObject.CreateInstance<VFXOutputEvent>();
-            var eventName = "qsdf";
-            outputEvent.SetSettingValue("eventName", eventName);
-            var basicSpawner = graph.children.OfType<VFXBasicSpawner>().FirstOrDefault();
-            graph.AddChild(outputEvent);
-            outputEvent.LinkFrom(basicSpawner);
-
-            //Add constant random to inspect the current seed
-            var setAttributePosition = ScriptableObject.CreateInstance<VFXSpawnerSetAttribute>();
-            setAttributePosition.SetSettingValue("attribute", "position");
-            basicSpawner.AddChild(setAttributePosition);
-
-            for (int i = 0; i < 3; ++i)
-            {
-                var random = ScriptableObject.CreateInstance<Operator.Random>();
-                random.SetSettingValue("seed", VFXSeedMode.PerComponent);
-                random.SetSettingValue("constant", true);
-                graph.AddChild(outputEvent);
-                random.outputSlots.First().Link(setAttributePosition.inputSlots.First()[i]);
-            }
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            s_RecordedPositions = new List<Vector3>();
-            vfxComponent.outputEventReceived += OnEventReceived_SavePosition;
-            vfxComponent.resetSeedOnPlay = reseed;
-
-            int maxFrame = 256;
-            while (s_RecordedPositions.Count < 3 && --maxFrame > 0)
-                yield return null;
-
-            Assert.IsTrue(maxFrame > 0);
-            Assert.AreEqual(1, s_RecordedPositions.Distinct().Count());
-
-            for (int i = 0; i < 3; ++i)
-            {
-                //The seed should change depending on resetSeedOnPlay settings
-                if (useSendEvent)
-                    vfxComponent.SendEvent(VisualEffectAsset.PlayEventID);
-                else
-                    vfxComponent.Play();
-
-                maxFrame = 256;
-                while (s_RecordedPositions.Count < 3 + i * 3 && --maxFrame > 0)
+                int maxFrame = 512;
+                while (vfxComponent.culled && --maxFrame > 0)
+                {
                     yield return null;
+                }
                 Assert.IsTrue(maxFrame > 0);
+                yield return null; //wait for exactly one more update if visible
+
+                //Default event state is supposed to be "OnPlay"
+                var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+                Assert.AreEqual(0.0, spawnerState.spawnCount);
+
+                var editor = Editor.CreateEditor(graph.GetResource().asset);
+                editor.serializedObject.Update();
+                var initialEventProperty = editor.serializedObject.FindProperty("m_Infos.m_InitialEventName");
+                initialEventProperty.stringValue = initialEventName;
+                editor.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                GameObject.DestroyImmediate(editor);
+                yield return null;
+                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+                var spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
+                Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
+
+                //Now, do it on vfxComponent (override automatically taken into account)
+                setPropertyInitialEventName.Invoke(vfxComponent, new object[] { "OnPlay" });
+                vfxComponent.Reinit(); //Automatic while changing it through serialized property, here, it's a runtime behavior
+                yield return null;
+                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+                Assert.AreEqual(0.0, spawnerState.spawnCount);
+
+                //Try setting the correct value
+                setPropertyInitialEventName.Invoke(vfxComponent, new object[] { initialEventName });
+                vfxComponent.Reinit();
+                yield return null;
+                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+                spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
+                Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
+
+                UnityEngine.Object.DestroyImmediate(gameObj);
+                UnityEngine.Object.DestroyImmediate(cameraObj);
             }
-
-            var distinctCount = s_RecordedPositions.Distinct().Count();
-            if (reseed)
-                Assert.AreNotEqual(1, distinctCount);
-            else
-                Assert.AreEqual(1, distinctCount);
-
-            yield return new ExitPlayMode();
+            //else initial event feature isn't available yet
         }
 
-        static List<int> s_ReceivedEventNamedId;
-        static void OnEventReceived_RegisterNameID(VFXOutputEventArgs evt)
-        {
-            s_ReceivedEventNamedId.Add(evt.nameId);
-        }
-
-        [UnityTest]
-        public IEnumerator Create_Asset_And_Component_Spawner_And_Output_Event()
-        {
-            yield return new EnterPlayMode();
-
-            //This mainly cover return value & expected behavior, event attribute values are covered by a graphic test
-            var spawnCountValue = 1.0f; //We running these test at 10FPS
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(spawnCountValue, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var outputEvent = ScriptableObject.CreateInstance<VFXOutputEvent>();
-            var eventName = "wxcvbn";
-            outputEvent.SetSettingValue("eventName", eventName);
-            var basicSpawner = graph.children.OfType<VFXBasicSpawner>().FirstOrDefault();
-            graph.AddChild(outputEvent);
-            outputEvent.LinkFrom(basicSpawner);
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            s_ReceivedEventNamedId = new List<int>();
-            vfxComponent.outputEventReceived += OnEventReceived_RegisterNameID;
-
-            int maxFrame = 64;
-            while (vfxComponent.culled && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            var outputEventNames = new List<string>();
-            vfxComponent.GetOutputEventNames(outputEventNames);
-            Assert.AreEqual(1u, outputEventNames.Count);
-            var outputEventName = outputEventNames[0];
-            Assert.AreEqual(outputEventName, eventName);
-
-            //Checking invalid event (waiting for the first event)
-            Assert.AreEqual(0u, s_ReceivedEventNamedId.Count);
-
-            //Checking on valid event while there is an event
-            maxFrame = 64; s_ReceivedEventNamedId.Clear();
-            while (s_ReceivedEventNamedId.Count == 0u && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-            Assert.IsTrue(s_ReceivedEventNamedId.Count > 0);
-            Assert.AreEqual(Shader.PropertyToID(eventName), s_ReceivedEventNamedId.FirstOrDefault());
-
-            s_ReceivedEventNamedId.Clear();
-
-            yield return new ExitPlayMode();
-        }
-
-        [UnityTest]
-        public IEnumerator Create_Asset_And_Component_Spawner_And_Output_Event_Expected_Count()
-        {
-            yield return new EnterPlayMode();
-
-            //This mainly cover return value & expected behavior, event attribute values are covered by a graphic test
-            var spawnCountValue = 1.0f; //We running these test at 10FPS
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(spawnCountValue, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var outputEvent = ScriptableObject.CreateInstance<VFXOutputEvent>();
-            var basicSpawner = graph.children.OfType<VFXBasicSpawner>().FirstOrDefault();
-            graph.AddChild(outputEvent);
-            outputEvent.LinkFrom(basicSpawner);
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            s_ReceivedEventNamedId = new List<int>();
-            vfxComponent.outputEventReceived += OnEventReceived_RegisterNameID;
-
-            int maxFrame = 512;
-            while (vfxComponent.culled && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            vfxComponent.Reinit();
-            float deltaTime = 0.1f;
-            uint count = 32;
-            vfxComponent.Simulate(deltaTime, count);
-            Assert.AreEqual(0u, s_ReceivedEventNamedId.Count); //The simulate is asynchronous
-
-            float simulateTime = deltaTime * count;
-            uint expectedEventCount = (uint)Mathf.Floor(simulateTime / spawnCountValue);
-
-            maxFrame = 64; s_ReceivedEventNamedId.Clear();
-            cameraObj.SetActive(false);
-            while (s_ReceivedEventNamedId.Count == 0u && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.AreEqual(expectedEventCount, (uint)s_ReceivedEventNamedId.Count);
-            yield return null;
-
-            yield return new ExitPlayMode();
-        }
-        
         [UnityTest]
         public IEnumerator Create_Asset_And_Component_Spawner()
         {
-            yield return new EnterPlayMode();
-
             var spawnCountValue = 753.0f;
             VisualEffect vfxComponent;
             GameObject cameraObj, gameObj;
@@ -436,208 +179,16 @@ namespace UnityEditor.VFX.Test
             yield return null; //wait for exactly one more update if visible
 
             var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+
             var spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
             Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
-
-            yield return new ExitPlayMode();
-        }
-
-        public struct VFXTimeModeTest
-        {
-            public override string ToString()
-            {
-                return name;
-            }
-
-            public string name { get; }
-            public uint vfxUpdateMode { get; }
-            public uint expectedUpdateCount { get; }
-            public float expectedDeltaTime { get; }
-
-            public VFXTimeModeTest(string name, uint vfxUpdateMode, uint expectedUpdateCount, float expectedDeltaTime)
-            {
-                this.name = name;
-                this.vfxUpdateMode = vfxUpdateMode;
-                this.expectedUpdateCount = expectedUpdateCount;
-                this.expectedDeltaTime = expectedDeltaTime;
-            }
-        }
-
-        const float s_Check_Time_Mode_SleepingTimeInSecond = 1.0f;
-        const float s_Check_Time_Mode_FixedDeltaTime = 0.1f;
-        const float s_Check_Time_Mode_MaxDeltaTime = 0.7f;
-
-        static VFXTimeModeTest[] s_CheckTimeMode = new[]
-        {
-            new VFXTimeModeTest("FixedDeltaTime", (uint)VFXUpdateMode.FixedDeltaTime, 1u, s_Check_Time_Mode_MaxDeltaTime),
-            new VFXTimeModeTest("ExactFixedDeltaTime", (uint)VFXUpdateMode.ExactFixedTimeStep, (uint)Mathf.Floor(s_Check_Time_Mode_MaxDeltaTime / s_Check_Time_Mode_FixedDeltaTime), s_Check_Time_Mode_FixedDeltaTime),
-        };
-
-        //Fix 1216631 : Check Exact time has actually an effect in low fps condition
-        [UnityTest]
-        public IEnumerator Create_Spawner_Check_Time_Mode_Update_Count([ValueSource("s_CheckTimeMode")] VFXTimeModeTest timeMode)
-        {
-            yield return new EnterPlayMode();
-
-            var spawnCountValue = 651.0f;
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(spawnCountValue, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-
-            var basicSpawner = graph.children.OfType<VFXBasicSpawner>().FirstOrDefault();
-            var blockCustomSpawner = ScriptableObject.CreateInstance<VFXSpawnerCustomWrapper>();
-            blockCustomSpawner.SetSettingValue("m_customType", new SerializableType(typeof(VFXCustomSpawnerUpdateCounterTest)));
-            basicSpawner.AddChild(blockCustomSpawner);
-
-            graph.GetResource().updateMode = (VFXUpdateMode)timeMode.vfxUpdateMode;
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-            Assert.AreEqual(graph.GetResource().updateMode, (VFXUpdateMode)timeMode.vfxUpdateMode);
-
-            var previousCaptureFrameRate = Time.captureFramerate;
-            var previousFixedTimeStep = UnityEngine.VFX.VFXManager.fixedTimeStep;
-            var previousMaxDeltaTime = UnityEngine.VFX.VFXManager.maxDeltaTime;
-
-            UnityEngine.VFX.VFXManager.fixedTimeStep = s_Check_Time_Mode_FixedDeltaTime;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = s_Check_Time_Mode_MaxDeltaTime;
-
-            VFXCustomSpawnerUpdateCounterTest.s_UpdateCount = 0;
-            //Wait for the first warm up
-            int maxFrame = 128;
-            while (VFXCustomSpawnerUpdateCounterTest.s_UpdateCount == 0 && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.AreNotEqual(0u, VFXCustomSpawnerUpdateCounterTest.s_UpdateCount);
-
-            vfxComponent.Reinit();
-            VFXCustomSpawnerUpdateCounterTest.s_UpdateCount = 0;
-            VFXCustomSpawnerUpdateCounterTest.s_LastDeltaTime = 0.0f;
-            Time.captureDeltaTime = s_Check_Time_Mode_SleepingTimeInSecond;
-
-            while (VFXCustomSpawnerUpdateCounterTest.s_UpdateCount == 0)
-            {
-                yield return null;
-            }
-            Assert.AreEqual(timeMode.expectedUpdateCount, VFXCustomSpawnerUpdateCounterTest.s_UpdateCount);
-            Assert.AreEqual(timeMode.expectedDeltaTime, VFXCustomSpawnerUpdateCounterTest.s_LastDeltaTime);
-
             UnityEngine.Object.DestroyImmediate(gameObj);
             UnityEngine.Object.DestroyImmediate(cameraObj);
-
-            Time.captureFramerate = previousCaptureFrameRate;
-            UnityEngine.VFX.VFXManager.fixedTimeStep = previousFixedTimeStep;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = previousMaxDeltaTime;
-
-            yield return new ExitPlayMode();
         }
 
-        //Cover fix from 1268360 : Simple usage of exact fixed time step, it should not throw any error from the renderer
-        [UnityTest]
-        public IEnumerator Create_Spawner_Check_No_Incorrect_Thread_Count([ValueSource("s_CheckTimeMode")] VFXTimeModeTest timeMode)
-        {
-            yield return new EnterPlayMode();
-
-            var spawnCountValue = 651.0f;
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(spawnCountValue, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-            graph.GetResource().updateMode = (VFXUpdateMode)timeMode.vfxUpdateMode;
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            var previousCaptureFrameRate = Time.captureFramerate;
-            var previousFixedTimeStep = UnityEngine.VFX.VFXManager.fixedTimeStep;
-            var previousMaxDeltaTime = UnityEngine.VFX.VFXManager.maxDeltaTime;
-
-            UnityEngine.VFX.VFXManager.fixedTimeStep = 0.1f;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = 0.5f;
-            Time.captureDeltaTime = 1.0f;
-
-            int maxFrame = 128;
-            while (vfxComponent.culled && --maxFrame > 0)
-                yield return null;
-
-            //Wait a few frame to verify if we are getting any warning from the rendering
-            for (int i = 0; i < 5; ++i)
-                yield return null;
-
-            UnityEngine.Object.DestroyImmediate(gameObj);
-            UnityEngine.Object.DestroyImmediate(cameraObj);
-
-            Time.captureFramerate = previousCaptureFrameRate;
-            UnityEngine.VFX.VFXManager.fixedTimeStep = previousFixedTimeStep;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = previousMaxDeltaTime;
-
-            yield return new ExitPlayMode();
-        }
-
-
-        //Fix case 1217876
-        static VFXTimeModeTest[] s_Change_Fixed_Time_Step_To_A_Large_Value_Then_Back_To_Default = new[]
-        {
-            new VFXTimeModeTest("FixedDeltaTime", (uint)VFXUpdateMode.FixedDeltaTime, 0u, 0),
-            new VFXTimeModeTest("FixedDeltaTime_And_IgnoreTimeScale", (uint)VFXUpdateMode.IgnoreTimeScale, 0u, 0),
-        };
-
-        [UnityTest]
-        public IEnumerator Change_Fixed_Time_Step_To_A_Large_Value_Then_Back_To_Default([ValueSource("s_Change_Fixed_Time_Step_To_A_Large_Value_Then_Back_To_Default")] VFXTimeModeTest timeMode)
-        {
-            yield return new EnterPlayMode();
-
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(3615.0f, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
-            graph.GetResource().updateMode = (VFXUpdateMode)timeMode.vfxUpdateMode;
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-            Assert.AreEqual(graph.GetResource().updateMode, (VFXUpdateMode)timeMode.vfxUpdateMode);
-
-            var previousCaptureFrameRate = Time.captureFramerate;
-            var previousFixedTimeStep = UnityEngine.VFX.VFXManager.fixedTimeStep;
-            var previousMaxDeltaTime = UnityEngine.VFX.VFXManager.maxDeltaTime;
-
-            //Set default
-            UnityEngine.VFX.VFXManager.fixedTimeStep = 0.01f;
-
-            var maxFrame = 64;
-            Time.captureFramerate = 10;
-            while (Mathf.Abs(Time.deltaTime - Time.captureDeltaTime) > 0.0001f && --maxFrame > 0)
-                yield return null; //wait capture deltaTime setting effective
-
-            //Change_Fixed_Time_Step_To_A_Large_Value
-            UnityEngine.VFX.VFXManager.fixedTimeStep = 2.0f;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = 5.0f;
-
-            //wait a few frame
-            for (int frame = 0; frame < 6; ++frame)
-                yield return null;
-
-            //Then_Back_To_Default (actually, a really small value)
-            Time.captureFramerate = 600; //Not round delta time, easily failing on small value
-            UnityEngine.VFX.VFXManager.fixedTimeStep = 0.001f; //Can be 0.01f too
-
-            //Failure should occurs within these frame
-            for (int frame = 0; frame < 8; ++frame)
-            {
-                var spawnState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-                Assert.AreNotEqual(spawnState.deltaTime, UnityEngine.VFX.VFXManager.maxDeltaTime); //Overflow in step count
-                yield return null;
-            }
-
-            Time.captureFramerate = previousCaptureFrameRate;
-            UnityEngine.VFX.VFXManager.fixedTimeStep = previousFixedTimeStep;
-            UnityEngine.VFX.VFXManager.maxDeltaTime = previousMaxDeltaTime;
-
-            yield return new ExitPlayMode();
-        }
-
-        [Retry(3)]
         [UnityTest]
         public IEnumerator Create_Asset_And_Component_Spawner_Plugging_OnStop_Into_Start_Input_Flow()
         {
-            yield return new EnterPlayMode();
-
             //Cover regression introduced at b76b691db3313ca06f157580e954116eca1473fa
             VisualEffect vfxComponent;
             GameObject cameraObj, gameObj;
@@ -649,8 +200,7 @@ namespace UnityEditor.VFX.Test
             eventStop.eventName = "Dummy";
             graph.AddChild(eventStop);
             graph.children.OfType<VFXBasicSpawner>().First().LinkFrom(eventStop, 0, 1);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             int maxFrame = 512;
             while (vfxComponent.culled && --maxFrame > 0)
@@ -665,27 +215,20 @@ namespace UnityEditor.VFX.Test
 
             //Now send event Stop, we expect to wake up
             vfxComponent.Stop();
-            maxFrame = 512;
-            while (--maxFrame > 0)
-            {
-                yield return null;
-                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-                if (spawnerState.loopState != VFXSpawnerLoopState.Finished)
-                    break;
-            }
-            Assert.AreNotEqual(VFXSpawnerLoopState.Finished, spawnerState.loopState);
-            Assert.IsTrue(maxFrame > 0);
+            yield return null;
 
-            yield return new ExitPlayMode();
+            spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
+            Assert.AreNotEqual(VFXSpawnerLoopState.Finished, spawnerState.loopState);
+
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
 
-        [Retry(3)]
         [UnityTest]
-        public IEnumerator Create_CustomEvent_For_StartAndStop_And_Send_Them_Manually()
+        public IEnumerator CreateEventStartAndStop()
         {
-            yield return new EnterPlayMode();
-
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            var graph = MakeTemporaryGraph();
 
             var eventStart = ScriptableObject.CreateInstance<VFXBasicEvent>();
             eventStart.eventName = "Custom_Start";
@@ -713,7 +256,7 @@ namespace UnityEditor.VFX.Test
             spawnerContext.LinkFrom(eventStart, 0, 0);
             spawnerContext.LinkFrom(eventStop, 0, 1);
 
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var gameObj = new GameObject("CreateEventStartAndStop");
             var vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -737,53 +280,49 @@ namespace UnityEditor.VFX.Test
             Assert.LessOrEqual(Mathf.Abs(spawnCountRead), 0.01f);
 
             vfxComponent.SendEvent("Custom_Start");
-            yield return null;
+            for (int i = 0; i < 16; ++i) yield return null;
 
             spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
             spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
             Assert.LessOrEqual(Mathf.Abs(spawnCountRead - spawnCountValue), 0.01f);
 
             vfxComponent.SendEvent("Custom_Stop");
-            yield return null;
+            for (int i = 0; i < 16; ++i) yield return null;
 
             spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
             spawnCountRead = spawnerState.spawnCount / spawnerState.deltaTime;
             Assert.LessOrEqual(Mathf.Abs(spawnCountRead), 0.01f);
 
-            yield return new ExitPlayMode();
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
 
         /*
-         * TODOPAUL : renable this test
         [UnityTest]
-        public IEnumerator Create_Event_Attribute_And_Send_It_Trough_Play()
+        [Timeout(1000 * 10)]
+        public IEnumerator CreateEventAttributeAndStart()
         {
-            yield return new EnterPlayMode();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            var graph = ScriptableObject.CreateInstance<VFXGraph>();
 
-            VisualEffect vfxComponent;
-            GameObject cameraObj, gameObj;
-            VFXGraph graph;
-            CreateAssetAndComponent(457.0f, "OnPlay", out graph, out vfxComponent, out gameObj, out cameraObj);
+            var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
+            var blockBurst = ScriptableObject.CreateInstance<VFXSpawnerConstantRate>();
 
-            //Add read source lifetime in initialize & size over life time to force storage
-            var readSource = ScriptableObject.CreateInstance<SetAttribute>();
-            readSource.SetSettingValue("attribute", "lifetime");
-            readSource.SetSettingValue("Source", SetAttribute.ValueSource.Source);
-            graph.children.OfType<VFXBasicInitialize>().First().AddChild(readSource);
+            spawnerContext.AddChild(blockBurst);
+            graph.AddChild(spawnerContext);
 
-            var setSizeOverLife = ScriptableObject.CreateInstance<AttributeFromCurve>();
-            setSizeOverLife.SetSettingValue("SampleMode", AttributeFromCurve.CurveSampleMode.OverLife);
-            setSizeOverLife.SetSettingValue("attribute", "size");
-            graph.children.OfType<VFXPlanarPrimitiveOutput>().First().AddChild(setSizeOverLife);
-
+            graph.visualEffectAsset = new VisualEffectAsset();
             graph.RecompileIfNeeded();
-            yield return null;
+            graph.visualEffectAsset.bounds = new Bounds(Vector3.zero, Vector3.positiveInfinity);
+
+            var gameObj = new GameObject("CreateEventAttributeAndStart");
+            var vfxComponent = gameObj.AddComponent<VisualEffect>();
+            vfxComponent.visualEffectAsset = graph.visualEffectAsset;
 
             var lifeTimeIn = 28.0f;
-            vfxComponent.Reinit();
             var vfxEventAttr = vfxComponent.CreateVFXEventAttribute();
-            vfxEventAttr.SetFloat("lifetime", lifeTimeIn);
-            vfxComponent.Play(vfxEventAttr);
+            vfxEventAttr.SetFloat("lifeTime", lifeTimeIn);
+            vfxComponent.Start(vfxEventAttr);
 
             int maxFrame = 512;
             while (vfxComponent.culled && --maxFrame > 0)
@@ -793,22 +332,19 @@ namespace UnityEditor.VFX.Test
             Assert.IsTrue(maxFrame > 0);
             yield return null; //wait for exactly one more update if visible
 
-            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            Assert.IsTrue(spawnerState.vfxEventAttribute.HasFloat("lifetime"));
-            var lifeTimeOut = spawnerState.vfxEventAttribute.GetFloat("lifetime");
+            var spawnerState = vfxComponent.GetSpawnerState(0);
+            var lifeTimeOut = spawnerState.vfxEventAttribute.GetFloat("lifeTime");
             Assert.AreEqual(lifeTimeIn, lifeTimeOut);
 
-            yield return new ExitPlayMode();
+            UnityEngine.Object.DestroyImmediate(gameObj);
         }
         */
 
-        [Retry(3)]
         [UnityTest]
-        public IEnumerator Create_CustomSpawner_And_Component()
+        public IEnumerator CreateCustomSpawnerAndComponent()
         {
-            yield return new EnterPlayMode();
-
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            var graph = MakeTemporaryGraph();
 
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var blockCustomSpawner = ScriptableObject.CreateInstance<VFXSpawnerCustomWrapper>();
@@ -837,7 +373,7 @@ namespace UnityEditor.VFX.Test
             var valueTotalTime = 187.0f;
             blockCustomSpawner.GetInputSlot(0).value = valueTotalTime;
 
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var gameObj = new GameObject("CreateCustomSpawnerAndComponent");
             var vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -849,20 +385,20 @@ namespace UnityEditor.VFX.Test
             camera.transform.LookAt(vfxComponent.transform);
 
             int maxFrame = 512;
-            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            vfxComponent.Simulate(0.5f);
-            while ((spawnerState.playing == false || spawnerState.deltaTime == 0.0f) && --maxFrame > 0)
+            while (vfxComponent.culled && --maxFrame > 0)
             {
                 yield return null;
-                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
             }
             Assert.IsTrue(maxFrame > 0);
+            yield return null; //wait for exactly one more update if visible
 
+            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
             Assert.GreaterOrEqual(spawnerState.totalTime, valueTotalTime);
             Assert.AreEqual(VFXCustomSpawnerTest.s_LifeTime, spawnerState.vfxEventAttribute.GetFloat("lifetime"));
             Assert.AreEqual(VFXCustomSpawnerTest.s_SpawnCount, spawnerState.spawnCount);
 
-            yield return new ExitPlayMode();
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
 
         /*
@@ -911,93 +447,12 @@ namespace UnityEditor.VFX.Test
         */
 
         [UnityTest]
-        public IEnumerator CreateSpawner_Set_Attribute_With_ContextDelay()
-        {
-            //This test cover an issue : 1205329
-            yield return new EnterPlayMode();
-
-            var graph = VFXTestCommon.MakeTemporaryGraph();
-
-            var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
-            var blockSpawnerBurst = ScriptableObject.CreateInstance<VFXSpawnerBurst>();
-            var setSpawnEventAttribute = ScriptableObject.CreateInstance<VFXSpawnerSetAttribute>();
-            setSpawnEventAttribute.SetSettingValue("attribute", "color");
-            var colorSlot = setSpawnEventAttribute.GetInputSlot(0);
-            Assert.AreEqual(VFXValueType.Float3, colorSlot.valueType);
-
-            var expectedColor = new Vector3(0.1f, 0.2f, 0.3f);
-            colorSlot.value = expectedColor;
-            blockSpawnerBurst.GetInputSlot(0).value = 23.0f;
-
-            var inheritColor = ScriptableObject.CreateInstance<SetAttribute>();
-            inheritColor.SetSettingValue("Source", SetAttribute.ValueSource.Source);
-            inheritColor.SetSettingValue("attribute", "color");
-
-            var spawnerInit = ScriptableObject.CreateInstance<VFXBasicInitialize>();
-            var spawnerOutput = ScriptableObject.CreateInstance<VFXPlanarPrimitiveOutput>();
-
-            var delayValue = 1.2f;
-            spawnerContext.SetSettingValue("delayBeforeLoop", VFXBasicSpawner.DelayMode.Constant);
-            spawnerContext.GetInputSlot(0).value = delayValue;
-
-            spawnerContext.AddChild(blockSpawnerBurst);
-            spawnerContext.AddChild(setSpawnEventAttribute);
-            spawnerInit.AddChild(inheritColor);
-
-            graph.AddChild(spawnerContext);
-            graph.AddChild(spawnerInit);
-            graph.AddChild(spawnerOutput);
-            spawnerInit.LinkFrom(spawnerContext);
-            spawnerOutput.LinkFrom(spawnerInit);
-
-            graph.SetCompilationMode(VFXCompilationMode.Edition);
-            graph.RecompileIfNeeded();
-
-            var gameObj = new GameObject("CreateSpawner_Set_Attribute_With_Delay");
-            var vfxComponent = gameObj.AddComponent<VisualEffect>();
-            vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
-
-            var cameraObj = new GameObject("CreateSpawner_Set_Attribute_With_Delay_Camera");
-            var camera = cameraObj.AddComponent<Camera>();
-            camera.transform.localPosition = Vector3.one;
-            camera.transform.LookAt(vfxComponent.transform);
-
-            int maxFrame = 512;
-            while (vfxComponent.culled && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            var spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-            //Catching sleeping state
-            maxFrame = 512;
-            while (--maxFrame > 0 && spawnerState.totalTime < delayValue / 10.0f)
-            {
-                spawnerState = VisualEffectUtility.GetSpawnerState(vfxComponent, 0);
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            //Check SetAttribute State while delaying
-            Assert.AreEqual(spawnerState.loopState, VFXSpawnerLoopState.DelayingBeforeLoop);
-            Assert.IsTrue(spawnerState.vfxEventAttribute.HasVector3("color"));
-
-            var actualColor = spawnerState.vfxEventAttribute.GetVector3("color");
-            Assert.AreEqual((double)expectedColor.x, (double)actualColor.x, 0.001);
-            Assert.AreEqual((double)expectedColor.y, (double)actualColor.y, 0.001);
-            Assert.AreEqual((double)expectedColor.z, (double)actualColor.z, 0.001);
-
-            yield return new ExitPlayMode();
-        }
-
-        [UnityTest]
         public IEnumerator CreateSpawner_Single_Burst_With_Delay()
         {
             //This test cover a regression : 1154292
-            yield return new EnterPlayMode();
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
 
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            var graph = MakeTemporaryGraph();
 
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var blockSpawnerBurst = ScriptableObject.CreateInstance<VFXSpawnerBurst>();
@@ -1022,8 +477,7 @@ namespace UnityEditor.VFX.Test
 
             //Force issue due to uninitialized expression (otherwise, constant folding resolve it)
             graph.SetCompilationMode(VFXCompilationMode.Edition);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var gameObj = new GameObject("CreateSpawner_Single_Burst_With_Delay");
             var vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -1067,16 +521,16 @@ namespace UnityEditor.VFX.Test
             }
             Assert.IsTrue(maxFrame > 0);
 
-            yield return new ExitPlayMode();
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
 
         string expectedLogFolder = "Assets/AllTests/Editor/Tests/VFXSpawnerTest_";
-        bool CompareWithExpectedLog(StringBuilder actualContent, string identifier, out string error)
+        bool CompareWithExpectedLog(StringBuilder actualContent, string identifier)
         {
             var pathExpected = expectedLogFolder + identifier + ".expected.txt";
             var pathActual = expectedLogFolder + identifier + ".actual.txt";
             bool success = true;
-            error = string.Empty;
 
             IEnumerable<string> expectedContent = Enumerable.Empty<string>();
             try
@@ -1086,7 +540,7 @@ namespace UnityEditor.VFX.Test
             catch (System.Exception)
             {
                 success = false;
-                error += "\nCan't locate file : " + pathExpected;
+                Debug.LogErrorFormat("Can't locate file : {0}", pathExpected);
             }
 
             //Compare line by line to avoid carriage return differences
@@ -1097,8 +551,8 @@ namespace UnityEditor.VFX.Test
                 if (line == null || string.Compare(line, expectedContentLine, StringComparison.InvariantCulture) != 0)
                 {
                     success = false;
-                    error += "\nExpected Line : " + expectedContentLine;
-                    error += "\nActual Line   : " + line;
+                    Debug.LogError("Expected Line : " + expectedContentLine);
+                    Debug.LogError("Actual Line   : " + line);
                     break;
                 }
             }
@@ -1136,14 +590,13 @@ namespace UnityEditor.VFX.Test
             return DebugSpawnerStateAggregate(allState);
         }
 
-        [Retry(3)]
         [UnityTest]
         public IEnumerator CreateSpawner_Chaining()
         {
-            yield return new EnterPlayMode();
-            Assert.AreEqual(UnityEngine.VFX.VFXManager.fixedTimeStep, 0.1f); //Early guard
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            Assert.AreEqual(UnityEngine.VFX.VFXManager.fixedTimeStep, 0.1f);
 
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            var graph = MakeTemporaryGraph();
 
             var spawnerContext_A = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var blockSpawnerConstant = ScriptableObject.CreateInstance<VFXSpawnerConstantRate>();
@@ -1176,8 +629,7 @@ namespace UnityEditor.VFX.Test
             spawnerInit.SetSettingValue("capacity", 512u);
 
             graph.SetCompilationMode(VFXCompilationMode.Runtime);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var gameObj = new GameObject("CreateSpawner_Chaining");
             var vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -1230,11 +682,11 @@ namespace UnityEditor.VFX.Test
                 }
             }
 
-            string error;
-            var compare = CompareWithExpectedLog(log, "Chaining", out error);
-            Assert.IsTrue(compare, error);
+            var compare = CompareWithExpectedLog(log, "Chaining");
+            Assert.IsTrue(compare);
             yield return null;
-            yield return new ExitPlayMode();
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
 
         public struct CreateSpawner_ChangeLoopMode_TestCase
@@ -1300,10 +752,10 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator CreateSpawner_ChangeLoopMode([ValueSource("k_CreateSpawner_ChangeLoopModeTestCases")] CreateSpawner_ChangeLoopMode_TestCase testCase)
         {
-            yield return new EnterPlayMode();
-            Assert.AreEqual(UnityEngine.VFX.VFXManager.fixedTimeStep, 0.1f); //Early test
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            Assert.AreEqual(UnityEngine.VFX.VFXManager.fixedTimeStep, 0.1f);
 
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            var graph = MakeTemporaryGraph();
 
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var blockSpawnerConstant = ScriptableObject.CreateInstance<VFXSpawnerConstantRate>();
@@ -1375,8 +827,7 @@ namespace UnityEditor.VFX.Test
             spawnerInit.SetSettingValue("capacity", 512u);
 
             graph.SetCompilationMode(VFXCompilationMode.Runtime);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
+            graph.RecompileIfNeeded();
 
             var gameObj = new GameObject("CreateSpawner_ChangeLoopMode_" + testCase.ToString());
             var vfxComponent = gameObj.AddComponent<VisualEffect>();
@@ -1428,81 +879,12 @@ namespace UnityEditor.VFX.Test
                 }
             }
 
-            string error;
-            var compare = CompareWithExpectedLog(log, testCase.ToString(), out error);
+            var compare = CompareWithExpectedLog(log, testCase.ToString());
             Assert.IsTrue(compare);
 
-            yield return new ExitPlayMode();
-        }
-
-        [UnityTest]
-        public IEnumerator CreateSpawner_With_All_Zero_Duration() //Cover possible infinite loop
-        {
-            yield return new EnterPlayMode();
-            Assert.AreEqual(UnityEngine.VFX.VFXManager.fixedTimeStep, 0.1f);
-
-            var graph = VFXTestCommon.MakeTemporaryGraph();
-
-            var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
-
-            var spawnerInit = ScriptableObject.CreateInstance<VFXBasicInitialize>();
-            var spawnerOutput = ScriptableObject.CreateInstance<VFXPointOutput>();
-
-            graph.AddChild(spawnerContext);
-            graph.AddChild(spawnerInit);
-            graph.AddChild(spawnerOutput);
-
-            //Add Position to have minimal data, and thus, valid system
-            var setPosition = ScriptableObject.CreateInstance<SetAttribute>();
-            setPosition.SetSettingValue("attribute", "position");
-            spawnerInit.AddChild(setPosition);
-
-            spawnerInit.LinkFrom(spawnerContext);
-            spawnerOutput.LinkFrom(spawnerInit);
-
-            spawnerContext.SetSettingValue("loopDuration", VFXBasicSpawner.LoopMode.Constant);
-            spawnerContext.SetSettingValue("loopCount", VFXBasicSpawner.LoopMode.Infinite);
-            spawnerContext.SetSettingValue("delayBeforeLoop", VFXBasicSpawner.DelayMode.Constant);
-            spawnerContext.SetSettingValue("delayAfterLoop", VFXBasicSpawner.DelayMode.Constant);
-
-            Assert.AreEqual(3, spawnerContext.inputSlots.Count, "Something change in VFXBasicSpawner");
-            foreach (var slot in spawnerContext.inputSlots)
-            {
-                Assert.AreEqual(slot.valueType, VFXValueType.Float, "Something change in VFXBasicSpawner");
-                slot.value = 0.0f;
-            }
-
-            graph.SetCompilationMode(VFXCompilationMode.Runtime);
-
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));
-
-            var gameObj = new GameObject("CreateSpawner_All_Zero_Duration");
-            var vfxComponent = gameObj.AddComponent<VisualEffect>();
-            vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
-            vfxComponent.startSeed = 1986;
-            vfxComponent.resetSeedOnPlay = false;
-
-            var cameraObj = new GameObject("CreateSpawner_All_Zero_Duration_Camera");
-            var camera = cameraObj.AddComponent<Camera>();
-            camera.transform.localPosition = Vector3.one;
-            camera.transform.LookAt(vfxComponent.transform);
-
-            int maxFrame = 512;
-            while (vfxComponent.culled && --maxFrame > 0)
-            {
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            maxFrame = 0;
-            while (VisualEffectUtility.GetSpawnerState(vfxComponent, 0u).loopIndex < 3 /* arbitrary loop count (should not be an infinite loop) */)
-            {
-                maxFrame++;
-                yield return null;
-            }
-            Assert.IsTrue(maxFrame > 0);
-
-            yield return new ExitPlayMode();
+            yield return null;
+            UnityEngine.Object.DestroyImmediate(gameObj);
+            UnityEngine.Object.DestroyImmediate(cameraObj);
         }
     }
 }

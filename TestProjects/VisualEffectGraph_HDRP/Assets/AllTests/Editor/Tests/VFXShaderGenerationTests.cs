@@ -14,16 +14,35 @@ namespace UnityEditor.VFX.Test
     [TestFixture]
     public class VFXShaderGenerationTests
     {
-        [OneTimeTearDown]
+        string tempFilePath = "Assets/TmpTests/vfxTest.vfx";
+
+        VFXGraph MakeTemporaryGraph()
+        {
+            if (System.IO.File.Exists(tempFilePath))
+            {
+                AssetDatabase.DeleteAsset(tempFilePath);
+            }
+            var asset = VisualEffectAssetEditorUtility.CreateNewAsset(tempFilePath);
+
+            VisualEffectResource resource = asset.GetResource(); // force resource creation
+
+            VFXGraph graph = ScriptableObject.CreateInstance<VFXGraph>();
+
+            graph.visualEffectResource = resource;
+
+            return graph;
+        }
+
+        [TearDown]
         public void TearDown()
         {
-            VFXTestCommon.DeleteAllTemporaryGraph();
+            AssetDatabase.DeleteAsset(tempFilePath);
         }
 
         [Test]
         public void GraphUsingGPUConstant()
         {
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            var graph = MakeTemporaryGraph();
             var updateContext = ScriptableObject.CreateInstance<VFXBasicUpdate>();
             var blockSetVelocity = ScriptableObject.CreateInstance<SetAttribute>();
             blockSetVelocity.SetSettingValue("attribute", "velocity");
@@ -56,7 +75,7 @@ namespace UnityEditor.VFX.Test
 
         void GraphWithImplicitBehavior_Internal(VFXBlock[] initBlocks)
         {
-            var graph = VFXTestCommon.MakeTemporaryGraph();
+            var graph = MakeTemporaryGraph();
             var spawnerContext = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             var initContext = ScriptableObject.CreateInstance<VFXBasicInitialize>();
             var updateContext = ScriptableObject.CreateInstance<VFXBasicUpdate>();
@@ -151,8 +170,8 @@ namespace UnityEditor.VFX.Test
                 gpuMapper = new VFXExpressionMapper(),
                 uniformMapper = new VFXUniformMapper(new VFXExpressionMapper(), true)
             };
-            HashSet<string> dependencies = new HashSet<string>();
-            var stringBuilder = VFXCodeGenerator.Build(updateContext, VFXCompilationMode.Runtime, contextCompiledData, dependencies);
+
+            var stringBuilder = VFXCodeGenerator.Build(updateContext, VFXCompilationMode.Runtime, contextCompiledData);
 
             var code = stringBuilder.ToString();
             Assert.IsTrue(code.Contains(VFXBlockSourceVariantTest.sourceCodeVariant[0]));

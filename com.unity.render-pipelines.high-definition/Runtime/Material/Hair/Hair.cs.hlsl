@@ -1,5 +1,5 @@
 //
-// This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
+// This file was automatically generated. Please don't edit by hand.
 //
 
 #ifndef HAIR_CS_HLSL
@@ -122,16 +122,16 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.specularOcclusion.xxx;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_NORMAL:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_SMOOTHNESS:
             result = surfacedata.perceptualSmoothness.xxx;
@@ -192,16 +192,16 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
             result = bsdfdata.specularTint;
             break;
         case DEBUGVIEW_HAIR_BSDFDATA_NORMAL_WS:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_BSDFDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_BSDFDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_HAIR_BSDFDATA_PERCEPTUAL_ROUGHNESS:
             result = bsdfdata.perceptualRoughness.xxx;

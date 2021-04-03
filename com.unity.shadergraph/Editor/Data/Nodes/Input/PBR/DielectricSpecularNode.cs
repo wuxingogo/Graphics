@@ -27,6 +27,7 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         [SerializeField]
         DielectricMaterial m_Material = new DielectricMaterial(DielectricMaterialType.Common, 0.5f, 1.0f);
 
@@ -74,6 +75,11 @@ namespace UnityEditor.ShaderGraph
         private const string kOutputSlotName = "Out";
 
         public override bool hasPreview { get { return true; } }
+        public override PreviewMode previewMode
+        {
+            get { return PreviewMode.Preview2D; }
+        }
+
 
         public sealed override void UpdateNodeAfterDeserialization()
         {
@@ -117,7 +123,7 @@ namespace UnityEditor.ShaderGraph
 
             if (material.type == DielectricMaterialType.Common)
             {
-                properties.Add(new PreviewProperty(PropertyType.Float)
+                properties.Add(new PreviewProperty(PropertyType.Vector1)
                 {
                     name = string.Format("_{0}_Range", GetVariableNameForNode()),
                     floatValue = material.range
@@ -125,7 +131,7 @@ namespace UnityEditor.ShaderGraph
             }
             else if (material.type == DielectricMaterialType.Custom)
             {
-                properties.Add(new PreviewProperty(PropertyType.Float)
+                properties.Add(new PreviewProperty(PropertyType.Vector1)
                 {
                     name = string.Format("_{0}_IOR", GetVariableNameForNode()),
                     floatValue = material.indexOfRefraction

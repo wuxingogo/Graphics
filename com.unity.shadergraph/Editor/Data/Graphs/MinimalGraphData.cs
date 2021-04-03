@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using UnityEditor.Graphing;
-using UnityEditor.ShaderGraph.Legacy;
-using UnityEditor.ShaderGraph.Serialization;
 using UnityEngine;
 
-namespace UnityEditor.ShaderGraph
+ namespace UnityEditor.ShaderGraph
 {
     /// <summary>
     /// Minimal version of <see cref="GraphData"/> used for gathering dependencies. This allows us to not deserialize
@@ -18,77 +15,67 @@ namespace UnityEditor.ShaderGraph
     /// want to avoid the extra GC pressure.
     /// </summary>
     [Serializable]
-    class MinimalGraphData
+    class MinimalGraphData : ISerializationCallbackReceiver
     {
         static Dictionary<string, Type> s_MinimalTypeMap = CreateMinimalTypeMap();
 
-        static Dictionary<string, Type> CreateMinimalTypeMap()
+         static Dictionary<string, Type> CreateMinimalTypeMap()
         {
             var types = new Dictionary<string, Type>();
-            foreach (var type in TypeCache.GetTypesWithAttribute<HasDependenciesAttribute>())
+            foreach (var nodeType in TypeCache.GetTypesWithAttribute<HasDependenciesAttribute>())
             {
-                var dependencyAttribute = (HasDependenciesAttribute)type.GetCustomAttributes(typeof(HasDependenciesAttribute), false)[0];
+                var dependencyAttribute = (HasDependenciesAttribute)nodeType.GetCustomAttributes(typeof(HasDependenciesAttribute), false)[0];
                 if (!typeof(IHasDependencies).IsAssignableFrom(dependencyAttribute.minimalType))
                 {
-                    Debug.LogError($"{type} must implement {typeof(IHasDependencies)} to be used in {typeof(HasDependenciesAttribute)}");
+                    Debug.LogError($"{nodeType} must implement {typeof(IHasDependencies)} to be used in {typeof(HasDependenciesAttribute)}");
                     continue;
                 }
 
-                types.Add(type.FullName, dependencyAttribute.minimalType);
+                 types.Add(nodeType.FullName, dependencyAttribute.minimalType);
 
-                var formerNameAttributes = (FormerNameAttribute[])type.GetCustomAttributes(typeof(FormerNameAttribute), false);
+                 var formerNameAttributes = (FormerNameAttribute[])nodeType.GetCustomAttributes(typeof(FormerNameAttribute), false);
                 foreach (var formerNameAttribute in formerNameAttributes)
                 {
                     types.Add(formerNameAttribute.fullName, dependencyAttribute.minimalType);
                 }
             }
-
             return types;
         }
 
-        [SerializeField]
+         [SerializeField]
         List<SerializationHelper.JSONSerializedElement> m_SerializableNodes = new List<SerializationHelper.JSONSerializedElement>();
 
-        // gather all asset dependencies declared by nodes in the given (shadergraph or shadersubgraph) asset
-        // by reading the source file from disk, and doing a minimal parse
-        // returns true if it successfully gathered the dependencies, false if there was an error
-        public static bool GatherMinimalDependenciesFromFile(string assetPath, AssetCollection assetCollection)
+         public List<string> dependencies { get; set; }
+
+         public void OnAfterDeserialize()
         {
-            var textGraph = FileUtilities.SafeReadAllText(assetPath);
-
-            // if we can't read the file, no dependencies can be gathered
-            if (string.IsNullOrEmpty(textGraph))
-                return false;
-
-            var entries = MultiJsonInternal.Parse(textGraph);
-
-            if (string.IsNullOrWhiteSpace(entries[0].type))
+            foreach (var element in m_SerializableNodes)
             {
-                var minimalGraphData = JsonUtility.FromJson<MinimalGraphData>(textGraph);
-                entries.Clear();
-                foreach (var node in minimalGraphData.m_SerializableNodes)
-                {
-                    entries.Add(new MultiJsonEntry(node.typeInfo.fullName, null, node.JSONnodeData));
-                    AbstractMaterialNode0 amn = new AbstractMaterialNode0();
-                    JsonUtility.FromJsonOverwrite(node.JSONnodeData, amn);
-                    foreach (var slot in amn.m_SerializableSlots)
-                    {
-                        entries.Add(new MultiJsonEntry(slot.typeInfo.fullName, null, slot.JSONnodeData));
-                    }
-                }
-            }
-
-            foreach (var entry in entries)
-            {
-                if (s_MinimalTypeMap.TryGetValue(entry.type, out var minimalType))
+                if (s_MinimalTypeMap.TryGetValue(element.typeInfo.fullName, out var minimalType))
                 {
                     var instance = (IHasDependencies)Activator.CreateInstance(minimalType);
-                    JsonUtility.FromJsonOverwrite(entry.json, instance);
-                    instance.GetSourceAssetDependencies(assetCollection);
+                    JsonUtility.FromJsonOverwrite(element.JSONnodeData, instance);
+                    instance.GetSourceAssetDependencies(dependencies);
                 }
             }
+        }
 
-            return true;
+         public void OnBeforeSerialize()
+        {
+        }
+
+         public static string[] GetDependencyPaths(string assetPath)
+        {
+            var dependencies = new List<string>();
+            GetDependencyPaths(assetPath, dependencies);
+            return dependencies.ToArray();
+        }
+
+         public static void GetDependencyPaths(string assetPath, List<string> dependencies)
+        {
+            var textGraph = File.ReadAllText(assetPath, Encoding.UTF8);
+            var minimalGraphData = new MinimalGraphData { dependencies = dependencies };
+            JsonUtility.FromJsonOverwrite(textGraph, minimalGraphData);
         }
     }
 }

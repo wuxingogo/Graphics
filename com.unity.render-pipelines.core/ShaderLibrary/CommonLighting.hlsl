@@ -1,9 +1,8 @@
 #ifndef UNITY_COMMON_LIGHTING_INCLUDED
 #define UNITY_COMMON_LIGHTING_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
+// These clamping function to max of floating point 16 bit are use to prevent INF in code in case of extreme value
+TEMPLATE_1_REAL(ClampToFloat16Max, value, return min(value, HALF_MAX))
 
 // Ligthing convention
 // Light direction is oriented backward (-Z). i.e in shader code, light direction is -lightData.forward
@@ -305,9 +304,9 @@ real ComputeWrappedPowerDiffuseLighting(real NdotL, real w, real p)
 // Ref: The Technical Art of Uncharted 4 - Brinck and Maximov 2016
 real ComputeMicroShadowing(real AO, real NdotL, real opacity)
 {
-    real aperture = 2.0 * AO * AO;
-    real microshadow = saturate(NdotL + aperture - 1.0);
-    return lerp(1.0, microshadow, opacity);
+	real aperture = 2.0 * AO * AO;
+	real microshadow = saturate(NdotL + aperture - 1.0);
+	return lerp(1.0, microshadow, opacity);
 }
 
 real3 ComputeShadowColor(real shadow, real3 shadowTint, real penumbraFlag)
@@ -441,7 +440,7 @@ real3x3 GetOrthoBasisViewNormal(real3 V, real3 N, real unclampedNdotV, bool test
     if (testSingularity && (abs(1.0 - unclampedNdotV) <= FLT_EPS))
     {
         // In this case N == V, and azimuth orientation around N shouldn't matter for the caller,
-        // we can use any quaternion-based method, like Frisvad or Reynold's (Pixar):
+        // we can use any quaternion-based method, like Frisvad or Reynold's (Pixar): 
         orthoBasisViewNormal = GetLocalFrame(N);
     }
     else
@@ -458,9 +457,5 @@ bool IsMatchingLightLayer(uint lightLayers, uint renderingLayers)
 {
     return (lightLayers & renderingLayers) != 0;
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
 
 #endif // UNITY_COMMON_LIGHTING_INCLUDED

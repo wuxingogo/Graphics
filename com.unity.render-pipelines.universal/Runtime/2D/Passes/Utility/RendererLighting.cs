@@ -6,66 +6,90 @@ namespace UnityEngine.Experimental.Rendering.Universal
 {
     internal static class RendererLighting
     {
-        private static readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler("Draw Normals");
-        private static readonly ShaderTagId k_NormalsRenderingPassName = new ShaderTagId("NormalsRendering");
-        private static readonly Color k_NormalClearColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
-        private static readonly string k_SpriteLightKeyword = "SPRITE_LIGHT";
-        private static readonly string k_UsePointLightCookiesKeyword = "USE_POINT_LIGHT_COOKIES";
-        private static readonly string k_LightQualityFastKeyword = "LIGHT_QUALITY_FAST";
-        private static readonly string k_UseNormalMap = "USE_NORMAL_MAP";
-        private static readonly string k_UseAdditiveBlendingKeyword = "USE_ADDITIVE_BLENDING";
+        static readonly ShaderTagId k_NormalsRenderingPassName = new ShaderTagId("NormalsRendering");
+        static readonly Color k_NormalClearColor = new Color(0.5f, 0.5f, 1.0f, 1.0f);
+        static readonly string k_SpriteLightKeyword = "SPRITE_LIGHT";
+        static readonly string k_UsePointLightCookiesKeyword = "USE_POINT_LIGHT_COOKIES";
+        static readonly string k_LightQualityFastKeyword = "LIGHT_QUALITY_FAST";
+        static readonly string k_UseNormalMap = "USE_NORMAL_MAP";
+        static readonly string k_UseAdditiveBlendingKeyword = "USE_ADDITIVE_BLENDING";
+        const int k_NumberOfLightMaterials = 1 << 5 + 3;  // 5 keywords +  volume bit, shape bit
 
-        private static readonly string[] k_UseBlendStyleKeywords =
+        static readonly string[] k_UseBlendStyleKeywords =
         {
             "USE_SHAPE_LIGHT_TYPE_0", "USE_SHAPE_LIGHT_TYPE_1", "USE_SHAPE_LIGHT_TYPE_2", "USE_SHAPE_LIGHT_TYPE_3"
         };
 
-        private static readonly int[] k_BlendFactorsPropIDs =
+        static readonly string[] k_BlendFactorsPropNames =
         {
-            Shader.PropertyToID("_ShapeLightBlendFactors0"),
-            Shader.PropertyToID("_ShapeLightBlendFactors1"),
-            Shader.PropertyToID("_ShapeLightBlendFactors2"),
-            Shader.PropertyToID("_ShapeLightBlendFactors3")
+            "_ShapeLightBlendFactors0", "_ShapeLightBlendFactors1", "_ShapeLightBlendFactors2", "_ShapeLightBlendFactors3"
         };
 
-        private static readonly int[] k_MaskFilterPropIDs =
+        static readonly string[] k_MaskFilterPropNames =
         {
-            Shader.PropertyToID("_ShapeLightMaskFilter0"),
-            Shader.PropertyToID("_ShapeLightMaskFilter1"),
-            Shader.PropertyToID("_ShapeLightMaskFilter2"),
-            Shader.PropertyToID("_ShapeLightMaskFilter3")
+            "_ShapeLightMaskFilter0", "_ShapeLightMaskFilter1", "_ShapeLightMaskFilter2", "_ShapeLightMaskFilter3"
         };
 
-        private static readonly int[] k_InvertedFilterPropIDs =
+        static readonly string[] k_InvertedFilterPropNames =
         {
-            Shader.PropertyToID("_ShapeLightInvertedFilter0"),
-            Shader.PropertyToID("_ShapeLightInvertedFilter1"),
-            Shader.PropertyToID("_ShapeLightInvertedFilter2"),
-            Shader.PropertyToID("_ShapeLightInvertedFilter3")
+            "_ShapeLightInvertedFilter0", "_ShapeLightInvertedFilter1", "_ShapeLightInvertedFilter2", "_ShapeLightInvertedFilter3"
         };
 
-        private static GraphicsFormat s_RenderTextureFormatToUse = GraphicsFormat.R8G8B8A8_UNorm;
-        private static bool s_HasSetupRenderTextureFormatToUse;
+        static Renderer2DData s_Renderer2DData;
+        static RenderingData  s_RenderingData;
+        static Light2DBlendStyle[] s_BlendStyles;
+        static RenderTargetHandle[] s_LightRenderTargets;
+        static bool[] s_LightRenderTargetsDirty;
+        static RenderTargetHandle s_ShadowsRenderTarget;
+        static RenderTargetHandle s_NormalsTarget;
+        static Texture s_LightLookupTexture;
+        static Texture s_FalloffLookupTexture;
+        static Material[] s_LightMaterials;
+        static Material[] s_ShadowMaterials;
+        static Material[] s_RemoveSelfShadowMaterials;
 
-        private static readonly int k_SrcBlendID = Shader.PropertyToID("_SrcBlend");
-        private static readonly int k_DstBlendID = Shader.PropertyToID("_DstBlend");
-        private static readonly int k_FalloffIntensityID = Shader.PropertyToID("_FalloffIntensity");
-        private static readonly int k_FalloffDistanceID = Shader.PropertyToID("_FalloffDistance");
-        private static readonly int k_LightColorID = Shader.PropertyToID("_LightColor");
-        private static readonly int k_VolumeOpacityID = Shader.PropertyToID("_VolumeOpacity");
-        private static readonly int k_CookieTexID = Shader.PropertyToID("_CookieTex");
-        private static readonly int k_FalloffLookupID = Shader.PropertyToID("_FalloffLookup");
-        private static readonly int k_LightPositionID = Shader.PropertyToID("_LightPosition");
-        private static readonly int k_LightInvMatrixID = Shader.PropertyToID("_LightInvMatrix");
-        private static readonly int k_InnerRadiusMultID = Shader.PropertyToID("_InnerRadiusMult");
-        private static readonly int k_OuterAngleID = Shader.PropertyToID("_OuterAngle");
-        private static readonly int k_InnerAngleMultID = Shader.PropertyToID("_InnerAngleMult");
-        private static readonly int k_LightLookupID = Shader.PropertyToID("_LightLookup");
-        private static readonly int k_IsFullSpotlightID = Shader.PropertyToID("_IsFullSpotlight");
-        private static readonly int k_LightZDistanceID = Shader.PropertyToID("_LightZDistance");
-        private static readonly int k_PointLightCookieTexID = Shader.PropertyToID("_PointLightCookieTex");
+        static GraphicsFormat s_RenderTextureFormatToUse = GraphicsFormat.R8G8B8A8_UNorm;
+        static bool s_HasSetupRenderTextureFormatToUse;
 
-        private static GraphicsFormat GetRenderTextureFormat()
+        static public void Setup(RenderingData renderingData, Renderer2DData renderer2DData)
+        {
+            s_Renderer2DData = renderer2DData;
+            s_BlendStyles = renderer2DData.lightBlendStyles;
+            s_RenderingData = renderingData;
+
+            if (s_LightRenderTargets == null)
+            {
+                s_LightRenderTargets = new RenderTargetHandle[s_BlendStyles.Length];
+                s_LightRenderTargets[0].Init("_ShapeLightTexture0");
+                s_LightRenderTargets[1].Init("_ShapeLightTexture1");
+                s_LightRenderTargets[2].Init("_ShapeLightTexture2");
+                s_LightRenderTargets[3].Init("_ShapeLightTexture3");
+
+                s_LightRenderTargetsDirty = new bool[s_BlendStyles.Length];
+            }
+
+            if (s_NormalsTarget.id == 0)
+                s_NormalsTarget.Init("_NormalMap");
+
+            if (s_ShadowsRenderTarget.id == 0)
+                s_ShadowsRenderTarget.Init("_ShadowTex");
+
+            // The array size should be determined by the number of 'feature bit' the material index has. See GetLightMaterialIndex().
+            // Not all slots must be filled because certain combinations of the feature bits don't make sense (e.g. sprite bit on + shape bit off).
+            if (s_LightMaterials == null)
+                s_LightMaterials = new Material[k_NumberOfLightMaterials];
+
+            // This really needs to be deleted and replaced with a material block
+            const int totalMaterials = 256;
+            if (s_ShadowMaterials == null)
+                s_ShadowMaterials = new Material[totalMaterials];
+
+            if (s_RemoveSelfShadowMaterials == null)
+                s_RemoveSelfShadowMaterials = new Material[totalMaterials];
+        }
+
+
+        static public void CreateNormalMapRenderTexture(CommandBuffer cmd)
         {
             if (!s_HasSetupRenderTextureFormatToUse)
             {
@@ -77,78 +101,48 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 s_HasSetupRenderTextureFormatToUse = true;
             }
 
-            return s_RenderTextureFormatToUse;
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(s_RenderingData.cameraData.cameraTargetDescriptor.width, s_RenderingData.cameraData.cameraTargetDescriptor.height);
+            descriptor.graphicsFormat = s_RenderTextureFormatToUse;
+            descriptor.useMipMap = false;
+            descriptor.autoGenerateMips = false;
+            descriptor.depthBufferBits = 0;
+            descriptor.msaaSamples = s_RenderingData.cameraData.cameraTargetDescriptor.msaaSamples;
+            descriptor.dimension = TextureDimension.Tex2D;
+
+            cmd.GetTemporaryRT(s_NormalsTarget.id, descriptor, FilterMode.Bilinear);
         }
 
-        public static void CreateNormalMapRenderTexture(this IRenderPass2D pass, RenderingData renderingData, CommandBuffer cmd, float renderScale)
+        static public void CreateBlendStyleRenderTexture(CommandBuffer cmd, int blendStyleIndex)
         {
-            if (renderScale != pass.rendererData.normalsRenderTargetScale)
+            if (!s_HasSetupRenderTextureFormatToUse)
             {
-                if (pass.rendererData.isNormalsRenderTargetValid)
-                {
-                    cmd.ReleaseTemporaryRT(pass.rendererData.normalsRenderTarget.id);
-                }
+                if (SystemInfo.IsFormatSupported(GraphicsFormat.B10G11R11_UFloatPack32, FormatUsage.Linear | FormatUsage.Render))
+                    s_RenderTextureFormatToUse = GraphicsFormat.B10G11R11_UFloatPack32;
+                else if (SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Linear | FormatUsage.Render))
+                    s_RenderTextureFormatToUse = GraphicsFormat.R16G16B16A16_SFloat;
 
-                pass.rendererData.isNormalsRenderTargetValid = true;
-                pass.rendererData.normalsRenderTargetScale = renderScale;
-
-                var descriptor = new RenderTextureDescriptor(
-                    (int)(renderingData.cameraData.cameraTargetDescriptor.width * renderScale),
-                    (int)(renderingData.cameraData.cameraTargetDescriptor.height * renderScale));
-
-                descriptor.graphicsFormat = GetRenderTextureFormat();
-                descriptor.useMipMap = false;
-                descriptor.autoGenerateMips = false;
-                descriptor.depthBufferBits = 0;
-                descriptor.msaaSamples = renderingData.cameraData.cameraTargetDescriptor.msaaSamples;
-                descriptor.dimension = TextureDimension.Tex2D;
-
-                cmd.GetTemporaryRT(pass.rendererData.normalsRenderTarget.id, descriptor, FilterMode.Bilinear);
+                s_HasSetupRenderTextureFormatToUse = true;
             }
-        }
 
-        public static RenderTextureDescriptor GetBlendStyleRenderTextureDesc(this IRenderPass2D pass, RenderingData renderingData)
-        {
-            var renderTextureScale = Mathf.Clamp(pass.rendererData.lightRenderTextureScale, 0.01f, 1.0f);
-            var width = (int)(renderingData.cameraData.cameraTargetDescriptor.width * renderTextureScale);
-            var height = (int)(renderingData.cameraData.cameraTargetDescriptor.height * renderTextureScale);
+            float renderTextureScale = Mathf.Clamp(s_BlendStyles[blendStyleIndex].renderTextureScale, 0.01f, 1.0f);
+            int width = (int)(s_RenderingData.cameraData.cameraTargetDescriptor.width * renderTextureScale);
+            int height = (int)(s_RenderingData.cameraData.cameraTargetDescriptor.height * renderTextureScale);
 
-            var descriptor = new RenderTextureDescriptor(width, height);
-            descriptor.graphicsFormat = GetRenderTextureFormat();
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(width, height);
+            descriptor.graphicsFormat = s_RenderTextureFormatToUse;
             descriptor.useMipMap = false;
             descriptor.autoGenerateMips = false;
             descriptor.depthBufferBits = 0;
             descriptor.msaaSamples = 1;
             descriptor.dimension = TextureDimension.Tex2D;
 
-            return descriptor;
+            cmd.GetTemporaryRT(s_LightRenderTargets[blendStyleIndex].id, descriptor, FilterMode.Bilinear);
+            s_LightRenderTargetsDirty[blendStyleIndex] = true;
         }
 
-        public static void CreateCameraSortingLayerRenderTexture(this IRenderPass2D pass, RenderingData renderingData, CommandBuffer cmd, Downsampling downsamplingMethod)
+        static public void EnableBlendStyle(CommandBuffer cmd, int blendStyleIndex, bool enabled)
         {
-            var renderTextureScale = 1.0f;
-            if (downsamplingMethod == Downsampling._2xBilinear)
-                renderTextureScale = 0.5f;
-            else if (downsamplingMethod == Downsampling._4xBox || downsamplingMethod == Downsampling._4xBilinear)
-                renderTextureScale = 0.25f;
-
-            var width = (int)(renderingData.cameraData.cameraTargetDescriptor.width * renderTextureScale);
-            var height = (int)(renderingData.cameraData.cameraTargetDescriptor.height * renderTextureScale);
-
-            var descriptor = new RenderTextureDescriptor(width, height);
-            descriptor.graphicsFormat = renderingData.cameraData.cameraTargetDescriptor.graphicsFormat;
-            descriptor.useMipMap = false;
-            descriptor.autoGenerateMips = false;
-            descriptor.depthBufferBits = 0;
-            descriptor.msaaSamples = 1;
-            descriptor.dimension = TextureDimension.Tex2D;
-
-            cmd.GetTemporaryRT(pass.rendererData.cameraSortingLayerRenderTarget.id, descriptor, FilterMode.Bilinear);
-        }
-
-        public static void EnableBlendStyle(CommandBuffer cmd, int blendStyleIndex, bool enabled)
-        {
-            var keyword = k_UseBlendStyleKeywords[blendStyleIndex];
+            string keyword = k_UseBlendStyleKeywords[blendStyleIndex];
 
             if (enabled)
                 cmd.EnableShaderKeyword(keyword);
@@ -156,426 +150,448 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 cmd.DisableShaderKeyword(keyword);
         }
 
-        public static void ReleaseRenderTextures(this IRenderPass2D pass, CommandBuffer cmd)
+        static public void CreateShadowRenderTexture(CommandBuffer cmd, int blendStyleIndex)
         {
-            pass.rendererData.isNormalsRenderTargetValid = false;
-            pass.rendererData.normalsRenderTargetScale = 0.0f;
-            cmd.ReleaseTemporaryRT(pass.rendererData.normalsRenderTarget.id);
-            cmd.ReleaseTemporaryRT(pass.rendererData.shadowsRenderTarget.id);
-            cmd.ReleaseTemporaryRT(pass.rendererData.cameraSortingLayerRenderTarget.id);
+            float renderTextureScale = Mathf.Clamp(s_BlendStyles[blendStyleIndex].renderTextureScale, 0.01f, 1.0f);
+            int width = (int)(s_RenderingData.cameraData.cameraTargetDescriptor.width * renderTextureScale);
+            int height = (int)(s_RenderingData.cameraData.cameraTargetDescriptor.height * renderTextureScale);
+
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(width, height);
+            descriptor.useMipMap = false;
+            descriptor.autoGenerateMips = false;
+            descriptor.depthBufferBits = 24;
+            descriptor.graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm;
+            descriptor.msaaSamples = 1;
+            descriptor.dimension = TextureDimension.Tex2D;
+
+            cmd.GetTemporaryRT(s_ShadowsRenderTarget.id, descriptor, FilterMode.Bilinear);
         }
 
-        public static void DrawPointLight(CommandBuffer cmd, Light2D light, Mesh lightMesh, Material material)
+        static public void ReleaseShadowRenderTexture(CommandBuffer cmd)
         {
-            var scale = new Vector3(light.pointLightOuterRadius, light.pointLightOuterRadius, light.pointLightOuterRadius);
-            var matrix = Matrix4x4.TRS(light.transform.position, light.transform.rotation, scale);
-            cmd.DrawMesh(lightMesh, matrix, material);
+            cmd.ReleaseTemporaryRT(s_ShadowsRenderTarget.id);
         }
 
-        private static void RenderLightSet(IRenderPass2D pass, RenderingData renderingData, int blendStyleIndex, CommandBuffer cmd, int layerToRender, RenderTargetIdentifier renderTexture, List<Light2D> lights)
+        static public void ReleaseRenderTextures(CommandBuffer cmd)
         {
-            var maxShadowTextureCount = ShadowRendering.maxTextureCount;
-            var requiresRTInit = true;
-
-            // This case should never happen, but if it does it may cause an infinite loop later.
-            if (maxShadowTextureCount < 1)
+            for (int i = 0; i < s_BlendStyles.Length; ++i)
             {
-                Debug.LogError("maxShadowTextureCount cannot be less than 1");
-                return;
+                cmd.ReleaseTemporaryRT(s_LightRenderTargets[i].id);
             }
 
-            // Break up light rendering into batches for the purpose of shadow casting
-            var lightIndex = 0;
-            while (lightIndex < lights.Count)
-            {
-                var remainingLights = (uint)lights.Count - lightIndex;
-                var batchedLights = 0;
-
-                // Add lights to our batch until the number of shadow textures reach the maxShadowTextureCount
-                var shadowLightCount = 0;
-                while (batchedLights < remainingLights && shadowLightCount < maxShadowTextureCount)
-                {
-                    var light = lights[lightIndex + batchedLights];
-                    if (light.shadowsEnabled && light.shadowIntensity > 0)
-                    {
-                        ShadowRendering.CreateShadowRenderTexture(pass, renderingData, cmd, shadowLightCount);
-                        ShadowRendering.PrerenderShadows(pass, renderingData, cmd, layerToRender, light, shadowLightCount, light.shadowIntensity);
-                        shadowLightCount++;
-                    }
-                    batchedLights++;
-                }
-
-                // Set the current RT to the light RT
-                if (shadowLightCount > 0 || requiresRTInit)
-                {
-                    cmd.SetRenderTarget(renderTexture, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                    requiresRTInit = false;
-                }
-
-                // Render all the lights.
-                shadowLightCount = 0;
-                for (var lightIndexOffset = 0; lightIndexOffset < batchedLights; lightIndexOffset++)
-                {
-                    var light = lights[(int)(lightIndex + lightIndexOffset)];
-
-                    if (light != null &&
-                        light.lightType != Light2D.LightType.Global &&
-                        light.blendStyleIndex == blendStyleIndex &&
-                        light.IsLitLayer(layerToRender))
-                    {
-                        // Render light
-                        var lightMaterial = pass.rendererData.GetLightMaterial(light, false);
-                        if (lightMaterial == null)
-                            continue;
-
-                        var lightMesh = light.lightMesh;
-                        if (lightMesh == null)
-                            continue;
-
-                        // Set the shadow texture to read from
-                        if (light.shadowsEnabled && light.shadowIntensity > 0)
-                            ShadowRendering.SetGlobalShadowTexture(cmd, light, shadowLightCount++);
-                        else
-                            ShadowRendering.DisableGlobalShadowTexture(cmd);
-
-
-                        if (light.lightType == Light2D.LightType.Sprite && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
-                            cmd.SetGlobalTexture(k_CookieTexID, light.lightCookieSprite.texture);
-
-                        SetGeneralLightShaderGlobals(pass, cmd, light);
-
-                        if (light.normalMapQuality != Light2D.NormalMapQuality.Disabled || light.lightType == Light2D.LightType.Point)
-                            SetPointLightShaderGlobals(pass, cmd, light);
-
-                        // Light code could be combined...
-                        if (light.lightType == (Light2D.LightType)Light2D.DeprecatedLightType.Parametric || light.lightType == Light2D.LightType.Freeform || light.lightType == Light2D.LightType.Sprite)
-                        {
-                            cmd.DrawMesh(lightMesh, light.transform.localToWorldMatrix, lightMaterial);
-                        }
-                        else if (light.lightType == Light2D.LightType.Point)
-                        {
-                            DrawPointLight(cmd, light, lightMesh, lightMaterial);
-                        }
-                    }
-                }
-
-                // Release all of the temporary shadow textures
-                for (var releaseIndex = shadowLightCount - 1; releaseIndex >= 0; releaseIndex--)
-                    ShadowRendering.ReleaseShadowRenderTexture(cmd, releaseIndex);
-
-                lightIndex += batchedLights;
-            }
+            cmd.ReleaseTemporaryRT(s_NormalsTarget.id);
+            cmd.ReleaseTemporaryRT(s_ShadowsRenderTarget.id);
         }
 
-        public static void RenderLightVolumes(this IRenderPass2D pass, RenderingData renderingData, CommandBuffer cmd, int layerToRender, int endLayerValue, RenderTargetIdentifier renderTexture, RenderTargetIdentifier depthTexture, List<Light2D> lights)
+
+        static private void RenderShadows(CommandBuffer cmdBuffer, int layerToRender, Light2D light, float shadowIntensity, RenderTargetIdentifier renderTexture, RenderTargetIdentifier depthTexture)
         {
-            var maxShadowTextureCount = ShadowRendering.maxTextureCount;
-            var requiresRTInit = true;
+            cmdBuffer.SetGlobalFloat("_ShadowIntensity", 1 - light.shadowIntensity);
+            cmdBuffer.SetGlobalFloat("_ShadowVolumeIntensity", 1 - light.shadowVolumeIntensity);
 
-            // This case should never happen, but if it does it may cause an infinite loop later.
-            if (maxShadowTextureCount < 1)
+            if (shadowIntensity > 0)
             {
-                Debug.LogError("maxShadowTextureCount cannot be less than 1");
-                return;
-            }
+                CreateShadowRenderTexture(cmdBuffer, light.blendStyleIndex);
 
-            // Break up light rendering into batches for the purpose of shadow casting
-            var lightIndex = 0;
-            while (lightIndex < lights.Count)
-            {
-                var remainingLights = (uint)lights.Count - lightIndex;
-                var batchedLights = 0;
+                cmdBuffer.SetRenderTarget(s_ShadowsRenderTarget.Identifier()); // This isn't efficient if this light doesn't cast shadow.
+                cmdBuffer.ClearRenderTarget(true, true, Color.black);
 
-                // Add lights to our batch until the number of shadow textures reach the maxShadowTextureCount
-                var shadowLightCount = 0;
-                while (batchedLights < remainingLights && shadowLightCount < maxShadowTextureCount)
+                BoundingSphere lightBounds = light.GetBoundingSphere(); // Gets the local bounding sphere...
+                float shadowRadius = 1.42f * lightBounds.radius;
+
+                cmdBuffer.SetGlobalVector("_LightPos", light.transform.position);
+                cmdBuffer.SetGlobalFloat("_ShadowRadius", shadowRadius);
+
+                Material shadowMaterial = GetShadowMaterial(1);
+                Material removeSelfShadowMaterial = GetRemoveSelfShadowMaterial(1);
+                List<ShadowCasterGroup2D> shadowCasterGroups = ShadowCasterGroup2DManager.shadowCasterGroups;
+                if (shadowCasterGroups != null && shadowCasterGroups.Count > 0)
                 {
-                    var light = lights[lightIndex + batchedLights];
-                    if (light.volumetricShadowsEnabled && light.shadowVolumeIntensity > 0)
+                    int previousShadowGroupIndex = -1;
+                    int incrementingGroupIndex = 0;
+                    for (int group = 0; group < shadowCasterGroups.Count; group++)
                     {
-                        ShadowRendering.CreateShadowRenderTexture(pass, renderingData, cmd, shadowLightCount);
-                        ShadowRendering.PrerenderShadows(pass, renderingData, cmd, layerToRender, light, shadowLightCount, light.shadowVolumeIntensity);
-                        shadowLightCount++;
-                    }
-                    batchedLights++;
-                }
+                        ShadowCasterGroup2D shadowCasterGroup = shadowCasterGroups[group];
 
-                // Set the current RT to the light RT
-                if (shadowLightCount > 0 || requiresRTInit)
-                {
-                    cmd.SetRenderTarget(renderTexture, depthTexture);
-                    requiresRTInit = false;
-                }
+                        List<ShadowCaster2D> shadowCasters = shadowCasterGroup.GetShadowCasters();
 
-                // Render all the lights.
-                shadowLightCount = 0;
-                for (var lightIndexOffset = 0; lightIndexOffset < batchedLights; lightIndexOffset++)
-                {
-                    var light = lights[(int)(lightIndex + lightIndexOffset)];
-
-                    if (light.lightType == Light2D.LightType.Global)
-                        continue;
-
-                    if (light.volumeIntensity <= 0.0f || !light.volumeIntensityEnabled)
-                        continue;
-
-                    var topMostLayerValue = light.GetTopMostLitLayer();
-                    if (endLayerValue == topMostLayerValue) // this implies the layer is correct
-                    {
-                        var lightVolumeMaterial = pass.rendererData.GetLightMaterial(light, true);
-                        var lightMesh = light.lightMesh;
-
-                        // Set the shadow texture to read from
-                        if (light.volumetricShadowsEnabled && light.shadowVolumeIntensity > 0)
-                            ShadowRendering.SetGlobalShadowTexture(cmd, light, shadowLightCount++);
-                        else
-                            ShadowRendering.DisableGlobalShadowTexture(cmd);
-
-                        if (light.lightType == Light2D.LightType.Sprite && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
-                            cmd.SetGlobalTexture(k_CookieTexID, light.lightCookieSprite.texture);
-
-                        SetGeneralLightShaderGlobals(pass, cmd, light);
-
-                        // Is this needed
-                        if (light.normalMapQuality != Light2D.NormalMapQuality.Disabled || light.lightType == Light2D.LightType.Point)
-                            SetPointLightShaderGlobals(pass, cmd, light);
-
-                        // Could be combined...
-                        if (light.lightType == Light2D.LightType.Parametric || light.lightType == Light2D.LightType.Freeform || light.lightType == Light2D.LightType.Sprite)
+                        int shadowGroupIndex = shadowCasterGroup.GetShadowGroup();
+                        if (LightUtility.CheckForChange(shadowGroupIndex, ref previousShadowGroupIndex) || shadowGroupIndex == 0)
                         {
-                            cmd.DrawMesh(lightMesh, light.transform.localToWorldMatrix, lightVolumeMaterial);
+                            incrementingGroupIndex++;
+                            shadowMaterial = GetShadowMaterial(incrementingGroupIndex);
+                            removeSelfShadowMaterial = GetRemoveSelfShadowMaterial(incrementingGroupIndex);
                         }
-                        else if (light.lightType == Light2D.LightType.Point)
+
+                        if (shadowCasters != null)
                         {
-                            DrawPointLight(cmd, light, lightMesh, lightVolumeMaterial);
+                            // Draw the shadow casting group first, then draw the silhouttes..
+                            for (int i = 0; i < shadowCasters.Count; i++)
+                            {
+                                ShadowCaster2D shadowCaster = (ShadowCaster2D)shadowCasters[i];
+
+                                if (shadowCaster != null && shadowMaterial != null && shadowCaster.IsShadowedLayer(layerToRender))
+                                {
+                                    if (shadowCaster.castsShadows)
+                                        cmdBuffer.DrawMesh(shadowCaster.mesh, shadowCaster.transform.localToWorldMatrix, shadowMaterial);
+                                }
+                            }
+
+                            for (int i = 0; i < shadowCasters.Count; i++)
+                            {
+                                ShadowCaster2D shadowCaster = (ShadowCaster2D)shadowCasters[i];
+
+                                if (shadowCaster != null && shadowMaterial != null && shadowCaster.IsShadowedLayer(layerToRender))
+                                {
+                                    if (shadowCaster.useRendererSilhouette) 
+                                    {
+                                        Renderer renderer = shadowCaster.GetComponent<Renderer>();
+                                        if (renderer != null)
+                                        {
+                                            if (!shadowCaster.selfShadows)
+                                                cmdBuffer.DrawRenderer(renderer, removeSelfShadowMaterial);
+                                            else
+                                                cmdBuffer.DrawRenderer(renderer, shadowMaterial, 0, 1);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!shadowCaster.selfShadows)
+                                        {
+                                            Matrix4x4 meshMat = shadowCaster.transform.localToWorldMatrix;
+                                            cmdBuffer.DrawMesh(shadowCaster.mesh, meshMat, removeSelfShadowMaterial);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
-
-                // Release all of the temporary shadow textures
-                for (var releaseIndex = shadowLightCount - 1; releaseIndex >= 0; releaseIndex--)
-                    ShadowRendering.ReleaseShadowRenderTexture(cmd, releaseIndex);
-
-                lightIndex += batchedLights;
+                ReleaseShadowRenderTexture(cmdBuffer);
+                cmdBuffer.SetRenderTarget(renderTexture, depthTexture);
             }
         }
 
-        public static void SetShapeLightShaderGlobals(this IRenderPass2D pass, CommandBuffer cmd)
+        static private bool RenderLightSet(Camera camera, int blendStyleIndex, CommandBuffer cmdBuffer, int layerToRender, RenderTargetIdentifier renderTexture, List<Light2D> lights)
         {
-            for (var i = 0; i < pass.rendererData.lightBlendStyles.Length; i++)
+            bool renderedAnyLight = false;
+            
+            foreach (var light in lights)
             {
-                var blendStyle = pass.rendererData.lightBlendStyles[i];
-                if (i >= k_BlendFactorsPropIDs.Length)
+                if (light != null && light.lightType != Light2D.LightType.Global && light.blendStyleIndex == blendStyleIndex && light.IsLitLayer(layerToRender) && light.IsLightVisible(camera))
+                {
+                    // Render light
+                    Material lightMaterial = GetLightMaterial(light, false);
+                    if (lightMaterial != null)
+                    {
+                        Mesh lightMesh = light.GetMesh();
+                        if (lightMesh != null)
+                        {
+                            RenderShadows(cmdBuffer, layerToRender, light, light.shadowIntensity, renderTexture, renderTexture);
+
+                            renderedAnyLight = true;
+
+                            if (light.lightType == Light2D.LightType.Sprite && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
+                                cmdBuffer.SetGlobalTexture("_CookieTex", light.lightCookieSprite.texture);
+
+                            cmdBuffer.SetGlobalFloat("_FalloffIntensity", light.falloffIntensity);
+                            cmdBuffer.SetGlobalFloat("_FalloffDistance", light.shapeLightFalloffSize);
+                            cmdBuffer.SetGlobalVector("_FalloffOffset", light.shapeLightFalloffOffset);
+                            cmdBuffer.SetGlobalColor("_LightColor", light.intensity * light.color);
+                            cmdBuffer.SetGlobalFloat("_VolumeOpacity", light.volumeOpacity);
+
+                            if(light.useNormalMap || light.lightType == Light2D.LightType.Point)
+                                RendererLighting.SetPointLightShaderGlobals(cmdBuffer, light);
+
+                            // Light code could be combined...
+                            if (light.lightType == Light2D.LightType.Parametric || light.lightType == Light2D.LightType.Freeform || light.lightType == Light2D.LightType.Sprite)
+                            {
+                                cmdBuffer.DrawMesh(lightMesh, light.transform.localToWorldMatrix, lightMaterial);
+                            }
+                            else if(light.lightType == Light2D.LightType.Point)
+                            {
+                                Vector3 scale = new Vector3(light.pointLightOuterRadius, light.pointLightOuterRadius, light.pointLightOuterRadius);
+                                Matrix4x4 matrix = Matrix4x4.TRS(light.transform.position, Quaternion.identity, scale);
+                                cmdBuffer.DrawMesh(lightMesh, matrix, lightMaterial);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return renderedAnyLight;
+        }
+
+        static private void RenderLightVolumeSet(Camera camera, int blendStyleIndex, CommandBuffer cmdBuffer, int layerToRender, RenderTargetIdentifier renderTexture, RenderTargetIdentifier depthTexture, List<Light2D> lights)
+        {
+            if (lights.Count > 0)
+            {
+                for (int i = 0; i < lights.Count; i++)
+                {
+                    Light2D light = lights[i];
+
+                    int topMostLayer = light.GetTopMostLitLayer();
+                    if (layerToRender == topMostLayer)
+                    {
+                        if (light != null && light.lightType != Light2D.LightType.Global && light.volumeOpacity > 0.0f && light.blendStyleIndex == blendStyleIndex && light.IsLitLayer(layerToRender) && light.IsLightVisible(camera))
+                        {
+                            Material lightVolumeMaterial = GetLightMaterial(light, true);
+                            if (lightVolumeMaterial != null)
+                            {
+                                Mesh lightMesh = light.GetMesh();
+                                if (lightMesh != null)
+                                {
+                                    RenderShadows(cmdBuffer, layerToRender, light, light.shadowVolumeIntensity, renderTexture, depthTexture);
+
+                                    if (light.lightType == Light2D.LightType.Sprite && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
+                                        cmdBuffer.SetGlobalTexture("_CookieTex", light.lightCookieSprite.texture);
+
+                                    cmdBuffer.SetGlobalFloat("_FalloffIntensity", light.falloffIntensity);
+                                    cmdBuffer.SetGlobalFloat("_FalloffDistance", light.shapeLightFalloffSize);
+                                    cmdBuffer.SetGlobalVector("_FalloffOffset", light.shapeLightFalloffOffset);
+                                    cmdBuffer.SetGlobalColor("_LightColor", light.intensity * light.color);
+                                    cmdBuffer.SetGlobalFloat("_VolumeOpacity", light.volumeOpacity);
+
+                                    // Is this needed
+                                    if (light.useNormalMap || light.lightType == Light2D.LightType.Point)
+                                        RendererLighting.SetPointLightShaderGlobals(cmdBuffer, light);
+
+                                    // Could be combined...
+                                    if (light.lightType == Light2D.LightType.Parametric || light.lightType == Light2D.LightType.Freeform || light.lightType == Light2D.LightType.Sprite)
+                                    {
+                                        cmdBuffer.DrawMesh(lightMesh, light.transform.localToWorldMatrix, lightVolumeMaterial);
+                                    }
+                                    else if (light.lightType == Light2D.LightType.Point)
+                                    {
+                                        Vector3 scale = new Vector3(light.pointLightOuterRadius, light.pointLightOuterRadius, light.pointLightOuterRadius);
+                                        Matrix4x4 matrix = Matrix4x4.TRS(light.transform.position, Quaternion.identity, scale);
+                                        cmdBuffer.DrawMesh(lightMesh, matrix, lightVolumeMaterial);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        static public void SetShapeLightShaderGlobals(CommandBuffer cmdBuffer)
+        {
+            for (int i = 0; i < s_BlendStyles.Length; ++i)
+            {
+
+                if (i >= k_BlendFactorsPropNames.Length)
                     break;
 
-                cmd.SetGlobalVector(k_BlendFactorsPropIDs[i], blendStyle.blendFactors);
-                cmd.SetGlobalVector(k_MaskFilterPropIDs[i], blendStyle.maskTextureChannelFilter.mask);
-                cmd.SetGlobalVector(k_InvertedFilterPropIDs[i], blendStyle.maskTextureChannelFilter.inverted);
+                cmdBuffer.SetGlobalVector(k_BlendFactorsPropNames[i], s_BlendStyles[i].blendFactors);
+                cmdBuffer.SetGlobalVector(k_MaskFilterPropNames[i], s_BlendStyles[i].maskTextureChannelFilter.mask);
+                cmdBuffer.SetGlobalVector(k_InvertedFilterPropNames[i], s_BlendStyles[i].maskTextureChannelFilter.inverted);
             }
 
-            cmd.SetGlobalTexture(k_FalloffLookupID, pass.rendererData.fallOffLookup);
+            cmdBuffer.SetGlobalTexture("_FalloffLookup", GetFalloffLookupTexture());
         }
 
-        private static float GetNormalizedInnerRadius(Light2D light)
+        static Texture GetLightLookupTexture()
+        {
+            if (s_LightLookupTexture == null)
+                s_LightLookupTexture = Light2DLookupTexture.CreatePointLightLookupTexture();
+
+            return s_LightLookupTexture;
+        }
+
+        static Texture GetFalloffLookupTexture()
+        {
+            if (s_FalloffLookupTexture == null)
+                s_FalloffLookupTexture = Light2DLookupTexture.CreateFalloffLookupTexture();
+
+            return s_FalloffLookupTexture;
+        }
+
+        static public float GetNormalizedInnerRadius(Light2D light)
         {
             return light.pointLightInnerRadius / light.pointLightOuterRadius;
         }
 
-        private static float GetNormalizedAngle(float angle)
+        static public float GetNormalizedAngle(float angle)
         {
             return (angle / 360.0f);
         }
 
-        private static void GetScaledLightInvMatrix(Light2D light, out Matrix4x4 retMatrix)
+        static public void GetScaledLightInvMatrix(Light2D light, out Matrix4x4 retMatrix, bool includeRotation)
         {
-            var outerRadius = light.pointLightOuterRadius;
-            var lightScale = Vector3.one;
-            var outerRadiusScale = new Vector3(lightScale.x * outerRadius, lightScale.y * outerRadius, lightScale.z * outerRadius);
+            float outerRadius = light.pointLightOuterRadius;
+            Vector3 lightScale = Vector3.one;
+            Vector3 outerRadiusScale = new Vector3(lightScale.x * outerRadius, lightScale.y * outerRadius, lightScale.z * outerRadius);
 
-            var transform = light.transform;
+            Quaternion rotation;
+            if (includeRotation)
+                rotation = light.transform.rotation;
+            else
+                rotation = Quaternion.identity;
 
-            var scaledLightMat = Matrix4x4.TRS(transform.position, transform.rotation, outerRadiusScale);
+            Matrix4x4 scaledLightMat = Matrix4x4.TRS(light.transform.position, rotation, outerRadiusScale);
             retMatrix = Matrix4x4.Inverse(scaledLightMat);
         }
 
-        private static void SetGeneralLightShaderGlobals(IRenderPass2D pass, CommandBuffer cmd, Light2D light)
-        {
-            float intensity = light.intensity * light.color.a;
-            Color color = intensity * light.color;
-            color.a = 1.0f;
-
-            float volumeIntensity = light.volumeIntensity;
-
-            cmd.SetGlobalFloat(k_FalloffIntensityID, light.falloffIntensity);
-            cmd.SetGlobalFloat(k_FalloffDistanceID, light.shapeLightFalloffSize);
-            cmd.SetGlobalColor(k_LightColorID, color);
-            cmd.SetGlobalFloat(k_VolumeOpacityID, volumeIntensity);
-        }
-
-        private static void SetPointLightShaderGlobals(IRenderPass2D pass, CommandBuffer cmd, Light2D light)
+        static public void SetPointLightShaderGlobals(CommandBuffer cmdBuffer, Light2D light)
         {
             // This is used for the lookup texture
-            GetScaledLightInvMatrix(light, out var lightInverseMatrix);
+            Matrix4x4 lightInverseMatrix;
+            Matrix4x4 lightNoRotInverseMatrix;
+            GetScaledLightInvMatrix(light, out lightInverseMatrix, true);
+            GetScaledLightInvMatrix(light, out lightNoRotInverseMatrix, false);
 
-            var innerRadius = GetNormalizedInnerRadius(light);
-            var innerAngle = GetNormalizedAngle(light.pointLightInnerAngle);
-            var outerAngle = GetNormalizedAngle(light.pointLightOuterAngle);
-            var innerRadiusMult = 1 / (1 - innerRadius);
+            float innerRadius = GetNormalizedInnerRadius(light);
+            float innerAngle = GetNormalizedAngle(light.pointLightInnerAngle);
+            float outerAngle = GetNormalizedAngle(light.pointLightOuterAngle);
+            float innerRadiusMult = 1 / (1 - innerRadius);
 
-            cmd.SetGlobalVector(k_LightPositionID, light.transform.position);
-            cmd.SetGlobalMatrix(k_LightInvMatrixID, lightInverseMatrix);
-            cmd.SetGlobalFloat(k_InnerRadiusMultID, innerRadiusMult);
-            cmd.SetGlobalFloat(k_OuterAngleID, outerAngle);
-            cmd.SetGlobalFloat(k_InnerAngleMultID, 1 / (outerAngle - innerAngle));
-            cmd.SetGlobalTexture(k_LightLookupID, Light2DLookupTexture.GetLightLookupTexture());
-            cmd.SetGlobalTexture(k_FalloffLookupID, pass.rendererData.fallOffLookup);
-            cmd.SetGlobalFloat(k_FalloffIntensityID, light.falloffIntensity);
-            cmd.SetGlobalFloat(k_IsFullSpotlightID, innerAngle == 1 ? 1.0f : 0.0f);
+            cmdBuffer.SetGlobalVector("_LightPosition", light.transform.position);
+            cmdBuffer.SetGlobalMatrix("_LightInvMatrix", lightInverseMatrix);
+            cmdBuffer.SetGlobalMatrix("_LightNoRotInvMatrix", lightNoRotInverseMatrix);
+            cmdBuffer.SetGlobalFloat("_InnerRadiusMult", innerRadiusMult);
 
-            cmd.SetGlobalFloat(k_LightZDistanceID, light.normalMapDistance);
+            cmdBuffer.SetGlobalFloat("_OuterAngle", outerAngle);
+            cmdBuffer.SetGlobalFloat("_InnerAngleMult", 1 / (outerAngle - innerAngle));
+            cmdBuffer.SetGlobalTexture("_LightLookup", GetLightLookupTexture());
+            cmdBuffer.SetGlobalTexture("_FalloffLookup", GetFalloffLookupTexture());
+            cmdBuffer.SetGlobalFloat("_FalloffIntensity", light.falloffIntensity);
+            cmdBuffer.SetGlobalFloat("_IsFullSpotlight", innerAngle == 1 ? 1.0f : 0.0f);
+
+            cmdBuffer.SetGlobalFloat("_LightZDistance", light.pointLightDistance);
 
             if (light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
-                cmd.SetGlobalTexture(k_PointLightCookieTexID, light.lightCookieSprite.texture);
+                cmdBuffer.SetGlobalTexture("_PointLightCookieTex", light.lightCookieSprite.texture);
         }
 
-        public static void ClearDirtyLighting(this IRenderPass2D pass, CommandBuffer cmd, uint blendStylesUsed)
+        static public void ClearDirtyLighting(CommandBuffer cmdBuffer, uint blendStylesUsed)
         {
-            for (var i = 0; i < pass.rendererData.lightBlendStyles.Length; ++i)
+            for (int i = 0; i < s_BlendStyles.Length; ++i)
             {
                 if ((blendStylesUsed & (uint)(1 << i)) == 0)
                     continue;
 
-                if (!pass.rendererData.lightBlendStyles[i].isDirty)
-                    continue;
-
-                cmd.SetRenderTarget(pass.rendererData.lightBlendStyles[i].renderTargetHandle.Identifier());
-                cmd.ClearRenderTarget(false, true, Color.black);
-                pass.rendererData.lightBlendStyles[i].isDirty = false;
-            }
-        }
-
-        public static void RenderNormals(this IRenderPass2D pass, ScriptableRenderContext context, RenderingData renderingData, DrawingSettings drawSettings, FilteringSettings filterSettings, RenderTargetIdentifier depthTarget, CommandBuffer cmd, LightStats lightStats)
-        {
-            using (new ProfilingScope(cmd, m_ProfilingSampler))
-            {
-                // figure out the scale
-                var normalRTScale = 0.0f;
-
-                if (depthTarget != BuiltinRenderTextureType.None)
-                    normalRTScale = 1.0f;
-                else
-                    normalRTScale = Mathf.Clamp(pass.rendererData.lightRenderTextureScale, 0.01f, 1.0f);
-
-                pass.CreateNormalMapRenderTexture(renderingData, cmd, normalRTScale);
-
-                if (depthTarget != BuiltinRenderTextureType.None)
+                if (s_LightRenderTargetsDirty[i])
                 {
-                    cmd.SetRenderTarget(
-                        pass.rendererData.normalsRenderTarget.Identifier(),
-                        RenderBufferLoadAction.DontCare,
-                        RenderBufferStoreAction.Store,
-                        depthTarget,
-                        RenderBufferLoadAction.Load,
-                        RenderBufferStoreAction.Store);
+                    cmdBuffer.SetRenderTarget(s_LightRenderTargets[i].Identifier());
+                    cmdBuffer.ClearRenderTarget(false, true, Color.black);
+                    s_LightRenderTargetsDirty[i] = false;
                 }
-                else
-                    cmd.SetRenderTarget(pass.rendererData.normalsRenderTarget.Identifier(), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-
-                cmd.ClearRenderTarget(false, true, k_NormalClearColor);
-
-                context.ExecuteCommandBuffer(cmd);
-                cmd.Clear();
-
-                drawSettings.SetShaderPassName(0, k_NormalsRenderingPassName);
-                context.DrawRenderers(renderingData.cullResults, ref drawSettings, ref filterSettings);
             }
         }
 
-        public static void RenderLights(this IRenderPass2D pass, RenderingData renderingData, CommandBuffer cmd, int layerToRender, ref LayerBatch layerBatch, ref RenderTextureDescriptor rtDesc)
+        static public void RenderNormals(ScriptableRenderContext renderContext, CullingResults cullResults, DrawingSettings drawSettings, FilteringSettings filterSettings, RenderTargetIdentifier depthTarget)
         {
-            var blendStyles = pass.rendererData.lightBlendStyles;
+            var cmd = CommandBufferPool.Get("Clear Normals");
+            cmd.SetRenderTarget(s_NormalsTarget.Identifier(), depthTarget);
+            cmd.ClearRenderTarget(true, true, k_NormalClearColor);
+            renderContext.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
 
-            for (var i = 0; i < blendStyles.Length; ++i)
+            drawSettings.SetShaderPassName(0, k_NormalsRenderingPassName);
+            renderContext.DrawRenderers(cullResults, ref drawSettings, ref filterSettings);
+        }
+
+        static public void RenderLights(Camera camera, CommandBuffer cmdBuffer, int layerToRender, uint blendStylesUsed)
+        {
+            for (int i = 0; i < s_BlendStyles.Length; ++i)
             {
-                if ((layerBatch.lightStats.blendStylesUsed & (uint)(1 << i)) == 0)
+                if ((blendStylesUsed & (uint)(1<<i)) == 0)
                     continue;
 
-                var sampleName = blendStyles[i].name;
-                cmd.BeginSample(sampleName);
+                string sampleName = s_BlendStyles[i].name;
+                cmdBuffer.BeginSample(sampleName);
 
-                if (!Light2DManager.GetGlobalColor(layerToRender, i, out var clearColor))
+                cmdBuffer.SetRenderTarget(s_LightRenderTargets[i].Identifier());
+
+                bool rtDirty = false;
+                Color clearColor;
+                if (!Light2DManager.GetGlobalColor(layerToRender, i, out clearColor))
                     clearColor = Color.black;
+                else
+                    rtDirty = true;
 
-                var anyLights = (layerBatch.lightStats.blendStylesWithLights & (uint)(1 << i)) != 0;
+                if (s_LightRenderTargetsDirty[i] || rtDirty)
+                    cmdBuffer.ClearRenderTarget(false, true, clearColor);
 
-                var desc = rtDesc;
-                if (!anyLights) // No lights -- create tiny texture
-                    desc.width = desc.height = 4;
-                var identifier = layerBatch.GetRTId(cmd, desc, i);
+                rtDirty |= RenderLightSet(
+                    camera,
+                    i,
+                    cmdBuffer,
+                    layerToRender,
+                    s_LightRenderTargets[i].Identifier(),
+                    Light2D.GetLightsByBlendStyle(i)
+                );
 
-                cmd.SetRenderTarget(identifier,
-                    RenderBufferLoadAction.DontCare,
-                    RenderBufferStoreAction.Store,
-                    RenderBufferLoadAction.DontCare,
-                    RenderBufferStoreAction.DontCare);
-                cmd.ClearRenderTarget(false, true, clearColor);
+                s_LightRenderTargetsDirty[i] = rtDirty;
 
-                if (anyLights)
-                {
-                    RenderLightSet(
-                        pass, renderingData,
-                        i,
-                        cmd,
-                        layerToRender,
-                        identifier,
-                        pass.rendererData.lightCullResult.visibleLights
-                    );
-                }
-
-                cmd.EndSample(sampleName);
+                cmdBuffer.EndSample(sampleName);
             }
         }
 
-        private static void SetBlendModes(Material material, BlendMode src, BlendMode dst)
+        static public void RenderLightVolumes(Camera camera, CommandBuffer cmdBuffer, int layerToRender, RenderTargetIdentifier renderTarget, RenderTargetIdentifier depthTarget, uint blendStylesUsed)
         {
-            material.SetFloat(k_SrcBlendID, (float)src);
-            material.SetFloat(k_DstBlendID, (float)dst);
+            for (int i = 0; i < s_BlendStyles.Length; ++i)
+            {
+                if ((blendStylesUsed & (uint)(1 << i)) == 0)
+                    continue;
+
+                string sampleName = s_BlendStyles[i].name;
+                cmdBuffer.BeginSample(sampleName);
+
+                RenderLightVolumeSet(
+                    camera,
+                    i,
+                    cmdBuffer,
+                    layerToRender,
+                    renderTarget,
+                    depthTarget,
+                    Light2D.GetLightsByBlendStyle(i)                  
+                );
+
+                cmdBuffer.EndSample(sampleName);
+            }
         }
 
-        private static uint GetLightMaterialIndex(Light2D light, bool isVolume)
+        static void SetBlendModes(Material material, BlendMode src, BlendMode dst)
         {
-            var isPoint = light.isPointLight;
-            var bitIndex = 0;
-            var volumeBit = isVolume ? 1u << bitIndex : 0u;
+            material.SetFloat("_SrcBlend", (float)src);
+            material.SetFloat("_DstBlend", (float)dst);
+        }
+
+        static uint GetLightMaterialIndex(Light2D light, bool isVolume)
+        {
+            int bitIndex = 0;
+            uint volumeBit = isVolume ? 1u << bitIndex : 0u;
             bitIndex++;
-            var shapeBit = !isPoint ? 1u << bitIndex : 0u;
+            uint shapeBit = light.IsShapeLight() ? 1u << bitIndex : 0u;
             bitIndex++;
-            var additiveBit = light.overlapOperation == Light2D.OverlapOperation.AlphaBlend ? 0u : 1u << bitIndex;
+            uint additiveBit = light.alphaBlendOnOverlap ? 0u : 1u << bitIndex;
             bitIndex++;
-            var spriteBit = light.lightType == Light2D.LightType.Sprite ? 1u << bitIndex : 0u;
+            uint spriteBit = light.lightType == Light2D.LightType.Sprite ? 1u << bitIndex : 0u;
             bitIndex++;
-            var pointCookieBit = (isPoint && light.lightCookieSprite != null && light.lightCookieSprite.texture != null) ? 1u << bitIndex : 0u;
+            uint pointCookieBit = (!light.IsShapeLight() && light.lightCookieSprite != null && light.lightCookieSprite.texture != null) ? 1u << bitIndex : 0u;
             bitIndex++;
-            var pointFastQualityBit = (isPoint && light.normalMapQuality == Light2D.NormalMapQuality.Fast) ? 1u << bitIndex : 0u;
+            uint pointFastQualityBit = (!light.IsShapeLight() && light.pointLightQuality == Light2D.PointLightQuality.Fast) ? 1u << bitIndex : 0u;
             bitIndex++;
-            var useNormalMap = light.normalMapQuality != Light2D.NormalMapQuality.Disabled ? 1u << bitIndex : 0u;
+            uint useNormalMap = light.useNormalMap ? 1u << bitIndex : 0u;
 
             return pointFastQualityBit | pointCookieBit | spriteBit | additiveBit | shapeBit | volumeBit | useNormalMap;
         }
 
-        private static Material CreateLightMaterial(Renderer2DData rendererData, Light2D light, bool isVolume)
+        static Material CreateLightMaterial(Light2D light, bool isVolume)
         {
-            var isPoint = light.isPointLight;
+            bool isShape = light.IsShapeLight();
             Material material;
 
             if (isVolume)
-                material = CoreUtils.CreateEngineMaterial(isPoint ? rendererData.pointLightVolumeShader : rendererData.shapeLightVolumeShader);
+                material = CoreUtils.CreateEngineMaterial(isShape ? s_Renderer2DData.shapeLightVolumeShader : s_Renderer2DData.pointLightVolumeShader);
             else
             {
-                material = CoreUtils.CreateEngineMaterial(isPoint ? rendererData.pointLightShader : rendererData.shapeLightShader);
+                material = CoreUtils.CreateEngineMaterial(isShape ? s_Renderer2DData.shapeLightShader : s_Renderer2DData.pointLightShader);
 
-                if (light.overlapOperation == Light2D.OverlapOperation.Additive)
+                if (!light.alphaBlendOnOverlap)
                 {
                     SetBlendModes(material, BlendMode.One, BlendMode.One);
                     material.EnableKeyword(k_UseAdditiveBlendingKeyword);
@@ -587,29 +603,50 @@ namespace UnityEngine.Experimental.Rendering.Universal
             if (light.lightType == Light2D.LightType.Sprite)
                 material.EnableKeyword(k_SpriteLightKeyword);
 
-            if (isPoint && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
+            if (!isShape && light.lightCookieSprite != null && light.lightCookieSprite.texture != null)
                 material.EnableKeyword(k_UsePointLightCookiesKeyword);
 
-            if (isPoint && light.normalMapQuality == Light2D.NormalMapQuality.Fast)
+            if (!isShape && light.pointLightQuality == Light2D.PointLightQuality.Fast)
                 material.EnableKeyword(k_LightQualityFastKeyword);
 
-            if (light.normalMapQuality != Light2D.NormalMapQuality.Disabled)
+            if (light.useNormalMap)
                 material.EnableKeyword(k_UseNormalMap);
 
             return material;
         }
 
-        private static Material GetLightMaterial(this Renderer2DData rendererData, Light2D light, bool isVolume)
+        static Material GetLightMaterial(Light2D light, bool isVolume)
         {
-            var materialIndex = GetLightMaterialIndex(light, isVolume);
+            uint materialIndex = GetLightMaterialIndex(light, isVolume);
 
-            if (!rendererData.lightMaterials.TryGetValue(materialIndex, out var material))
+            if (s_LightMaterials[materialIndex] == null)
+                s_LightMaterials[materialIndex] = CreateLightMaterial(light, isVolume);
+
+            return s_LightMaterials[materialIndex];
+        }
+
+        static Material GetShadowMaterial(int index)
+        {
+            int shadowMaterialIndex = index % 255;
+            if(s_ShadowMaterials[shadowMaterialIndex] == null)
             {
-                material = CreateLightMaterial(rendererData, light, isVolume);
-                rendererData.lightMaterials[materialIndex] = material;
+                s_ShadowMaterials[shadowMaterialIndex] = CoreUtils.CreateEngineMaterial(s_Renderer2DData.shadowGroupShader);
+                s_ShadowMaterials[shadowMaterialIndex].SetFloat("_ShadowStencilGroup", index);
             }
 
-            return material;
+            return s_ShadowMaterials[shadowMaterialIndex];
+        }
+
+        static Material GetRemoveSelfShadowMaterial(int index)
+        {
+            int shadowMaterialIndex = index % 255;
+            if (s_RemoveSelfShadowMaterials[shadowMaterialIndex] == null)
+            {
+                s_RemoveSelfShadowMaterials[shadowMaterialIndex] = CoreUtils.CreateEngineMaterial(s_Renderer2DData.removeSelfShadowShader);
+                s_RemoveSelfShadowMaterials[shadowMaterialIndex].SetFloat("_ShadowStencilGroup", index);
+            }
+
+            return s_RemoveSelfShadowMaterials[shadowMaterialIndex];
         }
     }
 }

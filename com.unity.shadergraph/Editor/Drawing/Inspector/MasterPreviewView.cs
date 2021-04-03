@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEditor.Graphing;
 using UnityEditor.Graphing.Util;
-using UnityEditor.ShaderGraph.Internal;
 using Object = UnityEngine.Object;
 
 using UnityEditor.UIElements;
@@ -31,10 +29,21 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
         Vector2 m_PreviewScrollPosition;
         ObjectField m_PreviewMeshPicker;
 
+        IMasterNode m_MasterNode;
         Mesh m_PreviousMesh;
+
+        bool m_Expanded = true;
+
+        public bool expanded
+        {
+            get { return m_Expanded; }
+        }
 
         bool m_RecalculateLayout;
 
+        Vector2 m_ExpandedPreviewSize;
+
+        VisualElement m_CollapsePreviewContainer;
         ResizeBorderFrame m_PreviewResizeBorderFrame;
 
         public ResizeBorderFrame previewResizeBorderFrame
@@ -79,8 +88,12 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             {
                 m_Title = new Label() { name = "title" };
                 m_Title.text = "Main Preview";
+                // Add preview collapse button on top of preview
+                m_CollapsePreviewContainer = new VisualElement { name = "collapse-container" };
+                m_CollapsePreviewContainer.AddToClassList("collapse-container");
 
                 topContainer.Add(m_Title);
+                topContainer.Add(m_CollapsePreviewContainer);
             }
             Add(topContainer);
 
@@ -93,12 +106,13 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             }
             Add(preview);
 
-            m_PreviewResizeBorderFrame = new ResizeBorderFrame(this, this) { name = "resizeBorderFrame" };
+            m_PreviewResizeBorderFrame = new ResizeBorderFrame(previewTextureView, this) { name = "resizeBorderFrame" };
             m_PreviewResizeBorderFrame.maintainAspectRatio = true;
             Add(m_PreviewResizeBorderFrame);
 
+            m_ExpandedPreviewSize = new Vector2(256f, 256f);
             m_RecalculateLayout = false;
-            this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            previewTextureView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         Image CreatePreview(Texture texture)
@@ -126,10 +140,15 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             evt.menu.AppendAction("Custom Mesh", e => ChangeMeshCustom(), DropdownMenuAction.AlwaysEnabled);
         }
 
+        void DirtyMasterNode(ModificationScope scope)
+        {
+            m_Graph?.outputNode?.Dirty(scope);
+        }
+
         void OnPreviewChanged()
         {
             m_PreviewTextureView.image = m_PreviewRenderHandle?.texture ?? Texture2D.blackTexture;
-            if (m_PreviewRenderHandle != null && m_PreviewRenderHandle.shaderData.isOutOfDate)
+            if (m_PreviewRenderHandle != null && m_PreviewRenderHandle.shaderData.isCompiling)
                 m_PreviewTextureView.tintColor = new Color(1.0f, 1.0f, 1.0f, 0.3f);
             else
                 m_PreviewTextureView.tintColor = Color.white;
@@ -147,7 +166,7 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
         {
             Mesh changedMesh = mesh;
 
-            m_PreviewManager.UpdateMasterPreview(ModificationScope.Node);
+            DirtyMasterNode(ModificationScope.Node);
 
             if (m_Graph.previewData.serializedMesh.mesh != changedMesh)
             {
@@ -174,7 +193,7 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
 
         void ChangeMeshCustom()
         {
-            MethodInfo ShowMethod = s_ObjectSelector.GetMethod("Show", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, Type.DefaultBinder, new[] {typeof(Object), typeof(Type), typeof(Object), typeof(bool), typeof(List<int>), typeof(Action<Object>), typeof(Action<Object>)}, new ParameterModifier[7]);
+            MethodInfo ShowMethod = s_ObjectSelector.GetMethod("Show", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, Type.DefaultBinder, new[] {typeof(Object), typeof(Type), typeof(SerializedProperty), typeof(bool), typeof(List<int>), typeof(Action<Object>), typeof(Action<Object>)}, new ParameterModifier[7]);
             m_PreviousMesh = m_Graph.previewData.serializedMesh.mesh;
             ShowMethod.Invoke(Get(), new object[] { null, typeof(Mesh), null, false, null, (Action<Object>)OnMeshChanged, (Action<Object>)OnMeshChanged });
         }
@@ -190,6 +209,9 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
                 m_RecalculateLayout = false;
             }
 
+            if (!expanded)
+                return;
+
             var currentWidth = m_PreviewRenderHandle?.texture != null ? m_PreviewRenderHandle.texture.width : -1;
             var currentHeight = m_PreviewRenderHandle?.texture != null ? m_PreviewRenderHandle.texture.height : -1;
 
@@ -199,9 +221,7 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             if (Mathf.Approximately(currentWidth, targetHeight) && Mathf.Approximately(currentHeight, targetWidth))
                 return;
 
-            m_PreviewTextureView.style.width = evt.newRect.width;
-            m_PreviewTextureView.style.height = evt.newRect.height - 40.0f;
-            m_PreviewManager.ResizeMasterPreview(new Vector2(evt.newRect.width, evt.newRect.width));
+            m_PreviewManager.ResizeMasterPreview(new Vector2(targetWidth, targetHeight));
         }
 
         void OnScroll(float scrollValue)
@@ -209,7 +229,7 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             float rescaleAmount = -scrollValue * .03f;
             m_Graph.previewData.scale = Mathf.Clamp(m_Graph.previewData.scale + rescaleAmount, 0.2f, 5f);
 
-            m_PreviewManager.UpdateMasterPreview(ModificationScope.Node);
+            DirtyMasterNode(ModificationScope.Node);
         }
 
         void OnMouseDragPreviewMesh(Vector2 deltaMouse)
@@ -221,7 +241,7 @@ namespace UnityEditor.ShaderGraph.Drawing.Inspector
             Quaternion previewRotation = Quaternion.Euler(m_PreviewScrollPosition.y, 0, 0) * Quaternion.Euler(0, m_PreviewScrollPosition.x, 0);
             m_Graph.previewData.rotation = previewRotation;
 
-            m_PreviewManager.UpdateMasterPreview(ModificationScope.Node);
+            DirtyMasterNode(ModificationScope.Node);
         }
     }
 }

@@ -34,10 +34,9 @@ namespace UnityEditor.Rendering.HighDefinition
                 PropertyField(m_RayTracing);
                 if (m_RayTracing.overrideState.boolValue && m_RayTracing.value.boolValue)
                 {
-                    using (new HDEditorUtils.IndentScope())
-                    {
-                        PropertyField(m_SampleCount);
-                    }
+                    EditorGUI.indentLevel++;
+                    PropertyField(m_SampleCount);
+                    EditorGUI.indentLevel--;
                 }
             }
         }

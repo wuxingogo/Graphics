@@ -19,7 +19,6 @@
 *.csproj
 *.exe
 *.ini
-*.log
 *.map
 *.mdb
 *.npmrc
@@ -31,17 +30,10 @@
 *.sublime-workspace
 *.suo
 *.userprefs
-*.orig
-*.orig.meta
+*.log
 .npmrc
 ShaderGraph/DebugOutput.meta
 ShaderGraph/DebugOutput/**
 ShaderGraph/Testing/IntegrationTests/.Failed
 TestProjects/*/ProjectSettings/ProjectVersion.txt
-TestProjects/VisualEffectGraph_HDRP/GraphViz/
-
-*/manifest-updater.py
 node_modules
-
-.yamato/script/path.config
-manifest-updater.py

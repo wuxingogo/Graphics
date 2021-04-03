@@ -17,13 +17,11 @@ namespace UnityEditor.VFX
 
         Spawner = 1 << 0,
         Init = 1 << 1,
-        OutputEvent = 1 << 2,
-        Update = 1 << 3,
-        Output = 1 << 4,
-        Event = 1 << 5,
-        SpawnerGPU = 1 << 6,
-        Subgraph = 1 << 7,
-        Filter = 1 << 8,
+        Update = 1 << 2,
+        Output = 1 << 3,
+        Event = 1 << 4,
+        SpawnerGPU = 1 << 5,
+        Subgraph = 1 << 6,
 
         InitAndUpdate = Init | Update,
         InitAndUpdateAndOutput = Init | Update | Output,
@@ -36,10 +34,9 @@ namespace UnityEditor.VFX
     {
         None =          0,
         SpawnEvent =    1 << 0,
-        OutputEvent =   1 << 1,
-        Particle =      1 << 2,
-        Mesh =          1 << 3,
-        ParticleStrip = 1 << 4 | Particle, // strips
+        Particle =      1 << 1,
+        Mesh =          1 << 2,
+        ParticleStrip = 1 << 3 | Particle, // strips
     };
 
     [Serializable]
@@ -70,11 +67,8 @@ namespace UnityEditor.VFX
             get { return m_Label; }
             set
             {
-                var invalidationCause = InvalidationCause.kUIChanged;
-                if (contextType == VFXContextType.Spawner && m_Label != value)
-                    invalidationCause = InvalidationCause.kSettingChanged;
                 m_Label = value;
-                Invalidate(invalidationCause);
+                Invalidate(InvalidationCause.kUIChanged);
             }
         }
 
@@ -100,6 +94,8 @@ namespace UnityEditor.VFX
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             int nbRemoved = 0;
             if (m_InputFlowSlot == null)
                 m_InputFlowSlot = Enumerable.Range(0, inputFlowCount).Select(_ => new VFXContextSlot()).ToArray();
@@ -120,8 +116,6 @@ namespace UnityEditor.VFX
                 SetDefaultData(false);
 
             m_UICollapsed = false;
-
-            base.OnEnable();
         }
 
         public bool doesGenerateShader                                  { get { return codeGeneratorTemplate != null; } }
@@ -167,28 +161,10 @@ namespace UnityEditor.VFX
             if (cause == InvalidationCause.kStructureChanged ||
                 cause == InvalidationCause.kConnectionChanged ||
                 cause == InvalidationCause.kExpressionInvalidated ||
-                cause == InvalidationCause.kSettingChanged ||
-                cause == InvalidationCause.kEnableChanged)
+                cause == InvalidationCause.kSettingChanged)
             {
                 if (hasBeenCompiled || CanBeCompiled())
-                {
-                    bool skip = false;
-
-                    // Check if the invalidation comes from a disable block and in that case don't recompile
-                    if (cause != InvalidationCause.kEnableChanged)
-                    {
-                        VFXBlock block = null;
-                        if (model is VFXBlock)
-                            block = (VFXBlock)model;
-                        else if (model is VFXSlot)
-                            block = ((VFXSlot)model).owner as VFXBlock;
-
-                        skip = block != null && !block.enabled;
-                    }
-
-                    if (!skip)
-                        Invalidate(InvalidationCause.kExpressionGraphChanged);
-                }
+                    Invalidate(InvalidationCause.kExpressionGraphChanged);
             }
         }
 
@@ -259,14 +235,6 @@ namespace UnityEditor.VFX
                 to.m_InputFlowSlot[toIndex].link.Any(o => o.context == from && o.slotIndex == fromIndex))
                 return false;
 
-            //Special incorrect case, GPUEvent use the same type than Spawner which leads to an unexpected allowed link.
-            if (from.m_ContextType == VFXContextType.SpawnerGPU && to.m_ContextType == VFXContextType.OutputEvent)
-                return false;
-
-            //Can't connect directly event to context (OutputEvent or Initialize) for now
-            if (from.m_ContextType == VFXContextType.Event && to.contextType != VFXContextType.Spawner && to.contextType != VFXContextType.Subgraph)
-                return false;
-
             return true;
         }
 
@@ -320,7 +288,6 @@ namespace UnityEditor.VFX
         private bool CanLinkFromMany()
         {
             return contextType == VFXContextType.Output
-                || contextType == VFXContextType.OutputEvent
                 || contextType == VFXContextType.Spawner
                 || contextType == VFXContextType.Subgraph
                 ||  contextType == VFXContextType.Init;
@@ -419,7 +386,7 @@ namespace UnityEditor.VFX
                 {
                     m_Data.OnContextRemoved(this);
                     if (m_Data.owners.Count() == 0)
-                        m_Data.Detach(notify);
+                        m_Data.Detach();
                 }
                 OnDataChanges(m_Data, data);
                 m_Data = data;
@@ -562,6 +529,76 @@ namespace UnityEditor.VFX
 
         public char letter { get; set; }
 
+
+        string shaderNamePrefix = "Hidden/VFX";
+
+        public string shaderName
+        {
+            get
+            {
+                string assetName = string.Empty;
+                try
+                {
+                    assetName = GetGraph().visualEffectResource.asset.name;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e, this);
+                }
+
+                string prefix = shaderNamePrefix + (assetName == string.Empty ? "" : "/" + assetName);
+                if (GetData() != null)
+                {
+                    string dataName = GetData().fileName;
+                    if (!string.IsNullOrEmpty(dataName))
+                        prefix += "/" + dataName;
+                }
+
+                if (letter != '\0')
+                {
+                    if (string.IsNullOrEmpty(label))
+                        return string.Format("{2}/({0}) {1}", letter, libraryName, prefix);
+                    else
+                        return string.Format("{2}/({0}) {1}", letter, label, prefix);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(label))
+                        return string.Format("{1}/{0}", libraryName, prefix);
+                    else
+                        return string.Format("{1}/{0}", label, prefix);
+                }
+            }
+        }
+        public string fileName
+        {
+            get
+            {
+                string prefix = string.Empty;
+                if (GetData() != null)
+                {
+                    string dataName = GetData().fileName;
+                    if (!string.IsNullOrEmpty(dataName))
+                        prefix += "[" + dataName + "]";
+                }
+
+                if (letter != '\0')
+                {
+                    if (string.IsNullOrEmpty(label))
+                        return string.Format("{2}{0} {1}", letter, libraryName, prefix);
+                    else
+                        return string.Format("{2}{0} {1}", letter, label, prefix);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(label))
+                        return string.Format("{1}{0}", libraryName, prefix);
+                    else
+                        return string.Format("{1}{0}", label, prefix);
+                }
+            }
+        }
+
         public override VFXCoordinateSpace GetOutputSpaceFromSlot(VFXSlot slot)
         {
             return space;
@@ -583,7 +620,7 @@ namespace UnityEditor.VFX
                 {
                     return (m_Data as ISpaceable).space;
                 }
-                return (VFXCoordinateSpace)int.MaxValue;
+                return VFXCoordinateSpace.Local;
             }
 
             set
@@ -599,16 +636,6 @@ namespace UnityEditor.VFX
                         slot.Invalidate(InvalidationCause.kSpaceChanged);
                 }
             }
-        }
-
-        public override void CheckGraphBeforeImport()
-        {
-            base.CheckGraphBeforeImport();
-            // If the graph is reimported it can be because one of its depedency such as the subgraphs, has been changed.
-            // blocs could be subgraph blocks.
-
-            foreach (var block in children)
-                block.CheckGraphBeforeImport();
         }
     }
 }

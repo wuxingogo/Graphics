@@ -1,18 +1,13 @@
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+#pragma only_renderers d3d11 playstation xboxone vulkan metal switch
 
-#pragma kernel MAIN         KERNEL_NAME=MAIN         NUM_SAMPLES=1      COARSE_STENCIL
-#pragma kernel MAIN_MSAA_2  KERNEL_NAME=MAIN_MSAA_2  NUM_SAMPLES=2 MSAA COARSE_STENCIL
-#pragma kernel MAIN_MSAA_4  KERNEL_NAME=MAIN_MSAA_4  NUM_SAMPLES=4 MSAA COARSE_STENCIL
-#pragma kernel MAIN_MSAA_8  KERNEL_NAME=MAIN_MSAA_8  NUM_SAMPLES=8 MSAA COARSE_STENCIL
+#pragma kernel MAIN         KERNEL_NAME=MAIN         NUM_SAMPLES=1
+#pragma kernel MAIN_MSAA_2  KERNEL_NAME=MAIN_MSAA_2  NUM_SAMPLES=2 MSAA
+#pragma kernel MAIN_MSAA_4  KERNEL_NAME=MAIN_MSAA_4  NUM_SAMPLES=4 MSAA 
+#pragma kernel MAIN_MSAA_8  KERNEL_NAME=MAIN_MSAA_8  NUM_SAMPLES=8 MSAA
 
-#pragma kernel MAIN_MSAA_2_RESOLVE  KERNEL_NAME=MAIN_MSAA_2_RESOLVE  NUM_SAMPLES=2 MSAA RESOLVE COARSE_STENCIL
-#pragma kernel MAIN_MSAA_4_RESOLVE  KERNEL_NAME=MAIN_MSAA_4_RESOLVE  NUM_SAMPLES=4 MSAA RESOLVE COARSE_STENCIL
-#pragma kernel MAIN_MSAA_8_RESOLVE  KERNEL_NAME=MAIN_MSAA_8_RESOLVE  NUM_SAMPLES=8 MSAA RESOLVE COARSE_STENCIL
-
-#pragma kernel MAIN_MSAA_2_RESOLVE_ONLY  KERNEL_NAME=MAIN_MSAA_2_RESOLVE_ONLY  NUM_SAMPLES=2 MSAA RESOLVE
-#pragma kernel MAIN_MSAA_4_RESOLVE_ONLY  KERNEL_NAME=MAIN_MSAA_4_RESOLVE_ONLY  NUM_SAMPLES=4 MSAA RESOLVE
-#pragma kernel MAIN_MSAA_8_RESOLVE_ONLY  KERNEL_NAME=MAIN_MSAA_8_RESOLVE_ONLY  NUM_SAMPLES=8 MSAA RESOLVE
-
+#pragma kernel MAIN_MSAA_2_RESOLVE  KERNEL_NAME=MAIN_MSAA_2_RESOLVE  NUM_SAMPLES=2 MSAA RESOLVE
+#pragma kernel MAIN_MSAA_4_RESOLVE  KERNEL_NAME=MAIN_MSAA_4_RESOLVE  NUM_SAMPLES=4 MSAA RESOLVE
+#pragma kernel MAIN_MSAA_8_RESOLVE  KERNEL_NAME=MAIN_MSAA_8_RESOLVE  NUM_SAMPLES=8 MSAA RESOLVE
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
@@ -47,7 +42,7 @@ void KERNEL_NAME(uint3 groupId          : SV_GroupID,
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadID.z);
 
-    // The best shot at resolving is being overly conservative, hence the OR operator. This is by nature inaccurate.
+    // The best shot at resolving is being overly conservative, hence the OR operator. This is by nature inaccurate. 
     uint resolvedStencil = 0;
 
     if (dispatchThreadID.x < (uint)_ScreenSize.x && dispatchThreadID.y < (uint)_ScreenSize.y)
@@ -68,18 +63,7 @@ void KERNEL_NAME(uint3 groupId          : SV_GroupID,
     _OutputStencilBuffer[COORD_TEXTURE2D_X(dispatchThreadID.xy)] = uint2(resolvedStencil, resolvedStencil);
 #endif
 
-#ifdef COARSE_STENCIL
-
-#if USE_INTRINSICS
-
-    // Need to workaround a warning incorrectly triggered when on Xbox One, so instead of using WaveIsFirstLane()
-    // we check the groupThreadId as in the non intrinsic version.
-    //bool isFirstThread = WaveIsFirstLane();
-    bool isFirstThread = groupThreadId.x == 0 && groupThreadId.y == 0;
-    uint coarseStencilValue = WaveActiveBitOr(resolvedStencil);
-
-
-#else
+#if USE_INTRINSICS == 0
 
     bool isFirstThread = groupThreadId.x == 0 && groupThreadId.y == 0;
     if (isFirstThread)
@@ -93,18 +77,19 @@ void KERNEL_NAME(uint3 groupId          : SV_GroupID,
 
     GroupMemoryBarrierWithGroupSync();
 
-#endif
+#else
 
-    //This temp is needed outside the if(isFirstThread) condition to workaround a DXC DXIL codegen
-    // issue https://github.com/microsoft/DirectXShaderCompiler/issues/2743 until it's fixed
-    uint perThreadCoarseStencilValue = coarseStencilValue;
+    // Need to workaround a warning incorrectly triggered when on Xbox One, so instead of using WaveIsFirstLane()
+    // we check the groupThreadId as in the non intrinsic version.
+    //bool isFirstThread = WaveIsFirstLane();
+    bool isFirstThread = groupThreadId.x == 0 && groupThreadId.y == 0;
+    uint coarseStencilValue = WaveActiveBitOr(resolvedStencil);
+
+#endif
 
     if (isFirstThread)
     {
         uint addressIndex = Get1DAddressFromPixelCoord(groupId.xy, _CoarseStencilBufferSize.xy, groupId.z);
-        _CoarseStencilBuffer[addressIndex] = perThreadCoarseStencilValue;
+        _CoarseStencilBuffer[addressIndex] = coarseStencilValue;
     }
-
-#endif
-
 }

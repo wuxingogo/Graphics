@@ -36,14 +36,6 @@ namespace UnityEngine.VFX.Utility
             m_VisualEffect = GetComponent<VisualEffect>();
         }
 
-        static private void SafeDestroy(Object toDelete)
-        {
-            if (Application.isPlaying)
-                Destroy(toDelete);
-            else
-                DestroyImmediate(toDelete);
-        }
-
         private void Reset()
         {
             m_VisualEffect = GetComponent<VisualEffect>();
@@ -100,8 +92,7 @@ namespace UnityEngine.VFX.Utility
         public void ClearPropertyBinders()
         {
             var allBinders = GetComponents<VFXBinderBase>();
-            foreach (var binder in allBinders)
-                SafeDestroy(binder);
+            foreach (var binder in allBinders) Destroy(binder);
         }
 
         /// <summary>
@@ -119,8 +110,7 @@ namespace UnityEngine.VFX.Utility
         /// <param name="binder">The VFXBinderBase to remove</param>
         public void RemovePropertyBinder(VFXBinderBase binder)
         {
-            if (binder.gameObject == this.gameObject)
-                SafeDestroy(binder);
+            if (binder.gameObject == this.gameObject) Destroy(binder);
         }
 
         /// <summary>
@@ -141,8 +131,7 @@ namespace UnityEngine.VFX.Utility
         {
             var allBinders = GetComponents<VFXBinderBase>();
             foreach (var binder in allBinders)
-                if (binder is T)
-                    SafeDestroy(binder);
+                if (binder is T) Destroy(binder);
         }
 
         /// <summary>

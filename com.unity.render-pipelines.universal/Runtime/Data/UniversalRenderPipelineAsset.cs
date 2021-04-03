@@ -20,6 +20,13 @@ namespace UnityEngine.Rendering.LWRP
 
 namespace UnityEngine.Rendering.Universal
 {
+    [MovedFrom("UnityEngine.Rendering.LWRP")] public enum ShadowCascadesOption
+    {
+        NoCascades,
+        TwoCascades,
+        FourCascades,
+    }
+
     [MovedFrom("UnityEngine.Rendering.LWRP")] public enum ShadowQuality
     {
         Disabled,
@@ -75,7 +82,6 @@ namespace UnityEngine.Rendering.Universal
         AllShaders,
     }
 
-    [Obsolete("PipelineDebugLevel is unused and has no effect.", false)]
     public enum PipelineDebugLevel
     {
         Disabled,
@@ -85,30 +91,62 @@ namespace UnityEngine.Rendering.Universal
     [MovedFrom("UnityEngine.Rendering.LWRP")] public enum RendererType
     {
         Custom,
-        UniversalRenderer,
+        ForwardRenderer,
         _2DRenderer,
-        [Obsolete("ForwardRenderer has been renamed (UnityUpgradable) -> UniversalRenderer", true)]
-        ForwardRenderer = UniversalRenderer,
     }
 
+    /// <summary>
+    /// The available color grading modes to use for the Project.
+    /// </summary>
     public enum ColorGradingMode
     {
+        /// <summary>
+        /// This mode follows a more classic workflow. Unity applies a limited range of color
+        /// grading after tonemapping.
+        /// </summary>
         LowDynamicRange,
+
+        /// <summary>
+        /// This mode works best for high precision grading similar to movie production workflow.
+        /// Unity applies color grading before tonemapping.
+        /// </summary>
         HighDynamicRange
     }
 
+    /// <summary>
+    /// The available post-processing solutions to use for the project. To future proof your
+    /// application, use <see cref="Integrated"/> instead of the comparability mode. Only use
+    /// compatibility mode if your project still uses the Post-processing V2 package, but be aware
+    /// that Unity plans to deprecate Post-processing V2 support for the Universal Render Pipeline
+    /// in the near future.
+    /// </summary>
+    public enum PostProcessingFeatureSet
+    {
+        /// <summary>
+        /// The integrated post-processing stack.
+        /// </summary>
+        Integrated,
+
+        /// <summary>
+        /// The post-processing stack v2. This option only works if the package is installed in the
+        /// project. Be aware that Unity plans to deprecate Post-processing V2 support for the
+        /// Universal Render Pipeline in the near future.
+        /// </summary>
+        PostProcessingV2
+    }
+
     [ExcludeFromPreset]
-    public partial class UniversalRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
+    public class UniversalRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
     {
         Shader m_DefaultShader;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
 
         // Default values set when a new UniversalRenderPipeline asset is created
-        [SerializeField] int k_AssetVersion = 8;
-        [SerializeField] int k_AssetPreviousVersion = 8;
+        [SerializeField] int k_AssetVersion = 5;
+        [SerializeField] int k_AssetPreviousVersion = 5;
 
         // Deprecated settings for upgrading sakes
-        [SerializeField] RendererType m_RendererType = RendererType.UniversalRenderer;
+        [SerializeField] RendererType m_RendererType = RendererType.ForwardRenderer;
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SerializeField] internal ScriptableRendererData m_RendererData = null;
 
@@ -123,7 +161,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_SupportsTerrainHoles = true;
 
         // Quality settings
-        [SerializeField] bool m_SupportsHDR = true;
+        [SerializeField] bool m_SupportsHDR = false;
         [SerializeField] MsaaQuality m_MSAA = MsaaQuality.Disabled;
         [SerializeField] float m_RenderScale = 1.0f;
         // TODO: Shader Quality Tiers
@@ -137,19 +175,13 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] LightRenderingMode m_AdditionalLightsRenderingMode = LightRenderingMode.PerPixel;
         [SerializeField] int m_AdditionalLightsPerObjectLimit = 4;
         [SerializeField] bool m_AdditionalLightShadowsSupported = false;
-        [SerializeField] ShadowResolution m_AdditionalLightsShadowmapResolution = ShadowResolution._2048;
-
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierLow = 256;
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierMedium = 512;
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierHigh = 1024;
+        [SerializeField] ShadowResolution m_AdditionalLightsShadowmapResolution = ShadowResolution._512;
 
         // Shadows Settings
         [SerializeField] float m_ShadowDistance = 50.0f;
-        [SerializeField] int m_ShadowCascadeCount = 1;
+        [SerializeField] ShadowCascadesOption m_ShadowCascades = ShadowCascadesOption.NoCascades;
         [SerializeField] float m_Cascade2Split = 0.25f;
-        [SerializeField] Vector2 m_Cascade3Split = new Vector2(0.1f, 0.3f);
         [SerializeField] Vector3 m_Cascade4Split = new Vector3(0.067f, 0.2f, 0.467f);
-        [SerializeField] float m_CascadeBorder = 0.2f;
         [SerializeField] float m_ShadowDepthBias = 1.0f;
         [SerializeField] float m_ShadowNormalBias = 1.0f;
         [SerializeField] bool m_SoftShadowsSupported = false;
@@ -158,15 +190,17 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_UseSRPBatcher = true;
         [SerializeField] bool m_SupportsDynamicBatching = false;
         [SerializeField] bool m_MixedLightingSupported = true;
-        [SerializeField][Obsolete] PipelineDebugLevel m_DebugLevel;
+        [SerializeField] PipelineDebugLevel m_DebugLevel = PipelineDebugLevel.Disabled;
 
         // Adaptive performance settings
-        [SerializeField] bool m_UseAdaptivePerformance = true;
+        [SerializeField] bool m_UseAdaptivePerformance = false;
 
         // Post-processing settings
+#pragma warning disable 414 // 'field' is assigned but never used
+        [SerializeField] PostProcessingFeatureSet m_PostProcessingFeatureSet = PostProcessingFeatureSet.Integrated;
+#pragma warning restore 414
         [SerializeField] ColorGradingMode m_ColorGradingMode = ColorGradingMode.LowDynamicRange;
         [SerializeField] int m_ColorGradingLutSize = 32;
-        [SerializeField] bool m_UseFastSRGBLinearConversion = false;
 
         // Deprecated settings
         [SerializeField] ShadowQuality m_ShadowType = ShadowQuality.HardShadows;
@@ -183,9 +217,6 @@ namespace UnityEngine.Rendering.Universal
         public const int k_MinLutSize = 16;
         public const int k_MaxLutSize = 65;
 
-        internal const int k_ShadowCascadeMinCount = 1;
-        internal const int k_ShadowCascadeMaxCount = 4;
-
 #if UNITY_EDITOR
         [NonSerialized]
         internal UniversalRenderPipelineEditorResources m_EditorResourcesAsset;
@@ -200,8 +231,8 @@ namespace UnityEngine.Rendering.Universal
             if (rendererData != null)
                 instance.m_RendererDataList[0] = rendererData;
             else
-                instance.m_RendererDataList[0] = CreateInstance<UniversalRendererData>();
-
+                instance.m_RendererDataList[0] = CreateInstance<ForwardRendererData>();
+            
             // Initialize default Renderer
             instance.m_EditorResourcesAsset = instance.editorResources;
 
@@ -214,18 +245,18 @@ namespace UnityEngine.Rendering.Universal
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
                 //Create asset
-                AssetDatabase.CreateAsset(Create(CreateRendererAsset(pathName, RendererType.UniversalRenderer)), pathName);
+                AssetDatabase.CreateAsset(Create(CreateRendererAsset(pathName, RendererType.ForwardRenderer)), pathName);
             }
         }
 
-        [MenuItem("Assets/Create/Rendering/URP Asset (with Universal Renderer)", priority = CoreUtils.Sections.section2 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority)]
+        [MenuItem("Assets/Create/Rendering/Universal Render Pipeline/Pipeline Asset (Forward Renderer)", priority = CoreUtils.assetCreateMenuPriority1)]
         static void CreateUniversalPipeline()
         {
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, CreateInstance<CreateUniversalPipelineAsset>(),
                 "UniversalRenderPipelineAsset.asset", null, null);
         }
 
-        internal static ScriptableRendererData CreateRendererAsset(string path, RendererType type, bool relativePath = true)
+        static ScriptableRendererData CreateRendererAsset(string path, RendererType type, bool relativePath = true)
         {
             ScriptableRendererData data = CreateRendererData(type);
             string dataPath;
@@ -242,19 +273,18 @@ namespace UnityEngine.Rendering.Universal
         {
             switch (type)
             {
-                case RendererType.UniversalRenderer:
-                    return CreateInstance<UniversalRendererData>();
+                case RendererType.ForwardRenderer:
+                    return CreateInstance<ForwardRendererData>();
                 // 2D renderer is experimental
                 case RendererType._2DRenderer:
                     return CreateInstance<Experimental.Rendering.Universal.Renderer2DData>();
-                // Universal Renderer is the fallback renderer that works on all platforms
+                // Forward Renderer is the fallback renderer that works on all platforms
                 default:
-                    return CreateInstance<UniversalRendererData>();
+                    return CreateInstance<ForwardRendererData>();
             }
         }
 
-        // Hide: User aren't suppose to have to create it.
-        //[MenuItem("Assets/Create/Rendering/URP Editor Resources", priority = CoreUtils.Sections.section8 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority)]
+        //[MenuItem("Assets/Create/Rendering/Universal Pipeline Editor Resources", priority = CoreUtils.assetCreateMenuPriority1)]
         static void CreateUniversalPipelineEditorResources()
         {
             var instance = CreateInstance<UniversalRenderPipelineEditorResources>();
@@ -268,7 +298,7 @@ namespace UnityEngine.Rendering.Universal
             {
                 if (m_EditorResourcesAsset != null && !m_EditorResourcesAsset.Equals(null))
                     return m_EditorResourcesAsset;
-
+                
                 string resourcePath = AssetDatabase.GUIDToAssetPath(editorResourcesGUID);
                 var objs = InternalEditorUtility.LoadSerializedFileAndForget(resourcePath);
                 m_EditorResourcesAsset = objs != null && objs.Length > 0 ? objs.First() as UniversalRenderPipelineEditorResources : null;
@@ -277,12 +307,12 @@ namespace UnityEngine.Rendering.Universal
         }
 #endif
 
-        public ScriptableRendererData LoadBuiltinRendererData(RendererType type = RendererType.UniversalRenderer)
+        public ScriptableRendererData LoadBuiltinRendererData(RendererType type = RendererType.ForwardRenderer)
         {
 #if UNITY_EDITOR
             EditorUtility.SetDirty(this);
             return m_RendererDataList[0] =
-                CreateRendererAsset("Assets/UniversalRenderer.asset", type, false);
+                CreateRendererAsset("Assets/ForwardRenderer.asset", type, false);
 #else
             m_RendererDataList[0] = null;
             return m_RendererDataList[0];
@@ -294,11 +324,11 @@ namespace UnityEngine.Rendering.Universal
             if (m_RendererDataList == null)
                 m_RendererDataList = new ScriptableRendererData[1];
 
-            // If no default data we can't create pipeline instance
-            if (m_RendererDataList[m_DefaultRendererIndex] == null)
+            // If no data we can't create pipeline instance
+            if (m_RendererDataList[0] == null)
             {
                 // If previous version and current version are miss-matched then we are waiting for the upgrader to kick in
-                if (k_AssetPreviousVersion != k_AssetVersion)
+                if(k_AssetPreviousVersion != k_AssetVersion)
                     return null;
 
                 Debug.LogError(
@@ -573,126 +603,40 @@ namespace UnityEngine.Rendering.Universal
             get { return (int)m_AdditionalLightsShadowmapResolution; }
         }
 
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "Low" in the UniversalRenderPipeline asset.
-        /// </summary>
-        public int additionalLightsShadowResolutionTierLow
-        {
-            get { return (int)m_AdditionalLightsShadowResolutionTierLow; }
-        }
-
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "Medium" in the UniversalRenderPipeline asset.
-        /// </summary>
-        public int additionalLightsShadowResolutionTierMedium
-        {
-            get { return (int)m_AdditionalLightsShadowResolutionTierMedium; }
-        }
-
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "High" in the UniversalRenderPipeline asset.
-        /// </summary>
-        public int additionalLightsShadowResolutionTierHigh
-        {
-            get { return (int)m_AdditionalLightsShadowResolutionTierHigh; }
-        }
-
-        internal int GetAdditionalLightsShadowResolution(int additionalLightsShadowResolutionTier)
-        {
-            if (additionalLightsShadowResolutionTier <= UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow /* 0 */)
-                return additionalLightsShadowResolutionTierLow;
-
-            if (additionalLightsShadowResolutionTier == UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium /* 1 */)
-                return additionalLightsShadowResolutionTierMedium;
-
-            if (additionalLightsShadowResolutionTier >= UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierHigh /* 2 */)
-                return additionalLightsShadowResolutionTierHigh;
-
-            return additionalLightsShadowResolutionTierMedium;
-        }
-
-        /// <summary>
-        /// Controls the maximum distance at which shadows are visible.
-        /// </summary>
         public float shadowDistance
         {
             get { return m_ShadowDistance; }
             set { m_ShadowDistance = Mathf.Max(0.0f, value); }
         }
 
-        /// <summary>
-        /// Returns the number of shadow cascades.
-        /// </summary>
-        public int shadowCascadeCount
+        public ShadowCascadesOption shadowCascadeOption
         {
-            get { return m_ShadowCascadeCount; }
-            set
-            {
-                if (value < k_ShadowCascadeMinCount || value > k_ShadowCascadeMaxCount)
-                {
-                    throw new ArgumentException($"Value ({value}) needs to be between {k_ShadowCascadeMinCount} and {k_ShadowCascadeMaxCount}.");
-                }
-                m_ShadowCascadeCount = value;
-            }
+            get { return m_ShadowCascades; }
+            set { m_ShadowCascades = value; }
         }
 
-        /// <summary>
-        /// Returns the split value.
-        /// </summary>
-        /// <returns>Returns a Float with the split value.</returns>
         public float cascade2Split
         {
             get { return m_Cascade2Split; }
         }
 
-        /// <summary>
-        /// Returns the split values.
-        /// </summary>
-        /// <returns>Returns a Vector2 with the split values.</returns>
-        public Vector2 cascade3Split
-        {
-            get { return m_Cascade3Split; }
-        }
-
-        /// <summary>
-        /// Returns the split values.
-        /// </summary>
-        /// <returns>Returns a Vector3 with the split values.</returns>
         public Vector3 cascade4Split
         {
             get { return m_Cascade4Split; }
         }
 
-        /// <summary>
-        /// Last cascade fade distance in percentage.
-        /// </summary>
-        public float cascadeBorder
-        {
-            get { return m_CascadeBorder; }
-            set { cascadeBorder = value; }
-        }
-
-        /// <summary>
-        /// The Shadow Depth Bias, controls the offset of the lit pixels.
-        /// </summary>
         public float shadowDepthBias
         {
             get { return m_ShadowDepthBias; }
             set { m_ShadowDepthBias = ValidateShadowBias(value); }
         }
 
-        /// <summary>
-        /// Controls the distance at which the shadow casting surfaces are shrunk along the surface normal.
-        /// </summary>
         public float shadowNormalBias
         {
             get { return m_ShadowNormalBias; }
             set { m_ShadowNormalBias = ValidateShadowBias(value); }
         }
 
-        /// <summary>
-        /// Returns true Soft Shadows are supported, false otherwise.
-        /// </summary>
         public bool supportsSoftShadows
         {
             get { return m_SoftShadowsSupported; }
@@ -715,10 +659,9 @@ namespace UnityEngine.Rendering.Universal
             set { m_ShaderVariantLogLevel = value; }
         }
 
-        [Obsolete("PipelineDebugLevel is deprecated. Calling debugLevel is not necessary.", false)]
         public PipelineDebugLevel debugLevel
         {
-            get => PipelineDebugLevel.Disabled;
+            get => m_DebugLevel;
         }
 
         public bool useSRPBatcher
@@ -727,30 +670,53 @@ namespace UnityEngine.Rendering.Universal
             set { m_UseSRPBatcher = value; }
         }
 
+        /// <summary>
+        /// The post-processing solution used in the project.
+        /// </summary>
+        public PostProcessingFeatureSet postProcessingFeatureSet
+        {
+            get
+            {
+#if POST_PROCESSING_STACK_2_0_0_OR_NEWER
+                return m_PostProcessingFeatureSet;
+#else
+                return PostProcessingFeatureSet.Integrated;
+#endif
+            }
+            set
+            {
+#if POST_PROCESSING_STACK_2_0_0_OR_NEWER
+                m_PostProcessingFeatureSet = value;
+#else
+                m_PostProcessingFeatureSet = PostProcessingFeatureSet.Integrated;
+#endif
+            }
+        }
+
+        /// <summary>
+        /// The color grading mode used in the project.
+        /// </summary>
         public ColorGradingMode colorGradingMode
         {
             get { return m_ColorGradingMode; }
             set { m_ColorGradingMode = value; }
         }
 
+        /// <summary>
+        /// The color grading LUT size used in the project. Higher sizes provide more precision, but
+        /// have a potential cost of performance and memory use. You cannot mix and match LUT sizes,
+        /// so decide on a size before you start the color grading process.
+        /// </summary>
         public int colorGradingLutSize
         {
             get { return m_ColorGradingLutSize; }
             set { m_ColorGradingLutSize = Mathf.Clamp(value, k_MinLutSize, k_MaxLutSize); }
         }
 
-        /// <summary>
-        /// Returns true if fast approximation functions are used when converting between the sRGB and Linear color spaces, false otherwise.
-        /// </summary>
-        public bool useFastSRGBLinearConversion
-        {
-            get { return m_UseFastSRGBLinearConversion; }
-        }
-
-        /// <summary>
-        /// Set to true to allow Adaptive performance to modify graphics quality settings during runtime.
-        /// Only applicable when Adaptive performance package is available.
-        /// </summary>
+       /// <summary>
+       /// Set to true to allow Adaptive performance to modify graphics quality settings during runtime.
+       /// Only applicable when Adaptive performance package is available.
+       /// </summary>
         public bool useAdaptivePerformance
         {
             get { return m_UseAdaptivePerformance; }
@@ -813,7 +779,7 @@ namespace UnityEngine.Rendering.Universal
                     if (defaultShader != null)
                         return defaultShader;
                 }
-
+                
                 if (m_DefaultShader == null)
                 {
                     string path = AssetDatabase.GUIDToAssetPath(ShaderUtils.GetShaderGUID(ShaderPathID.Lit));
@@ -902,38 +868,6 @@ namespace UnityEngine.Rendering.Universal
                 k_AssetPreviousVersion = k_AssetVersion;
                 k_AssetVersion = 5;
             }
-
-            if (k_AssetVersion < 6)
-            {
-#pragma warning disable 618 // Obsolete warning
-                // Adding an upgrade here so that if it was previously set to 2 it meant 4 cascades.
-                // So adding a 3rd cascade shifted this value up 1.
-                int value = (int)m_ShadowCascades;
-                if (value == 2)
-                {
-                    m_ShadowCascadeCount = 4;
-                }
-                else
-                {
-                    m_ShadowCascadeCount = value + 1;
-                }
-                k_AssetVersion = 6;
-#pragma warning restore 618 // Obsolete warning
-            }
-
-            if (k_AssetVersion < 7)
-            {
-                k_AssetPreviousVersion = k_AssetVersion;
-                k_AssetVersion = 7;
-            }
-
-            if (k_AssetVersion < 8)
-            {
-                k_AssetPreviousVersion = k_AssetVersion;
-                m_CascadeBorder = 0.1f; // In previous version we had this hard coded
-                k_AssetVersion = 8;
-            }
-
 #if UNITY_EDITOR
             if (k_AssetPreviousVersion != k_AssetVersion)
             {
@@ -945,11 +879,11 @@ namespace UnityEngine.Rendering.Universal
 #if UNITY_EDITOR
         static void UpgradeAsset(UniversalRenderPipelineAsset asset)
         {
-            if (asset.k_AssetPreviousVersion < 5)
+            if(asset.k_AssetPreviousVersion < 5)
             {
-                if (asset.m_RendererType == RendererType.UniversalRenderer)
+                if (asset.m_RendererType == RendererType.ForwardRenderer)
                 {
-                    var data = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/UniversalRenderer.asset");
+                    var data = AssetDatabase.LoadAssetAtPath<ForwardRendererData>("Assets/ForwardRenderer.asset");
                     if (data)
                     {
                         asset.m_RendererDataList[0] = data;
@@ -963,16 +897,7 @@ namespace UnityEngine.Rendering.Universal
 
                 asset.k_AssetPreviousVersion = 5;
             }
-
-            if (asset.k_AssetPreviousVersion < 8)
-            {
-                // The added feature was reverted, we keep this version to avoid breakage in case somebody already has version 7
-                asset.k_AssetPreviousVersion = 8;
-            }
-
-            EditorUtility.SetDirty(asset);
         }
-
 #endif
 
         float ValidateShadowBias(float value)
@@ -991,7 +916,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         /// <summary>
-        /// Check to see if the RendererData list contains valid RendererData references.
+        /// Check to see if the RendererData list contains valide RendererData references.
         /// </summary>
         /// <param name="partial">This bool controls whether to test against all or any, if false then there has to be no invalid RendererData</param>
         /// <returns></returns>

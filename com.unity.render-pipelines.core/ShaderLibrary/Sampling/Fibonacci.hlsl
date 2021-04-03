@@ -1,10 +1,6 @@
 #ifndef UNITY_FIBONACCI_INCLUDED
 #define UNITY_FIBONACCI_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
-
 // Computes a point using the Fibonacci sequence of length N.
 // Input: Fib[N - 1], Fib[N - 2], and the index 'i' of the point.
 // Ref: Efficient Quadrature Rules for Illumination Integrals
@@ -16,8 +12,8 @@ real2 Fibonacci2dSeq(real fibN1, real fibN2, uint i)
     return real2(i / fibN1 + (0.5 / fibN1), frac(i * (fibN2 / fibN1)));
 }
 
-#define GOLDEN_RATIO 1.618033988749895
-#define GOLDEN_ANGLE 2.399963229728653
+#define GOLDEN_RATIO 1.61803
+#define GOLDEN_ANGLE 2.39996
 
 // Replaces the Fibonacci sequence in Fibonacci2dSeq() with the Golden ratio.
 real2 Golden2dSeq(uint i, real n)
@@ -272,12 +268,6 @@ real2 Fibonacci2d(uint i, uint sampleCount)
     }
 }
 
-real2 SampleDiskGolden(uint i, uint sampleCount)
-{
-    real2 f = Golden2dSeq(i, sampleCount);
-    return real2(sqrt(f.x), TWO_PI * f.y);
-}
-
 // Returns the radius as the X coordinate, and the angle as the Y coordinate.
 real2 SampleDiskFibonacci(uint i, uint sampleCount)
 {
@@ -298,9 +288,5 @@ real2 SampleSphereFibonacci(uint i, uint sampleCount)
     real2 f = Fibonacci2d(i, sampleCount);
     return real2(1 - 2 * f.x, TWO_PI * f.y);
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
 
 #endif // UNITY_FIBONACCI_INCLUDED

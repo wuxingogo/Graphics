@@ -31,10 +31,9 @@ namespace UnityEngine.Rendering
     }
 
     /// <summary>
-    /// An attribute to hide the volume component to be added through `Add Override` button on the volume component list
+    /// An attribute set on deprecated volume components.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class)]
-    [Obsolete("VolumeComponentDeprecated has been deprecated (UnityUpgradable) -> [UnityEngine] UnityEngine.HideInInspector", false)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class VolumeComponentDeprecated : Attribute
     {
     }
@@ -46,7 +45,7 @@ namespace UnityEngine.Rendering
     /// <example>
     /// <code>
     /// using UnityEngine.Rendering;
-    ///
+    /// 
     /// [Serializable, VolumeComponentMenu("Custom/Example Component")]
     /// public class ExampleComponent : VolumeComponent
     /// {
@@ -74,32 +73,10 @@ namespace UnityEngine.Rendering
         /// </summary>
         public ReadOnlyCollection<VolumeParameter> parameters { get; private set; }
 
-        /// <summary>
-        /// Extracts all the <see cref="VolumeParameter"/>s defined in this class and nested classes.
-        /// </summary>
-        /// <param name="o">The object to find the parameters</param>
-        /// <param name="parameters">The list filled with the parameters.</param>
-        /// <param name="filter">If you want to filter the parameters</param>
-        internal static void FindParameters(object o, List<VolumeParameter> parameters, Func<FieldInfo, bool> filter = null)
-        {
-            if (o == null)
-                return;
-
-            var fields = o.GetType()
-                .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .OrderBy(t => t.MetadataToken); // Guaranteed order
-
-            foreach (var field in fields)
-            {
-                if (field.FieldType.IsSubclassOf(typeof(VolumeParameter)))
-                {
-                    if (filter?.Invoke(field) ?? true)
-                        parameters.Add((VolumeParameter)field.GetValue(o));
-                }
-                else if (!field.FieldType.IsArray && field.FieldType.IsClass)
-                    FindParameters(field.GetValue(o), parameters, filter);
-            }
-        }
+#pragma warning disable 414
+        [SerializeField]
+        bool m_AdvancedMode = false; // Editor-only
+#pragma warning restore 414
 
         /// <summary>
         /// Unity calls this method when it loads the class.
@@ -110,18 +87,16 @@ namespace UnityEngine.Rendering
         protected virtual void OnEnable()
         {
             // Automatically grab all fields of type VolumeParameter for this instance
-            var fields = new List<VolumeParameter>();
-            FindParameters(this, fields);
-            parameters = fields.AsReadOnly();
-
+            parameters = this.GetType()
+                .GetFields(BindingFlags.Public | BindingFlags.NonPublic  | BindingFlags.Instance)
+                .Where(t => t.FieldType.IsSubclassOf(typeof(VolumeParameter)))
+                .OrderBy(t => t.MetadataToken) // Guaranteed order
+                .Select(t => (VolumeParameter)t.GetValue(this))
+                .ToList()
+                .AsReadOnly();
 
             foreach (var parameter in parameters)
-            {
-                if (parameter != null)
-                    parameter.OnEnable();
-                else
-                    Debug.LogWarning("Volume Component " + GetType().Name + " contains a null parameter; please make sure all parameters are initialized to a default value. Until this is fixed the null parameters will not be considered by the system.");
-            }
+                parameter.OnEnable();
         }
 
         /// <summary>
@@ -133,12 +108,8 @@ namespace UnityEngine.Rendering
                 return;
 
             foreach (var parameter in parameters)
-            {
-                if (parameter != null)
-                    parameter.OnDisable();
-            }
+                parameter.OnDisable();
         }
-
         /// <summary>
         /// Interpolates a <see cref="VolumeComponent"/> with this component by an interpolation
         /// factor and puts the result back into the given <see cref="VolumeComponent"/>.
@@ -159,15 +130,15 @@ namespace UnityEngine.Rendering
         /// public virtual void Override(VolumeComponent state, float interpFactor)
         /// {
         ///     int count = parameters.Count;
-        ///
+        /// 
         ///     for (int i = 0; i &lt; count; i++)
         ///     {
         ///         var stateParam = state.parameters[i];
         ///         var toParam = parameters[i];
-        ///
+        /// 
         ///         // Keep track of the override state for debugging purpose
         ///         stateParam.overrideState = toParam.overrideState;
-        ///
+        /// 
         ///         if (toParam.overrideState)
         ///             stateParam.Interp(stateParam, toParam, interpFactor);
         ///     }
@@ -183,12 +154,11 @@ namespace UnityEngine.Rendering
                 var stateParam = state.parameters[i];
                 var toParam = parameters[i];
 
+                // Keep track of the override state for debugging purpose
+                stateParam.overrideState = toParam.overrideState;
+
                 if (toParam.overrideState)
-                {
-                    // Keep track of the override state for debugging purpose
-                    stateParam.overrideState = toParam.overrideState;
                     stateParam.Interp(stateParam, toParam, interpFactor);
-                }
             }
         }
 
@@ -198,14 +168,10 @@ namespace UnityEngine.Rendering
         /// <param name="state">The value to set the state of the overrides to.</param>
         public void SetAllOverridesTo(bool state)
         {
-            SetOverridesTo(parameters, state);
+            SetAllOverridesTo(parameters, state);
         }
 
-        /// <summary>
-        /// Sets the override state of the given parameters on this component to a given value.
-        /// </summary>
-        /// <param name="state">The value to set the state of the overrides to.</param>
-        internal void SetOverridesTo(IEnumerable<VolumeParameter> enumerable, bool state)
+        void SetAllOverridesTo(IEnumerable<VolumeParameter> enumerable, bool state)
         {
             foreach (var prop in enumerable)
             {
@@ -217,10 +183,10 @@ namespace UnityEngine.Rendering
                     // This method won't be called a lot but this is sub-optimal, fix me
                     var innerParams = (ReadOnlyCollection<VolumeParameter>)
                         t.GetProperty("parameters", BindingFlags.NonPublic | BindingFlags.Instance)
-                            .GetValue(prop, null);
+                        .GetValue(prop, null);
 
                     if (innerParams != null)
-                        SetOverridesTo(innerParams, state);
+                        SetAllOverridesTo(innerParams, state);
                 }
             }
         }
@@ -245,7 +211,7 @@ namespace UnityEngine.Rendering
         }
 
         /// <summary>
-        /// Unity calls this method before the object is destroyed.
+        /// Unity calls this method before the object is destroyed. 
         /// </summary>
         protected virtual void OnDestroy() => Release();
 
@@ -255,10 +221,7 @@ namespace UnityEngine.Rendering
         public void Release()
         {
             for (int i = 0; i < parameters.Count; i++)
-            {
-                if (parameters[i] != null)
-                    parameters[i].Release();
-            }
+                parameters[i].Release();
         }
     }
 }

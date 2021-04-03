@@ -7,7 +7,6 @@ using UnityEditor.ShaderGraph.Internal;
 namespace UnityEditor.ShaderGraph
 {
     [Title("Input", "Texture", "Texture 2D Array Asset")]
-    [HasDependencies(typeof(Minimal2dArrayTextureAssetNode))]
     class Texture2DArrayAssetNode : AbstractMaterialNode, IPropertyFromNode
     {
         public const int OutputSlotId = 0;
@@ -19,6 +18,7 @@ namespace UnityEditor.ShaderGraph
             name = "Texture 2D Array Asset";
             UpdateNodeAfterDeserialization();
         }
+
 
         public sealed override void UpdateNodeAfterDeserialization()
         {
@@ -42,21 +42,11 @@ namespace UnityEditor.ShaderGraph
             }
         }
 
-        string GetTexturePropertyName()
-        {
-            return base.GetVariableNameForSlot(OutputSlotId);
-        }
-
-        public override string GetVariableNameForSlot(int slotId)
-        {
-            return $"UnityBuildTexture2DArrayStruct({GetTexturePropertyName()})";
-        }
-
         public override void CollectShaderProperties(PropertyCollector properties, GenerationMode generationMode)
         {
             properties.AddShaderProperty(new Texture2DArrayShaderProperty()
             {
-                overrideReferenceName = GetTexturePropertyName(),
+                overrideReferenceName = GetVariableNameForSlot(OutputSlotId),
                 generatePropertyBlock = true,
                 value = m_Texture,
                 modifiable = false
@@ -67,7 +57,7 @@ namespace UnityEditor.ShaderGraph
         {
             properties.Add(new PreviewProperty(PropertyType.Texture2DArray)
             {
-                name = GetTexturePropertyName(),
+                name = GetVariableNameForSlot(OutputSlotId),
                 textureValue = texture
             });
         }
@@ -81,20 +71,5 @@ namespace UnityEditor.ShaderGraph
         }
 
         public int outputSlotId { get { return OutputSlotId; } }
-    }
-
-    class Minimal2dArrayTextureAssetNode : IHasDependencies
-    {
-        [SerializeField]
-        private SerializableTextureArray m_Texture = null;
-
-        public void GetSourceAssetDependencies(AssetCollection assetCollection)
-        {
-            var guidString = m_Texture.guid;
-            if (!string.IsNullOrEmpty(guidString) && GUID.TryParse(guidString, out var guid))
-            {
-                assetCollection.AddAssetDependency(guid, AssetCollection.Flags.IncludeInExportPackage);
-            }
-        }
     }
 }

@@ -78,7 +78,7 @@ VaryingsPassToDS InterpolateWithBaryCoordsPassToDS(VaryingsPassToDS input0, Vary
 
 void MotionVectorPositionZBias(VaryingsToPS input)
 {
-#if UNITY_REVERSED_Z
+#if defined(UNITY_REVERSED_Z)
     input.vmesh.positionCS.z -= unity_MotionVectorsParams.z * input.vmesh.positionCS.w;
 #else
     input.vmesh.positionCS.z += unity_MotionVectorsParams.z * input.vmesh.positionCS.w;
@@ -115,14 +115,9 @@ PackedVaryingsType MotionVectorVS(inout VaryingsType varyingsType, AttributesMes
     // Need to apply any vertex animation to the previous worldspace position, if we want it to show up in the motion vector buffer
 #if defined(HAVE_MESH_MODIFICATION)
         AttributesMesh previousMesh = inputMesh;
-        previousMesh.positionOS = effectivePositionOS;
+        previousMesh.positionOS = effectivePositionOS ;
 
-        previousMesh = ApplyMeshModification(previousMesh, _LastTimeParameters.xyz
-    #if defined(USE_CUSTOMINTERP_APPLYMESHMOD)
-            , varyingsType.vmesh
-    #endif
-            );
-
+        previousMesh = ApplyMeshModification(previousMesh, _LastTimeParameters.xyz);
         float3 previousPositionRWS = TransformPreviousObjectToWorld(previousMesh.positionOS);
 #else
         float3 previousPositionRWS = TransformPreviousObjectToWorld(effectivePositionOS);
@@ -136,13 +131,6 @@ PackedVaryingsType MotionVectorVS(inout VaryingsType varyingsType, AttributesMes
 
 #if defined(HAVE_VERTEX_MODIFICATION)
         ApplyVertexModification(inputMesh, normalWS, previousPositionRWS, _LastTimeParameters.xyz);
-#endif
-
-#ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
-        if (_TransparentCameraOnlyMotionVectors > 0)
-        {
-            previousPositionRWS = varyingsType.vmesh.positionRWS.xyz;
-        }
 #endif
 
         varyingsType.vpass.previousPositionCS = mul(UNITY_MATRIX_PREV_VP, float4(previousPositionRWS, 1.0));

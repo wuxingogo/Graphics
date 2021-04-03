@@ -63,8 +63,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
                     MaterialChanged(material);
                 }
             }
-
-            DrawQueueOffsetField();
+            base.DrawAdvancedOptions(material);
         }
 
         public override void OnOpenGUI(Material material, MaterialEditor materialEditor)

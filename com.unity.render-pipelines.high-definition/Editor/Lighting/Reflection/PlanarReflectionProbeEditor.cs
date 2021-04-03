@@ -13,7 +13,7 @@ namespace UnityEditor.Rendering.HighDefinition
     sealed class PlanarReflectionProbeEditor : HDProbeEditor<PlanarReflectionProbeUISettingsProvider, SerializedPlanarReflectionProbe>
     {
         public static Material GUITextureBlit2SRGBMaterial
-            => HDRenderPipeline.defaultAsset.renderPipelineEditorResources.materials.GUITextureBlit2SRGB;
+                => HDRenderPipeline.defaultAsset.renderPipelineEditorResources.materials.GUITextureBlit2SRGB;
 
         const float k_PreviewHeight = 128;
 
@@ -74,10 +74,10 @@ namespace UnityEditor.Rendering.HighDefinition
                 var row = i / rowSize;
                 var col = i % rowSize;
                 var itemRect = new Rect(
-                    r.x + size.x * row + ((row > 0) ? (row - 1) * space.x : 0),
-                    r.y + size.y * col + ((col > 0) ? (col - 1) * space.y : 0),
-                    size.x,
-                    size.y);
+                        r.x + size.x * row + ((row > 0) ? (row - 1) * space.x : 0),
+                        r.y + size.y * col + ((col > 0) ? (col - 1) * space.y : 0),
+                        size.x,
+                        size.y);
 
                 if (m_PreviewedTextures[i] != null)
                     EditorGUI.DrawPreviewTexture(itemRect, m_PreviewedTextures[i], previewMaterial, ScaleMode.ScaleToFit, 0, 1);
@@ -91,15 +91,15 @@ namespace UnityEditor.Rendering.HighDefinition
             if (s_MipMapLow == null)
                 InitIcons();
 
+            int mipmapCount = m_PreviewedTextures.Count > 0 ? m_PreviewedTextures[0].mipmapCount : 1;
+
             GUILayout.Box(s_ExposureLow, s_PreLabel, GUILayout.MaxWidth(20));
             previewExposure = GUILayout.HorizontalSlider(previewExposure, -20f, 20f, GUILayout.MaxWidth(80));
             GUILayout.Space(5);
 
-            // For now we don't display the mip level slider because they are black. The convolution of the probe
-            // texture is made in the atlas and so is not available in the texture we have here.
+// For now we don't display the mip level slider because they are black. The convolution of the probe
+// texture is made in the atlas and so is not available in the texture we have here.
 #if false
-            int mipmapCount = m_PreviewedTextures.Count > 0 ? m_PreviewedTextures[0].mipmapCount : 1;
-
             GUILayout.Box(s_MipMapHigh, s_PreLabel, GUILayout.MaxWidth(20));
             mipLevelPreview = GUILayout.HorizontalSlider(mipLevelPreview, 0, mipmapCount, GUILayout.MaxWidth(80));
             GUILayout.Box(s_MipMapLow, s_PreLabel, GUILayout.MaxWidth(20));
@@ -193,8 +193,6 @@ namespace UnityEditor.Rendering.HighDefinition
                 // Setup the material to draw the quad with the exposure texture
                 var material = GUITextureBlit2SRGBMaterial;
                 material.SetTexture("_Exposure", exposureTex);
-                //this fixes the UI so it doesn't blow up when the probe is pre-exposed
-                material.SetFloat("_ExposureBias", (float)Math.Log(1.0f / p.ProbeExposureValue(), 2.0));
                 Graphics.DrawTexture(c, p.texture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, material, -1);
 
                 // We now display the FoV and aspect used during the capture of the planar reflection
@@ -262,7 +260,7 @@ namespace UnityEditor.Rendering.HighDefinition
             if (k_QuadMesh == null)
                 k_QuadMesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
             if (k_PreviewMaterial == null)
-                k_PreviewMaterial = new Material(Shader.Find("Hidden/Debug/PlanarReflectionProbePreview"));
+                k_PreviewMaterial = new Material(Shader.Find("Debug/PlanarReflectionProbePreview"));
             if (k_PreviewOutlineMaterial == null)
                 k_PreviewOutlineMaterial = new Material(Shader.Find("Hidden/UnlitTransparentColored"));
 
@@ -272,8 +270,7 @@ namespace UnityEditor.Rendering.HighDefinition
             // When a user creates a new mirror, the capture position is at the exact position of the mirror mesh.
             // We need to offset slightly the gizmo to avoid a Z-fight in that case, as it looks like a bug
             // for users discovering the planar reflection.
-            var mirrorPositionProxySpace = settings.proxySettings.mirrorPositionProxySpace;
-            mirrorPositionProxySpace += settings.proxySettings.mirrorRotationProxySpace * Vector3.forward * 0.001f;
+            var mirrorPositionProxySpace = settings.proxySettings.mirrorPositionProxySpace + Vector3.up * 0.001f;
 
             var mirrorPosition = proxyToWorld.MultiplyPoint(mirrorPositionProxySpace);
             var mirrorRotation = (proxyToWorld.rotation * settings.proxySettings.mirrorRotationProxySpace * Quaternion.Euler(0, 180, 0)).normalized;
@@ -301,8 +298,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             k_PreviewMaterial.SetTexture("_MainTex", probe.texture);
             k_PreviewMaterial.SetMatrix("_CaptureVPMatrix", vp);
-            //this fixes the UI so it doesn't blow up when the probe is pre-exposed
-            k_PreviewMaterial.SetFloat("_Exposure", (float)Math.Log(1.0 / probe.ProbeExposureValue(), 2.0));
+            k_PreviewMaterial.SetFloat("_Exposure", 1.0f);
             k_PreviewMaterial.SetVector("_CameraPositionWS", new Vector4(cameraPositionWS.x, cameraPositionWS.y, -cameraPositionWS.z, 0));
             k_PreviewMaterial.SetVector("_CapturePositionWS", new Vector4(capturePositionWS.x, capturePositionWS.y, -capturePositionWS.z, 0));
             k_PreviewMaterial.SetPass(0);
@@ -330,18 +326,17 @@ namespace UnityEditor.Rendering.HighDefinition
                 | ProbeSettingsFields.frustumAutomaticScale
                 | ProbeSettingsFields.frustumViewerScale
                 | ProbeSettingsFields.frustumFixedValue
-                | ProbeSettingsFields.resolution
-                | ProbeSettingsFields.roughReflections,
+                | ProbeSettingsFields.resolution,
             camera = new CameraSettingsOverride
             {
                 camera = (CameraSettingsFields)(-1) & ~(
-                    CameraSettingsFields.flipYMode
-                    | CameraSettingsFields.frustumAspect
-                    | CameraSettingsFields.cullingInvertFaceCulling
-                    | CameraSettingsFields.frustumMode
-                    | CameraSettingsFields.frustumProjectionMatrix
-                    | CameraSettingsFields.frustumFieldOfView
-                )
+                   CameraSettingsFields.flipYMode
+                   | CameraSettingsFields.frustumAspect
+                   | CameraSettingsFields.cullingInvertFaceCulling
+                   | CameraSettingsFields.frustumMode
+                   | CameraSettingsFields.frustumProjectionMatrix
+                   | CameraSettingsFields.frustumFieldOfView
+               )
             }
         };
 

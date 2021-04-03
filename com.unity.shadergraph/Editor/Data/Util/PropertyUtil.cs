@@ -34,14 +34,12 @@ namespace UnityEditor.ShaderGraph
                     return ConcreteSlotValueType.Vector3;
                 case PropertyType.Vector2:
                     return ConcreteSlotValueType.Vector2;
-                case PropertyType.Float:
+                case PropertyType.Vector1:
                     return ConcreteSlotValueType.Vector1;
                 case PropertyType.Boolean:
                     return ConcreteSlotValueType.Boolean;
                 case PropertyType.Color:
                     return ConcreteSlotValueType.Vector4;
-                case PropertyType.VirtualTexture:
-                    return ConcreteSlotValueType.VirtualTexture;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

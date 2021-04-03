@@ -903,79 +903,16 @@ namespace UnityEditor.VFX.Test
         }
 
         [Test]
-        public void UniqueDefaultSystemNames()
-        {
-            VFXViewWindow window = EditorWindow.GetWindow<VFXViewWindow>();
-            VFXView view = window.graphView;
-            view.controller = m_ViewController;
-
-            const int count = 16;
-            var spawners = VFXTestCommon.CreateSpawners(view, m_ViewController, count);
-
-            var systemNames = view.controller.graph.systemNames;
-            var names = new List<string>();
-            foreach (var system in spawners)
-                names.Add(systemNames.GetUniqueSystemName(system));
-
-            Assert.IsTrue(names.Where(name => !string.IsNullOrEmpty(name)).Distinct().Count() == count, "Some spawners have the same name or are null or empty.");
-
-            var GPUSystems = VFXTestCommon.GetFieldValue<VFXView, List<VFXSystemBorder>>(view, "m_Systems");
-            VFXTestCommon.CreateSystems(view, m_ViewController, count, count);
-            var uniqueSystemNames = GPUSystems.Select(system => system.controller.title).Distinct();
-
-            Assert.IsTrue(uniqueSystemNames.Count() == count, "Some GPU systems have the same name or are null or empty.");
-        }
-
-        [Test]
         public void ConvertToSubgraph()
         {
             //Create a new vfx based on the usual template
-            var templateString = System.IO.File.ReadAllText(VisualEffectGraphPackageInfo.assetPackagePath + "/Editor/Templates/SimpleParticleSystem.vfx");
+            var templateString = System.IO.File.ReadAllText(VisualEffectGraphPackageInfo.assetPackagePath + "/Editor/Templates/Simple Particle System.vfx");
             System.IO.File.WriteAllText(testSubgraphAssetName, templateString);
 
             VFXViewWindow window = VFXViewWindow.GetWindow<VFXViewWindow>();
             window.LoadAsset(AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(testAssetName), null);
 
             VFXConvertSubgraph.ConvertToSubgraphContext(window.graphView, window.graphView.Query<VFXContextUI>().ToList().Where(t => !(t.controller.model is VFXBasicSpawner)).Select(t => t.controller).Cast<Controller>(), Rect.zero, testSubgraphSubAssetName);
-
-            window.graphView.controller = null;
-        }
-
-        [Test]
-        public void Subgraph_Event_Link_To_Spawn()
-        {
-            VFXViewWindow window = VFXViewWindow.GetWindow<VFXViewWindow>();
-            window.LoadAsset(AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(testAssetName), null);
-
-            //Create Spawner in subgraph
-            {
-                var spawner = ScriptableObject.CreateInstance<VFXBasicSpawner>();
-                m_ViewController.graph.AddChild(spawner);
-                m_ViewController.LightApplyChanges();
-
-                var controller = window.graphView.Query<VFXContextUI>().ToList().Select(t => t.controller).Cast<Controller>();
-                Assert.AreEqual(1, controller.Count());
-                VFXConvertSubgraph.ConvertToSubgraphContext(window.graphView, controller, Rect.zero, testSubgraphSubAssetName);
-            }
-
-            var subGraphController = m_ViewController.allChildren.OfType<VFXContextController>().FirstOrDefault(o => o.model is VFXSubgraphContext);
-            Assert.IsNotNull(subGraphController);
-
-            //Create Event Context & Link the two input flow
-            var subGraphContext = subGraphController.model;
-            var eventContext = ScriptableObject.CreateInstance<VFXBasicEvent>();
-
-            Assert.IsTrue(VFXContext.CanLink(eventContext, subGraphContext, 0, 0));
-            Assert.IsTrue(VFXContext.CanLink(eventContext, subGraphContext, 0, 1));
-
-            eventContext.LinkTo(subGraphContext, 0, 0);
-            eventContext.LinkTo(subGraphContext, 0, 1);
-
-            var flow = eventContext.outputFlowSlot.First().link;
-            Assert.AreEqual(2, flow.Count());
-            Assert.IsTrue(flow.All(o => o.context == subGraphContext));
-            Assert.IsTrue(flow.Any(o => o.slotIndex == 0));
-            Assert.IsTrue(flow.Any(o => o.slotIndex == 1));
 
             window.graphView.controller = null;
         }

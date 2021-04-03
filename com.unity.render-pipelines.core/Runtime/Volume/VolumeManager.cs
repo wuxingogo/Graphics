@@ -14,6 +14,8 @@ namespace UnityEngine.Rendering
     /// </summary>
     public sealed class VolumeManager
     {
+        internal static bool needIsolationFilteredByRenderer = false;
+
         static readonly Lazy<VolumeManager> s_Instance = new Lazy<VolumeManager>(() => new VolumeManager());
 
         /// <summary>
@@ -30,20 +32,7 @@ namespace UnityEngine.Rendering
         /// <summary>
         /// The current list of all available types that derive from <see cref="VolumeComponent"/>.
         /// </summary>
-        [Obsolete("Please use baseComponentTypeArray instead.")]
-        public IEnumerable<Type> baseComponentTypes
-        {
-            get
-            {
-                return baseComponentTypeArray;
-            }
-            private set
-            {
-                baseComponentTypeArray = value.ToArray();
-            }
-        }
-
-        public Type[] baseComponentTypeArray { get; private set; }
+        public IEnumerable<Type> baseComponentTypes { get; private set; }
 
         // Max amount of layers available in Unity
         const int k_MaxLayerCount = 32;
@@ -88,7 +77,7 @@ namespace UnityEngine.Rendering
         public VolumeStack CreateStack()
         {
             var stack = new VolumeStack();
-            stack.Reload(baseComponentTypeArray);
+            stack.Reload(baseComponentTypes);
             return stack;
         }
 
@@ -108,15 +97,13 @@ namespace UnityEngine.Rendering
             m_ComponentsDefaultState.Clear();
 
             // Grab all the component types we can find
-            baseComponentTypeArray = CoreUtils.GetAllTypesDerivedFrom<VolumeComponent>()
-                .Where(t => !t.IsAbstract).ToArray();
+            baseComponentTypes = CoreUtils.GetAllTypesDerivedFrom<VolumeComponent>()
+                .Where(t => !t.IsAbstract);
 
-            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
             // Keep an instance of each type to be used in a virtual lowest priority global volume
             // so that we have a default state to fallback to when exiting volumes
-            foreach (var type in baseComponentTypeArray)
+            foreach (var type in baseComponentTypes)
             {
-                type.GetMethod("Init", flags)?.Invoke(null, null);
                 var inst = (VolumeComponent)ScriptableObject.CreateInstance(type);
                 m_ComponentsDefaultState.Add(inst);
             }
@@ -239,13 +226,7 @@ namespace UnityEngine.Rendering
                 int count = component.parameters.Count;
 
                 for (int i = 0; i < count; i++)
-                {
-                    if (target.parameters[i] != null)
-                    {
-                        target.parameters[i].overrideState = false;
-                        target.parameters[i].SetValue(component.parameters[i]);
-                    }
-                }
+                    target.parameters[i].SetValue(component.parameters[i]);
             }
         }
 
@@ -275,7 +256,7 @@ namespace UnityEngine.Rendering
 
             if (components == null)
             {
-                stack.Reload(baseComponentTypeArray);
+                stack.Reload(baseComponentTypes);
                 return;
             }
 
@@ -283,7 +264,7 @@ namespace UnityEngine.Rendering
             {
                 if (kvp.Key == null || kvp.Value == null)
                 {
-                    stack.Reload(baseComponentTypeArray);
+                    stack.Reload(baseComponentTypes);
                     return;
                 }
             }
@@ -332,12 +313,18 @@ namespace UnityEngine.Rendering
             if (!onlyGlobal)
                 trigger.TryGetComponent<Camera>(out camera);
 
+#if UNITY_EDITOR
+            // requested or prefab isolation mode.
+            bool needIsolation = needIsolationFilteredByRenderer || (UnityEditor.SceneManagement.StageUtility.GetCurrentStageHandle() != UnityEditor.SceneManagement.StageUtility.GetMainStageHandle());
+#endif
+
             // Traverse all volumes
             foreach (var volume in volumes)
             {
 #if UNITY_EDITOR
                 // Skip volumes that aren't in the scene currently displayed in the scene view
-                if (!IsVolumeRenderedByCamera(volume, camera))
+                if (needIsolation
+                    && !IsVolumeRenderedByCamera(volume, camera))
                     continue;
 #endif
 
@@ -395,17 +382,6 @@ namespace UnityEngine.Rendering
                 // No need to clamp01 the interpolation factor as it'll always be in [0;1[ range
                 OverrideData(stack, volume.profileRef.components, interpFactor * Mathf.Clamp01(volume.weight));
             }
-        }
-
-        /// <summary>
-        /// Get all volumes on a given layer mask sorted by influence.
-        /// </summary>
-        /// <param name="layerMask">The LayerMask that Unity uses to filter Volumes that it should consider.</param>
-        /// <returns>An array of volume.</returns>
-        public Volume[] GetVolumes(LayerMask layerMask)
-        {
-            var volumes = GrabVolumes(layerMask);
-            return volumes.ToArray();
         }
 
         List<Volume> GrabVolumes(LayerMask mask)
@@ -476,18 +452,19 @@ namespace UnityEngine.Rendering
     /// <summary>
     /// A scope in which a Camera filters a Volume.
     /// </summary>
-    [Obsolete("VolumeIsolationScope is deprecated, it does not have any effect anymore.")]
     public struct VolumeIsolationScope : IDisposable
     {
         /// <summary>
         /// Constructs a scope in which a Camera filters a Volume.
         /// </summary>
         /// <param name="unused">Unused parameter.</param>
-        public VolumeIsolationScope(bool unused) {}
+        public VolumeIsolationScope(bool unused)
+            => VolumeManager.needIsolationFilteredByRenderer = true;
 
         /// <summary>
         /// Stops the Camera from filtering a Volume.
         /// </summary>
-        void IDisposable.Dispose() {}
+        void IDisposable.Dispose()
+            => VolumeManager.needIsolationFilteredByRenderer = false;
     }
 }

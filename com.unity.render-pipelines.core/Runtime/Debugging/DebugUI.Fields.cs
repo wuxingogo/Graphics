@@ -98,7 +98,7 @@ namespace UnityEngine.Rendering
         /// <summary>
         /// Boolean field.
         /// </summary>
-        public class BoolField : Field<bool> {}
+        public class BoolField : Field<bool> { }
         /// <summary>
         /// Boolean field with history.
         /// </summary>
@@ -279,23 +279,15 @@ namespace UnityEngine.Rendering
             {
                 set
                 {
+                    enumNames = Enum.GetNames(value).Select(x => new GUIContent(x)).ToArray();
+
+                    // Linq.Cast<T> on a typeless Array breaks the JIT on PS4/Mono so we have to do it manually
+                    //enumValues = Enum.GetValues(value).Cast<int>().ToArray();
+
                     var values = Enum.GetValues(value);
                     enumValues = new int[values.Length];
-                    enumNames = new GUIContent[values.Length];
                     for (int i = 0; i < values.Length; i++)
-                    {
-                        var enumValue = values.GetValue(i);
-                        var memInfo = value.GetMember(value.GetEnumName(enumValue));
-                        var name = memInfo[0]
-                            .GetCustomAttributes(typeof(InspectorNameAttribute), false)
-                            .FirstOrDefault() is InspectorNameAttribute attribute ? attribute.displayName : enumValue.ToString();
-
-                        if (memInfo[0].GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() is ObsoleteAttribute)
-                            name += " (Obsolete)";
-
-                        enumNames[i] = new GUIContent(name);
-                        enumValues[i] = (int)enumValue;
-                    }
+                        enumValues[i] = (int)values.GetValue(i);
 
                     InitIndexes();
                     InitQuickSeparators();
@@ -328,9 +320,6 @@ namespace UnityEngine.Rendering
 
             internal void InitIndexes()
             {
-                if (enumNames == null)
-                    enumNames = new GUIContent[0];
-
                 indexes = new int[enumNames.Length];
                 for (int i = 0; i < enumNames.Length; i++)
                 {

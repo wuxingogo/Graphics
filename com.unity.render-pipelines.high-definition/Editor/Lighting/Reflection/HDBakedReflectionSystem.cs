@@ -11,7 +11,6 @@ using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEditor.Experimental.Rendering;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -56,6 +55,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
         HDBakedReflectionSystem() : base(1)
         {
+
         }
 
         public override bool BakeAllReflectionProbes()
@@ -119,8 +119,6 @@ namespace UnityEditor.Rendering.HighDefinition
             //   a. If we have to remove a baked data
             //   b. If we have to bake a probe
             // 4. Bake all required probes
-            //   a. Bake probe that were added or modified
-            //   b. Bake probe with a missing baked texture
             // 5. Remove unused baked data
             // 6. Update probe assets
 
@@ -137,30 +135,10 @@ namespace UnityEditor.Rendering.HighDefinition
 
             // == 2. ==
             var states = stackalloc HDProbeBakingState[bakedProbeCount];
-            // A list of indices of probe we may want to force to rebake, even if the hashes matches.
-            // Usually, add a probe when something external to its state or the world state forces the bake.
-            var probeForcedToBakeIndices = stackalloc int[bakedProbeCount];
-            var probeForcedToBakeIndicesCount = 0;
-            var probeForcedToBakeIndicesList = new ListBuffer<int>(
-                probeForcedToBakeIndices,
-                &probeForcedToBakeIndicesCount,
-                bakedProbeCount
-            );
-
             ComputeProbeInstanceID(bakedProbes, states);
             ComputeProbeSettingsHashes(bakedProbes, states);
             // TODO: Handle bounce dependency here
             ComputeProbeBakingHashes(bakedProbeCount, allProbeDependencyHash, states);
-
-            // Force to rebake probe with missing baked texture
-            for (var i = 0; i < bakedProbeCount; ++i)
-            {
-                var instanceId = states[i].instanceID;
-                var probe = (HDProbe)EditorUtility.InstanceIDToObject(instanceId);
-                if (probe.bakedTexture != null && !probe.bakedTexture.Equals(null)) continue;
-
-                probeForcedToBakeIndicesList.TryAdd(i);
-            }
 
             CoreUnsafeUtils.QuickSort<HDProbeBakingState, Hash128, HDProbeBakingState.ProbeBakingHash>(
                 bakedProbeCount, states
@@ -179,30 +157,27 @@ namespace UnityEditor.Rendering.HighDefinition
             }
             else
             {
-                fixed(HDProbeBakedState* oldBakedStates = &m_HDProbeBakedStates[0])
+                fixed (HDProbeBakedState* oldBakedStates = &m_HDProbeBakedStates[0])
                 {
                     // == 3. ==
                     // Compare hashes between baked probe states and desired probe states
                     operationCount = CoreUnsafeUtils.CompareHashes<
-                        HDProbeBakedState, HDProbeBakedState.ProbeBakedHash,
-                        HDProbeBakingState, HDProbeBakingState.ProbeBakingHash
-                        >(
-                            m_HDProbeBakedStates.Length, oldBakedStates, // old hashes
-                            bakedProbeCount, states,              // new hashes
-                            addIndices, remIndices,
-                            out addCount, out remCount
-                        );
+                            HDProbeBakedState, HDProbeBakedState.ProbeBakedHash,
+                            HDProbeBakingState, HDProbeBakingState.ProbeBakingHash
+                       > (
+                       m_HDProbeBakedStates.Length, oldBakedStates, // old hashes
+                       bakedProbeCount, states,                   // new hashes
+                       addIndices, remIndices,
+                       out addCount, out remCount
+                    );
                 }
             }
 
-            if (operationCount > 0 || probeForcedToBakeIndicesList.Count > 0)
+            if (operationCount > 0)
             {
                 // == 4. ==
                 var cubemapSize = (int)hdPipeline.currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCubemapSize;
-                // We force RGBAHalf as we don't support 11-11-10 textures (only RT)
-                var probeFormat = GraphicsFormat.R16G16B16A16_SFloat;
-
-                var cubeRT = HDRenderUtilities.CreateReflectionProbeRenderTarget(cubemapSize, probeFormat);
+                var cubeRT = HDRenderUtilities.CreateReflectionProbeRenderTarget(cubemapSize);
 
                 handle.EnterStage(
                     (int)BakingStages.ReflectionProbes,
@@ -210,66 +185,33 @@ namespace UnityEditor.Rendering.HighDefinition
                     0
                 );
 
-                // Compute indices of probes to bake: added, modified probe or with a missing baked texture.
-                var toBakeIndices = stackalloc int[bakedProbeCount];
-                var toBakeIndicesCount = 0;
-                var toBakeIndicesList = new ListBuffer<int>(toBakeIndices, &toBakeIndicesCount, bakedProbeCount);
-                {
-                    // Note: we will add probes from change check and baked texture missing check.
-                    //   So we can add at most 2 time the probe in the list.
-                    var toBakeIndicesTmp = stackalloc int[bakedProbeCount * 2];
-                    var toBakeIndicesTmpCount = 0;
-                    var toBakeIndicesTmpList =
-                        new ListBuffer<int>(toBakeIndicesTmp, &toBakeIndicesTmpCount, bakedProbeCount * 2);
-
-                    // Add the indices from the added or modified detection check
-                    toBakeIndicesTmpList.TryCopyFrom(addIndices, addCount);
-                    // Add the probe with missing baked texture check
-                    probeForcedToBakeIndicesList.TryCopyTo(toBakeIndicesTmpList);
-
-                    // Sort indices
-                    toBakeIndicesTmpList.QuickSort();
-                    // Add to final list without the duplicates
-                    var lastValue = int.MaxValue;
-                    for (var i = 0; i < toBakeIndicesTmpList.Count; ++i)
-                    {
-                        if (lastValue == toBakeIndicesTmpList.GetUnchecked(i))
-                            // Skip duplicates
-                            continue;
-
-                        lastValue = toBakeIndicesTmpList.GetUnchecked(i);
-                        toBakeIndicesList.TryAdd(lastValue);
-                    }
-                }
-
-                // Render probes that were added or modified
-                for (int i = 0; i < toBakeIndicesList.Count; ++i)
+                // Render probes
+                for (int i = 0; i < addCount; ++i)
                 {
                     handle.EnterStage(
                         (int)BakingStages.ReflectionProbes,
                         string.Format("Reflection Probes | {0} jobs", addCount),
-                        i / (float)toBakeIndicesCount
+                        i / (float)addCount
                     );
 
-                    var index = toBakeIndicesList.GetUnchecked(i);
+                    var index = addIndices[i];
                     var instanceId = states[index].instanceID;
                     var probe = (HDProbe)EditorUtility.InstanceIDToObject(instanceId);
                     var cacheFile = GetGICacheFileForHDProbe(states[index].probeBakingHash);
+                    var planarRT = HDRenderUtilities.CreatePlanarProbeRenderTarget((int)probe.resolution);
 
                     // Get from cache or render the probe
                     if (!File.Exists(cacheFile))
-                    {
-                        var planarRT = HDRenderUtilities.CreatePlanarProbeRenderTarget((int)probe.resolution, probeFormat);
                         RenderAndWriteToFile(probe, cacheFile, cubeRT, planarRT);
-                        planarRT.Release();
-                    }
+
+                    planarRT.Release();
                 }
                 cubeRT.Release();
 
                 // Copy texture from cache
-                for (int i = 0; i < toBakeIndicesList.Count; ++i)
+                for (int i = 0; i < addCount; ++i)
                 {
-                    var index = toBakeIndicesList.GetUnchecked(i);
+                    var index = addIndices[i];
                     var instanceId = states[index].instanceID;
                     var probe = (HDProbe)EditorUtility.InstanceIDToObject(instanceId);
                     var cacheFile = GetGICacheFileForHDProbe(states[index].probeBakingHash);
@@ -293,7 +235,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     AssetDatabase.StartAssetEditing();
                     for (int i = 0; i < bakedProbeCount; ++i)
                     {
-                        var index = toBakeIndicesList.GetUnchecked(i);
+                        var index = addIndices[i];
                         var instanceId = states[index].instanceID;
                         var probe = (HDProbe)EditorUtility.InstanceIDToObject(instanceId);
                         var bakedTexturePath = HDBakingUtilities.GetBakedTextureFilePath(probe);
@@ -304,9 +246,9 @@ namespace UnityEditor.Rendering.HighDefinition
                 }
                 // Import assets
                 AssetDatabase.StartAssetEditing();
-                for (int i = 0; i < toBakeIndicesList.Count; ++i)
+                for (int i = 0; i < addCount; ++i)
                 {
-                    var index = toBakeIndicesList.GetUnchecked(i);
+                    var index = addIndices[i];
                     var instanceId = states[index].instanceID;
                     var probe = (HDProbe)EditorUtility.InstanceIDToObject(instanceId);
                     var bakedTexturePath = HDBakingUtilities.GetBakedTextureFilePath(probe);
@@ -322,7 +264,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 // == 5. ==
 
                 // Create new baked state array
-                var targetSize = m_HDProbeBakedStates.Length - remCount + toBakeIndicesList.Count;
+                var targetSize = m_HDProbeBakedStates.Length + addCount - remCount;
                 var targetBakedStates = stackalloc HDProbeBakedState[targetSize];
                 // Copy baked state that are not removed
                 var targetI = 0;
@@ -330,14 +272,12 @@ namespace UnityEditor.Rendering.HighDefinition
                 {
                     if (CoreUnsafeUtils.IndexOf(remIndices, remCount, i) != -1)
                         continue;
-                    Assert.IsTrue(targetI < targetSize);
                     targetBakedStates[targetI++] = m_HDProbeBakedStates[i];
                 }
                 // Add new baked states
-                for (int i = 0; i < toBakeIndicesList.Count; ++i)
+                for (int i = 0; i < addCount; ++i)
                 {
-                    var state = states[toBakeIndicesList.GetUnchecked(i)];
-                    Assert.IsTrue(targetI < targetSize);
+                    var state = states[addIndices[i]];
                     targetBakedStates[targetI++] = new HDProbeBakedState
                     {
                         instanceID = state.instanceID,
@@ -351,7 +291,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 Array.Resize(ref m_HDProbeBakedStates, targetSize);
                 if (targetSize > 0)
                 {
-                    fixed(HDProbeBakedState* bakedStates = &m_HDProbeBakedStates[0])
+                    fixed (HDProbeBakedState* bakedStates = &m_HDProbeBakedStates[0])
                     {
                         UnsafeUtility.MemCpy(
                             bakedStates,
@@ -377,24 +317,20 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             if (!(RenderPipelineManager.currentPipeline is HDRenderPipeline hdPipeline))
             {
-                Debug.LogWarning("HDBakedReflectionSystem only works with HDRP, " +
-                    "please switch your render pipeline or use another reflection probe system.");
+                Debug.LogWarning("HDBakedReflectionSystem work with HDRP, " +
+                    "please switch your render pipeline or use another reflection system");
                 return false;
             }
 
-            hdPipeline.reflectionProbeBaking = true;
-
             var cubemapSize = (int)hdPipeline.currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCubemapSize;
-            // We force RGBAHalf as we don't support 11-11-10 textures (only RT)
-            var probeFormat = GraphicsFormat.R16G16B16A16_SFloat;
 
-            var cubeRT = HDRenderUtilities.CreateReflectionProbeRenderTarget(cubemapSize, probeFormat);
+            var cubeRT = HDRenderUtilities.CreateReflectionProbeRenderTarget(cubemapSize);
 
             // Render and write the result to disk
             foreach (var probe in bakedProbes)
             {
                 var bakedTexturePath = HDBakingUtilities.GetBakedTextureFilePath(probe);
-                var planarRT = HDRenderUtilities.CreatePlanarProbeRenderTarget((int)probe.resolution, probeFormat);
+                var planarRT = HDRenderUtilities.CreatePlanarProbeRenderTarget((int)probe.resolution);
                 RenderAndWriteToFile(probe, bakedTexturePath, cubeRT, planarRT);
                 planarRT.Release();
             }
@@ -440,7 +376,7 @@ namespace UnityEditor.Rendering.HighDefinition
             // to update the texture.
             // updateCount is a transient data, so don't execute this code before the asset reload.
             {
-                UnityEngine.Random.InitState((int)(1000 * EditorApplication.timeSinceStartup));
+                UnityEngine.Random.InitState((int)(1000 * hdPipeline.GetTime()));
                 foreach (var probe in bakedProbes)
                 {
                     var c = UnityEngine.Random.Range(2, 10);
@@ -449,8 +385,6 @@ namespace UnityEditor.Rendering.HighDefinition
             }
 
             cubeRT.Release();
-
-            hdPipeline.reflectionProbeBaking = false;
 
             return true;
         }
@@ -510,7 +444,7 @@ namespace UnityEditor.Rendering.HighDefinition
             var buffer = new CoreUnsafeUtils.FixedBufferStringQueue(bufferStart, bufferLength);
 
             // Look for baked assets in scene folders
-            for (int sceneI = 0, sceneC = SceneManager.sceneCount; sceneI < sceneC; ++sceneI)
+            for (int sceneI = 0, sceneC = SceneManager.sceneCount; sceneI< sceneC; ++sceneI)
             {
                 var scene = SceneManager.GetSceneAt(sceneI);
                 var sceneFolder = HDBakingUtilities.GetBakedTextureDirectory(scene);
@@ -528,11 +462,11 @@ namespace UnityEditor.Rendering.HighDefinition
                     {
                         if (!HDBakingUtilities.TryParseBakedProbeAssetFileName(
                             files[fileI], out ProbeSettings.ProbeType fileProbeType, out int fileIndex
-                            ))
+                        ))
                             continue;
 
-                        // This file is a baked asset for a destroyed game object
-                        // We can destroy it
+                            // This file is a baked asset for a destroyed game object
+                            // We can destroy it
                         if (!indicesSet.Contains(fileIndex) && deleteUnusedOnly
                             // Or we delete all assets
                             || !deleteUnusedOnly)
@@ -590,19 +524,19 @@ namespace UnityEditor.Rendering.HighDefinition
             switch (probe.settings.type)
             {
                 case ProbeSettings.ProbeType.PlanarProbe:
-                {
-                    var planarProbe = (PlanarReflectionProbe)probe;
-                    var dataFile = bakedTexturePath + ".renderData";
-                    if (File.Exists(dataFile))
                     {
-                        if (HDBakingUtilities.TryDeserializeFromDisk(dataFile, out HDProbe.RenderData renderData))
+                        var planarProbe = (PlanarReflectionProbe)probe;
+                        var dataFile = bakedTexturePath + ".renderData";
+                        if (File.Exists(dataFile))
                         {
-                            HDProbeSystem.AssignRenderData(probe, renderData, ProbeSettings.Mode.Baked);
-                            EditorUtility.SetDirty(probe);
+                            if (HDBakingUtilities.TryDeserializeFromDisk(dataFile, out HDProbe.RenderData renderData))
+                            {
+                                HDProbeSystem.AssignRenderData(probe, renderData, ProbeSettings.Mode.Baked);
+                                EditorUtility.SetDirty(probe);
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
             }
         }
 
@@ -625,42 +559,42 @@ namespace UnityEditor.Rendering.HighDefinition
             switch (settings.type)
             {
                 case ProbeSettings.ProbeType.ReflectionProbe:
-                {
-                    var positionSettings = ProbeCapturePositionSettings.ComputeFrom(probe, null);
-                    HDRenderUtilities.Render(probe.settings, positionSettings, cubeRT,
-                        out cameraSettings, out cameraPositionSettings,
-                        forceFlipY: true,
-                        forceInvertBackfaceCulling: true,     // Cubemap have an RHS standard, so we need to invert the face culling
-                        (uint)StaticEditorFlags.ReflectionProbeStatic
-                    );
-                    HDBakingUtilities.CreateParentDirectoryIfMissing(targetFile);
-                    Checkout(targetFile);
-                    HDTextureUtilities.WriteTextureFileToDisk(cubeRT, targetFile);
-                    break;
-                }
+                    {
+                        var positionSettings = ProbeCapturePositionSettings.ComputeFrom(probe, null);
+                        HDRenderUtilities.Render(probe.settings, positionSettings, cubeRT,
+                            out cameraSettings, out cameraPositionSettings,
+                            forceFlipY: true,
+                            forceInvertBackfaceCulling: true, // Cubemap have an RHS standard, so we need to invert the face culling
+                            (uint)StaticEditorFlags.ReflectionProbeStatic
+                        );
+                        HDBakingUtilities.CreateParentDirectoryIfMissing(targetFile);
+                        Checkout(targetFile);
+                        HDTextureUtilities.WriteTextureFileToDisk(cubeRT, targetFile);
+                        break;
+                    }
                 case ProbeSettings.ProbeType.PlanarProbe:
-                {
-                    var planarProbe = (PlanarReflectionProbe)probe;
-                    var positionSettings = ProbeCapturePositionSettings.ComputeFromMirroredReference(
-                        probe,
-                        planarProbe.referencePosition
-                    );
+                    {
+                        var planarProbe = (PlanarReflectionProbe)probe;
+                        var positionSettings = ProbeCapturePositionSettings.ComputeFromMirroredReference(
+                            probe,
+                            planarProbe.referencePosition
+                        );
 
-                    HDRenderUtilities.Render(
-                        settings,
-                        positionSettings,
-                        planarRT,
-                        out cameraSettings, out cameraPositionSettings
-                    );
-                    HDBakingUtilities.CreateParentDirectoryIfMissing(targetFile);
-                    Checkout(targetFile);
-                    HDTextureUtilities.WriteTextureFileToDisk(planarRT, targetFile);
-                    var renderData = new HDProbe.RenderData(cameraSettings, cameraPositionSettings);
-                    var targetRenderDataFile = targetFile + ".renderData";
-                    Checkout(targetRenderDataFile);
-                    HDBakingUtilities.TrySerializeToDisk(renderData, targetRenderDataFile);
-                    break;
-                }
+                        HDRenderUtilities.Render(
+                            settings,
+                            positionSettings,
+                            planarRT,
+                            out cameraSettings, out cameraPositionSettings
+                        );
+                        HDBakingUtilities.CreateParentDirectoryIfMissing(targetFile);
+                        Checkout(targetFile);
+                        HDTextureUtilities.WriteTextureFileToDisk(planarRT, targetFile);
+                        var renderData = new HDProbe.RenderData(cameraSettings, cameraPositionSettings);
+                        var targetRenderDataFile = targetFile + ".renderData";
+                        Checkout(targetRenderDataFile);
+                        HDBakingUtilities.TrySerializeToDisk(renderData, targetRenderDataFile);
+                        break;
+                    }
                 default: throw new ArgumentOutOfRangeException(nameof(probe.settings.type));
             }
         }
@@ -671,41 +605,43 @@ namespace UnityEditor.Rendering.HighDefinition
             switch (probe.settings.type)
             {
                 case ProbeSettings.ProbeType.ReflectionProbe:
-                {
-                    var importer = AssetImporter.GetAtPath(file) as TextureImporter;
-                    if (importer == null)
-                        return;
-                    var settings = new TextureImporterSettings();
-                    importer.ReadTextureSettings(settings);
-                    settings.sRGBTexture = false;
-                    settings.filterMode = FilterMode.Bilinear;
-                    settings.generateCubemap = TextureImporterGenerateCubemap.AutoCubemap;
-                    settings.cubemapConvolution = TextureImporterCubemapConvolution.None;
-                    settings.seamlessCubemap = false;
-                    settings.wrapMode = TextureWrapMode.Repeat;
-                    settings.aniso = 1;
-                    importer.SetTextureSettings(settings);
-                    importer.mipmapEnabled = false;
-                    importer.textureCompression = hd.currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCacheCompressed
-                        ? TextureImporterCompression.Compressed
-                        : TextureImporterCompression.Uncompressed;
-                    importer.textureShape = TextureImporterShape.TextureCube;
-                    importer.SaveAndReimport();
-                    break;
-                }
+                    {
+                        var importer = AssetImporter.GetAtPath(file) as TextureImporter;
+                        if (importer == null)
+                            return;
+                        var settings = new TextureImporterSettings();
+                        importer.ReadTextureSettings(settings);
+                        settings.sRGBTexture = false;
+                        settings.filterMode = FilterMode.Bilinear;
+                        settings.generateCubemap = TextureImporterGenerateCubemap.AutoCubemap;
+                        settings.cubemapConvolution = TextureImporterCubemapConvolution.None;
+                        settings.seamlessCubemap = false;
+                        settings.wrapMode = TextureWrapMode.Repeat;
+                        settings.aniso = 1;
+                        importer.SetTextureSettings(settings);
+                        importer.mipmapEnabled = false;
+                        importer.textureCompression = hd.currentPlatformRenderPipelineSettings.lightLoopSettings.reflectionCacheCompressed
+                            ? TextureImporterCompression.Compressed
+                            : TextureImporterCompression.Uncompressed;
+                        importer.textureShape = TextureImporterShape.TextureCube;
+                        importer.SaveAndReimport();
+                        break;
+                    }
                 case ProbeSettings.ProbeType.PlanarProbe:
-                {
-                    var importer = AssetImporter.GetAtPath(file) as TextureImporter;
-                    if (importer == null)
-                        return;
-                    importer.sRGBTexture = false;
-                    importer.filterMode = FilterMode.Bilinear;
-                    importer.mipmapEnabled = false;
-                    importer.textureCompression = TextureImporterCompression.Uncompressed;
-                    importer.textureShape = TextureImporterShape.Texture2D;
-                    importer.SaveAndReimport();
-                    break;
-                }
+                    {
+                        var importer = AssetImporter.GetAtPath(file) as TextureImporter;
+                        if (importer == null)
+                            return;
+                        importer.sRGBTexture = false;
+                        importer.filterMode = FilterMode.Bilinear;
+                        importer.mipmapEnabled = false;
+                        importer.textureCompression = hd.currentPlatformRenderPipelineSettings.lightLoopSettings.planarReflectionCacheCompressed
+                            ? TextureImporterCompression.Compressed
+                            : TextureImporterCompression.Uncompressed;
+                        importer.textureShape = TextureImporterShape.Texture2D;
+                        importer.SaveAndReimport();
+                        break;
+                    }
             }
         }
 
@@ -777,9 +713,9 @@ namespace UnityEditor.Rendering.HighDefinition
         static Func<string> GetGICachePath = Expression.Lambda<Func<string>>(
             Expression.Call(
                 typeof(Lightmapping)
-                    .GetProperty("diskCachePath", BindingFlags.Static | BindingFlags.NonPublic)
-                    .GetGetMethod(true)
+                .GetProperty("diskCachePath", BindingFlags.Static | BindingFlags.NonPublic)
+                .GetGetMethod(true)
             )
-            ).Compile();
+        ).Compile();
     }
 }

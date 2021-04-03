@@ -1,7 +1,6 @@
-using UnityEngine;
 using UnityEditor.Rendering;
-using UnityEditor.Rendering.HighDefinition;
 using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HighDefinition
 {
@@ -13,7 +12,6 @@ namespace UnityEditor.Experimental.Rendering.HighDefinition
         SerializedDataParameter m_LayerMask;
         SerializedDataParameter m_MaxDepth;
         SerializedDataParameter m_RayLength;
-        SerializedDataParameter m_MinSmoothness;
 
         public override void OnEnable()
         {
@@ -23,10 +21,7 @@ namespace UnityEditor.Experimental.Rendering.HighDefinition
             m_LayerMask = Unpack(o.Find(x => x.layerMask));
             m_MaxDepth = Unpack(o.Find(x => x.maxDepth));
             m_RayLength = Unpack(o.Find(x => x.rayLength));
-            m_MinSmoothness = Unpack(o.Find(x => x.minSmoothness));
         }
-
-        static public readonly GUIContent k_RayLengthText = EditorGUIUtility.TrTextContent("Max Ray Length", "This defines the maximal travel distance of rays.");
 
         public override void OnInspectorGUI()
         {
@@ -45,13 +40,11 @@ namespace UnityEditor.Experimental.Rendering.HighDefinition
 
                 if (m_Enable.overrideState.boolValue && m_Enable.value.boolValue)
                 {
-                    using (new HDEditorUtils.IndentScope())
-                    {
-                        PropertyField(m_LayerMask);
-                        PropertyField(m_MaxDepth);
-                        PropertyField(m_RayLength, k_RayLengthText);
-                        PropertyField(m_MinSmoothness);
-                    }
+                    EditorGUI.indentLevel++;
+                    PropertyField(m_LayerMask);
+                    PropertyField(m_MaxDepth);
+                    PropertyField(m_RayLength);
+                    EditorGUI.indentLevel--;
                 }
             }
         }

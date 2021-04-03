@@ -20,9 +20,7 @@ namespace UnityEngine.VFX.Utility
         public float SmoothSpeed = 2.0f;
         public bool UseButtonSmooth = true;
 
-#if ENABLE_LEGACY_INPUT_MANAGER
         float m_CachedSmoothValue = 0.0f;
-#endif
 
         public override bool IsValid(VisualEffect component)
         {
@@ -31,17 +29,14 @@ namespace UnityEngine.VFX.Utility
 
         private void Start()
         {
-#if ENABLE_LEGACY_INPUT_MANAGER
             if (UseButtonSmooth)
             {
                 m_CachedSmoothValue = Input.GetButton(ButtonName) ? 1.0f : 0.0f;
             }
-#endif
         }
 
         public override void UpdateBinding(VisualEffect component)
         {
-#if ENABLE_LEGACY_INPUT_MANAGER
             bool press = Input.GetButton(ButtonName);
             component.SetBool(m_ButtonProperty, press);
             if (UseButtonSmooth)
@@ -50,7 +45,6 @@ namespace UnityEngine.VFX.Utility
                 m_CachedSmoothValue = Mathf.Clamp01(m_CachedSmoothValue);
                 component.SetFloat(m_ButtonSmoothProperty, m_CachedSmoothValue);
             }
-#endif
         }
 
         public override string ToString()

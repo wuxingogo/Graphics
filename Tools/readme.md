@@ -37,7 +37,6 @@ A description of the hooks we currently have is available in the [hooks library 
 
 For this repository we have enabled:
 
-- format-code
 - check-shader-includes
 - file-extension-to-lowercase
 - check-branch-name
@@ -116,16 +115,10 @@ On Windows, Active perl is not supported by the formatting tool. Use Strawberry 
 
 ## Formatting
 
-Provided you installed [unity-meta](https://internaldocs.hq.unity3d.com/unity-meta/setup/), you can manually run the formatting tool with the following command:
+Provided you installed [unity-meta](https://internaldocs.hq.unity3d.com/unity-meta/setup/), you can manually run the formatting tool with the following command (use powershell on windows):
 ```
 perl ~/unity-meta/Tools/Format/format.pl --hgroot $(pwd) --dry-run <folder to format>
 ```
-**Notes for Windows users:**
-- Use Powershell (not the CMD), or the command substitution syntax `$(pwd)` won't be recognized. Alternatively, you can replace `$(pwd)` by the full path to your repository root (ie. where you are in the file system now).
-- Uou may have to manually "expand" the tilde (`~`) sign, meaning replacing it by your $HOME path. In powershell, hit `TAB` with the cursor on the tilde sign to automatically expand it to the $HOME path.
-- You may have to run `perl.exe` instead of `perl`.
-
-
 To actually apply the changes:
 ```
 perl ~/unity-meta/Tools/Format/format.pl --hgroot $(pwd) --nobackups <folder to format>

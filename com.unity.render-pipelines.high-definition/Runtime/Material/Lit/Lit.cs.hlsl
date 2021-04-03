@@ -1,5 +1,5 @@
 //
-// This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
+// This file was automatically generated. Please don't edit by hand.
 //
 
 #ifndef LIT_CS_HLSL
@@ -93,7 +93,7 @@ struct SurfaceData
     real anisotropy;
     real iridescenceThickness;
     real iridescenceMask;
-    real3 geomNormalWS;
+    float3 geomNormalWS;
     real ior;
     real3 transmittanceColor;
     real atDistance;
@@ -149,10 +149,10 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.specularOcclusion.xxx;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_NORMAL:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_SMOOTHNESS:
             result = surfacedata.perceptualSmoothness.xxx;
@@ -192,10 +192,10 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.iridescenceMask.xxx;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_SURFACEDATA_INDEX_OF_REFRACTION:
             result = surfacedata.ior.xxx;
@@ -236,10 +236,10 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
             result = bsdfdata.specularOcclusion.xxx;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_NORMAL_WS:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_PERCEPTUAL_ROUGHNESS:
             result = bsdfdata.perceptualRoughness.xxx;
@@ -287,10 +287,10 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
             result = bsdfdata.coatRoughness.xxx;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_LIT_BSDFDATA_IOR:
             result = bsdfdata.ior.xxx;

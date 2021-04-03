@@ -1,29 +1,13 @@
-using System;
 using UnityEditor.ShaderGraph;
-using UnityEngine.Rendering;
 
-namespace UnityEditor.Rendering.Universal.ShaderGraph
+namespace UnityEditor.Experimental.Rendering.Universal
 {
-    static class CreateSpriteLitShaderGraph
+    class CreateSpriteLitShaderGraph
     {
-        [MenuItem("Assets/Create/Shader Graph/URP/Sprite Lit Shader Graph", priority = CoreUtils.Sections.section1 + CoreUtils.Priorities.assetsCreateShaderMenuPriority + 1)]
-        public static void CreateSpriteLitGraph()
+        [MenuItem("Assets/Create/Shader/2D Renderer/Sprite Lit Graph (Experimental)", false, 208)]
+        public static void CreateMaterialGraph()
         {
-            var target = (UniversalTarget)Activator.CreateInstance(typeof(UniversalTarget));
-            target.TrySetActiveSubTarget(typeof(UniversalSpriteLitSubTarget));
-
-            var blockDescriptors = new[]
-            {
-                BlockFields.VertexDescription.Position,
-                BlockFields.VertexDescription.Normal,
-                BlockFields.VertexDescription.Tangent,
-                BlockFields.SurfaceDescription.BaseColor,
-                UniversalBlockFields.SurfaceDescription.SpriteMask,
-                BlockFields.SurfaceDescription.NormalTS,
-                BlockFields.SurfaceDescription.Alpha,
-            };
-
-            GraphUtil.CreateNewGraphWithOutputs(new[] {target}, blockDescriptors);
+            GraphUtil.CreateNewGraph(new SpriteLitMasterNode());
         }
     }
 }

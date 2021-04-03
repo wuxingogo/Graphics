@@ -4,11 +4,11 @@ To add a Renderer Feature to a Renderer:
 
 1. In the __Project__ window, select a Renderer.
 
-    ![Select a Renderer.](Images/post-proc/ssao/ssao-select-renderer.png)
+    ![Select a Renderer.](Images/urp-assets/urp-select-renderer.png)
 
     The Inspector window shows the the Renderer properties.
 
-    ![Inspector window shows the Renderer properties.](Images\post-proc\ssao\ssao-inspector-no-rend-features.png)
+    ![Inspector window shows the Renderer properties.](Images/urp-assets/inspector-no-rend-features.png)
 
 2. In the Inspector window, select __Add Renderer Feature__. In the list, select a Renderer Feature.
 

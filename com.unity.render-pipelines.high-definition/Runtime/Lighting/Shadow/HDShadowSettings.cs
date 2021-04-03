@@ -6,7 +6,6 @@ namespace UnityEngine.Rendering.HighDefinition
     /// Settings for shadows.
     /// </summary>
     [Serializable, VolumeComponentMenu("Shadowing/Shadows")]
-    [HDRPHelpURLAttribute("Override-Shadows")]
     public class HDShadowSettings : VolumeComponent
     {
         float[] m_CascadeShadowSplits = new float[3];

@@ -5,12 +5,7 @@ using System.IO;
 using System.Text;
 using System.Globalization;
 using UnityEngine;
-#if UNITY_2020_2_OR_NEWER
-using UnityEditor.AssetImporters;
-#else
 using UnityEditor.Experimental.AssetImporters;
-#endif
-
 
 namespace UnityEditor.Experimental.VFX.Utility
 {
@@ -178,6 +173,7 @@ namespace UnityEditor.Experimental.VFX.Utility
                 foreach (var kvp in surfaces)
                 {
                     kvp.Value.Apply();
+                    kvp.Value.hideFlags = HideFlags.HideInHierarchy;
                     ctx.AddObjectToAsset(kvp.Key.Name, kvp.Value);
                     cache.surfaces[k] = kvp.Value;
                     k++;

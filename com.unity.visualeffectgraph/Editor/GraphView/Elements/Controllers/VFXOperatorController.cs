@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
+using Branch = UnityEditor.VFX.Operator.VFXOperatorDynamicBranch;
+
 namespace UnityEditor.VFX.UI
 {
     class VFXOperatorController : VFXNodeController
@@ -27,12 +29,11 @@ namespace UnityEditor.VFX.UI
 
         public VFXOperatorController(VFXOperator model, VFXViewController viewController) : base(model, viewController)
         {
-            if (model is VFXSubgraphOperator subgraphOperator)
+            if (model is VFXSubgraphOperator)
             {
                 // Prevent breaking the editor opening.
                 try
                 {
-                    subgraphOperator.RecreateCopy();
                     model.ResyncSlots(false);
                     model.UpdateOutputExpressions();
                 }
@@ -333,9 +334,9 @@ namespace UnityEditor.VFX.UI
         }
     }
 
-    class VFXDynamicTypeOperatorController : VFXUniformOperatorController<VFXOperatorDynamicType>
+    class VFXBranchOperatorController : VFXUniformOperatorController<Branch>
     {
-        public VFXDynamicTypeOperatorController(VFXOperator model, VFXViewController viewController) : base(model, viewController)
+        public VFXBranchOperatorController(VFXOperator model, VFXViewController viewController) : base(model, viewController)
         {
         }
     }

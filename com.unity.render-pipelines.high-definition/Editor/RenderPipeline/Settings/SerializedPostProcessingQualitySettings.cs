@@ -14,7 +14,6 @@ namespace UnityEditor.Rendering.HighDefinition
         public SerializedProperty FarBlurMaxRadius;
         public SerializedProperty DoFResolution;
         public SerializedProperty DoFHighFilteringQuality;
-        public SerializedProperty DoFPhysicallyBased;
 
         // Motion Blur
         public SerializedProperty MotionBlurSampleCount;
@@ -22,7 +21,6 @@ namespace UnityEditor.Rendering.HighDefinition
         // Bloom
         public SerializedProperty BloomRes;
         public SerializedProperty BloomHighFilteringQuality;
-        public SerializedProperty BloomHighPrefilteringQuality;
 
         // Chromatic Aberration
         public SerializedProperty ChromaticAbMaxSamples;
@@ -38,7 +36,6 @@ namespace UnityEditor.Rendering.HighDefinition
             FarBlurMaxRadius            = root.Find((GlobalPostProcessingQualitySettings s) => s.FarBlurMaxRadius);
             DoFResolution               = root.Find((GlobalPostProcessingQualitySettings s) => s.DoFResolution);
             DoFHighFilteringQuality     = root.Find((GlobalPostProcessingQualitySettings s) => s.DoFHighQualityFiltering);
-            DoFPhysicallyBased          = root.Find((GlobalPostProcessingQualitySettings s) => s.DoFPhysicallyBased);
 
             // Motion Blur
             MotionBlurSampleCount       = root.Find((GlobalPostProcessingQualitySettings s) => s.MotionBlurSampleCount);
@@ -46,7 +43,6 @@ namespace UnityEditor.Rendering.HighDefinition
             // Bloom
             BloomRes                    = root.Find((GlobalPostProcessingQualitySettings s) => s.BloomRes);
             BloomHighFilteringQuality   = root.Find((GlobalPostProcessingQualitySettings s) => s.BloomHighQualityFiltering);
-            BloomHighPrefilteringQuality = root.Find((GlobalPostProcessingQualitySettings s) => s.BloomHighQualityPrefiltering);
 
             // Chromatic Aberration
             ChromaticAbMaxSamples       = root.Find((GlobalPostProcessingQualitySettings s) => s.ChromaticAberrationMaxSamples);

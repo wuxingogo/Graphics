@@ -4,29 +4,80 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [12.0.0] - 2021-01-11
+## [7.6.0] - 2021-03-25
 
 Version Updated
 The version number for this package has increased due to a version update of a related graphics package.
 
-## [11.0.0] - 2020-10-21
+## [7.5.3] - 2021-01-11
 
 Version Updated
 The version number for this package has increased due to a version update of a related graphics package.
 
-## [10.2.0] - 2020-10-19
+## [7.5.2] - 2020-11-16
 
 Version Updated
 The version number for this package has increased due to a version update of a related graphics package.
 
-## [10.1.0] - 2020-10-12
+## [7.5.1] - 2020-09-02
 
 Version Updated
 The version number for this package has increased due to a version update of a related graphics package.
 
-## [10.0.0] - 2019-06-10
-### Fixed
-- Fixed a typo in the `CombinedShapeLightShared` shader include that resulted in an invalid file reference.
+## [7.4.1] - 2020-06-03
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.4.0] - 2020-05-22
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.3.0] - 2020-03-11
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.2.0] - 2020-02-10
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.8] - 2020-01-20
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.7] - 2019-12-11
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.6] - 2019-11-22
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.5] - 2019-11-15
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.4] - 2019-11-13
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.3] - 2019-11-04
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
+
+## [7.1.2] - 2019-09-19
+
+Version Updated
+The version number for this package has increased due to a version update of a related graphics package.
 
 ## [7.1.1] - 2019-09-05
 
@@ -68,7 +119,7 @@ The version number for this package has increased due to a version update of a r
 - Shaders are now set up for VR stereo instancing on Vulkan. [case 1142952](https://fogbugz.unity3d.com/f/cases/1142952/).
 - VR stereo matrices and vertex inputs are now set up on Vulkan. [case 1142952](https://fogbugz.unity3d.com/f/cases/1142952/).
 - Fixed the Material Upgrader so it's now run upon updating the LWRP package. [1148764](https://issuetracker.unity3d.com/product/unity/issues/guid/1148764/)
-- Fixed a NullReference exception when you create a new Lightweight Render Pipeline Asset. [case 1153388](https://issuetracker.unity3d.com/product/unity/issues/guid/1153388/)
+- Fixed a NullReference exception when you create a new Lightweight Render Pipeline Asset. [case 1153388](https://issuetracker.unity3d.com/product/unity/issues/guid/1153388/) 
 
 ## [6.6.0] - 2019-04-01
 ### Added
@@ -105,9 +156,9 @@ The version number for this package has increased due to a version update of a r
 - `ScriptableRenderPass` now exposes `CreateDrawingSettings` as a helper for render passes that need to call `ScriptableRenderContext.DrawRenderers`.
 
 ### Changed
-- Removed `RegisterShaderPassName` from `ScriptableRenderPass`. Instead, `CreateDrawingSettings` now  takes one or a list of `ShaderTagId`.
+- Removed `RegisterShaderPassName` from `ScriptableRenderPass`. Instead, `CreateDrawingSettings` now  takes one or a list of `ShaderTagId`. 
 - Removed remaining experimental namespace from LWRP. All APIrelated to `ScriptableRenderer`, `ScriptableRenderPass`, and render pass injection is now out of preview.
-- Removed `SetRenderTarget` from `ScriptableRenderPass`. You should never call it. Instead, call `ConfigureTarget`, and the renderer automatically sets up targets for you.
+- Removed `SetRenderTarget` from `ScriptableRenderPass`. You should never call it. Instead, call `ConfigureTarget`, and the renderer automatically sets up targets for you. 
 - Removed `RenderFullscreenQuad` from `ScriptableRenderer`. Use `CommandBuffer.DrawMesh` and `RenderingUtils.fullscreenMesh` instead.
 - Removed `RenderPostProcess` from `ScriptableRenderer`. Use `ScriptableRenderPass.RenderPostProcessing` instead.
 - Removed `postProcessingContext` property from `ScriptableRenderer`. This is now exposed in `RenderingUtils.postProcessingContext`.
@@ -149,7 +200,7 @@ The version number for this package has increased due to a version update of a r
 
 ### Changed
 - You can now only initialize a camera by setting a Background Type. The supported options are Skybox, Solid Color, and Don't Care.
-- LWRP now uses non-square shadowmap textures when it renders directional shadows with 2 shadow cascades.
+- LWRP now uses non-square shadowmap textures when it renders directional shadows with 2 shadow cascades. 
 - LWRP now uses RGB111110 as the HDR format on mobile devices, when this format is supported.
 - Removed `IAfterDepthPrePass` interface.
 - We’ve redesigned the Shader GUI. For example, all property names in Shaders are now inline across the board
@@ -231,7 +282,7 @@ The version number for this package has increased due to a version update of a r
 - When you use __Area Light__ with LWRP, __Cast Shadows__ no longer overlaps with other UI elements in the Inspector. [case 1085363](https://issuetracker.unity3d.com/issues/inspector-area-light-cast-shadows-ui-option-is-obscured-by-render-mode-for-lwrp-regression-in-2018-dot-3a3)
 
 ### Changed
-Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
+Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings. 
 
 ## [4.0.0-preview] - 2018-09-28
 ### Added
@@ -256,7 +307,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
 
 ### Changed
 - The `RenderingData` struct is now read-only.
-- `ScriptableRenderer`always performs a Clear before calling `IRendererSetup::Setup.`
+- `ScriptableRenderer`always performs a Clear before calling `IRendererSetup::Setup.` 
 - `ScriptableRenderPass::Execute` no longer takes `CullResults` as input. Instead, use `RenderingData`as input, since that references `CullResults`.
 - `IRendererSetup_Setup` no longer takes `ScriptableRenderContext` and `CullResults` as input.
 - Shader includes are now referenced via package relative paths instead of via the deprecated shader export path mechanism https://docs.unity3d.com/2018.3/Documentation/ScriptReference/ShaderIncludePathAttribute.html.
@@ -371,7 +422,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
 - GLES2 shader compiler error in IntegrationTests
 - Can't set RenderScale and ShadowDistance by script
 - VR Single Pass Instancing shadows
-- Fixed compilation errors on platforms with limited XRSetting support.
+- Fixed compilation errors on Nintendo Switch (limited XRSetting support).
 
 ## [2.0.0-preview] - 2018-01-01
 
@@ -390,7 +441,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
 - Multiple shadow casting lights are supported. Currently only 1 directional + 4 spots light shadows.
 #### Shading Framework
 - Directional Lights are always considered a main light in shader. They have a fast shading path with no branching and no indexing.
-- GetMainLight() is provided in shader to initialize Light struct with main light shading data.
+- GetMainLight() is provided in shader to initialize Light struct with main light shading data. 
 - Directional lights have a dedicated shadowmap for performance reasons. Shadow coord always comes from interpolator.
 - MainLigthRealtimeShadowAttenuation(float4 shadowCoord) is provided to compute main light realtime shadows.
 - Spot and Point lights are always shaded in the light loop. Branching on uniform and indexing happens when shading them.
@@ -428,7 +479,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
 ## [1.1.2-preview] - 2018-01-01
 
 ### Changed
- - Performance improvements in mobile
+ - Performance improvements in mobile  
 
 ### Fixed
  - Shadows on GLES 2.0
@@ -458,7 +509,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
 
 ### Added
  - Added Light abstraction layer on lightweight shader library.
- - Added HDR global setting on pipeline asset.
+ - Added HDR global setting on pipeline asset. 
  - Added Soft Particles settings on pipeline asset.
  - Ported particles shaders to SRP library
 
@@ -485,7 +536,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
  - UI Improvements (Rendering features not supported by LW are hidden)
 
 ### Changed
- - Shaders were ported to the new SRP shader library.
+ - Shaders were ported to the new SRP shader library. 
  - Constant Buffer refactor to use new Batcher
  - Shadow filtering and bias improved.
  - Pipeline now updates color constants in gamma when in Gamma colorspace.
@@ -506,7 +557,7 @@ Read/write XRGraphicsConfig -> Read-only XRGraphics interface to XRSettings.
  - UI improvements
 
 ### Changed
-- Realtime shadow filtering was improved.
+- Realtime shadow filtering was improved. 
 
 ### Fixed
  - Fixed an issue that was including unreferenced shaders in the build.

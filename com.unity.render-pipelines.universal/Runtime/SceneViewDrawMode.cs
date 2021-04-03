@@ -10,7 +10,8 @@ namespace UnityEditor.Rendering.Universal
 
         static bool RejectDrawMode(SceneView.CameraMode cameraMode)
         {
-            if (cameraMode.drawMode == DrawCameraMode.ShadowCascades ||
+            if (cameraMode.drawMode == DrawCameraMode.TexturedWire ||
+                cameraMode.drawMode == DrawCameraMode.ShadowCascades ||
                 cameraMode.drawMode == DrawCameraMode.RenderPaths ||
                 cameraMode.drawMode == DrawCameraMode.AlphaChannel ||
                 cameraMode.drawMode == DrawCameraMode.Overdraw ||
@@ -21,7 +22,9 @@ namespace UnityEditor.Rendering.Universal
                 cameraMode.drawMode == DrawCameraMode.DeferredSmoothness ||
                 cameraMode.drawMode == DrawCameraMode.DeferredNormal ||
                 cameraMode.drawMode == DrawCameraMode.ValidateAlbedo ||
-                cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular
+                cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular ||
+                cameraMode.drawMode == DrawCameraMode.ShadowMasks ||
+                cameraMode.drawMode == DrawCameraMode.LightOverlap
             )
                 return false;
 
@@ -34,7 +37,7 @@ namespace UnityEditor.Rendering.Universal
             {
                 if (sceneViewHaveValidateFunction.Contains(sceneView))
                     continue;
-
+                
 
                 sceneView.onValidateCameraMode += RejectDrawMode;
                 sceneViewHaveValidateFunction.Add(sceneView);
@@ -50,7 +53,7 @@ namespace UnityEditor.Rendering.Universal
         public static void ResetDrawMode()
         {
             EditorApplication.update -= UpdateSceneViewStates;
-
+            
             foreach (var sceneView in sceneViewHaveValidateFunction)
                 sceneView.onValidateCameraMode -= RejectDrawMode;
             sceneViewHaveValidateFunction.Clear();

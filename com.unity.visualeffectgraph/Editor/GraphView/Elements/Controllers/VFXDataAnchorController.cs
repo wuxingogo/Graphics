@@ -1,3 +1,4 @@
+#define _RESTRICT_ATTRIBUTE_ACCESS
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -5,8 +6,6 @@ using UnityEngine;
 using UnityEngine.VFX;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine.Profiling;
-
-using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.VFX.UI
 {
@@ -146,8 +145,39 @@ namespace UnityEditor.VFX.UI
             return model.HasLink();
         }
 
+#if _RESTRICT_ATTRIBUTE_ACCESS
+        static private bool DependOnAttribute(object model)
+        {
+            return model is VFXAttributeParameter || model is Operator.AgeOverLifetime;
+        }
+
+        static private HashSet<IVFXSlotContainer> CollectDescendantOfAttribute(IEnumerable<VFXNodeController> allSlotContainerControllers)
+        {
+            var operatorDependOnAttribute = new HashSet<IVFXSlotContainer>();
+            foreach (var attributeParameter in allSlotContainerControllers.Where(o => DependOnAttribute(o.model)))
+            {
+                VFXViewController.CollectDescendantOperator(attributeParameter.model as IVFXSlotContainer, operatorDependOnAttribute);
+            }
+            return operatorDependOnAttribute;
+        }
+
+        static private HashSet<IVFXSlotContainer> CollectAnscestorOfSpawner(IEnumerable<VFXNodeController> allSlotContainerControllers)
+        {
+            var operatorDependOnSpawner = new HashSet<IVFXSlotContainer>();
+            foreach (var block in allSlotContainerControllers.Where(o => o.model is VFXBlock && (o.model as VFXBlock).GetParent().contextType == VFXContextType.Spawner))
+            {
+                VFXViewController.CollectAncestorOperator(block.model as IVFXSlotContainer, operatorDependOnSpawner);
+            }
+            return operatorDependOnSpawner;
+        }
+
+#endif
         public class CanLinkCache
         {
+#if _RESTRICT_ATTRIBUTE_ACCESS
+            internal HashSet<IVFXSlotContainer> ancestorOfSpawners;
+            internal HashSet<IVFXSlotContainer> descendantOfAttribute;
+#endif
             internal HashSet<IVFXSlotContainer> localChildrenOperator = new HashSet<IVFXSlotContainer>();
             internal HashSet<IVFXSlotContainer> localParentOperator = new HashSet<IVFXSlotContainer>();
         }
@@ -167,11 +197,32 @@ namespace UnityEditor.VFX.UI
             if (direction != Direction.Input)
             {
                 VFXViewController.CollectAncestorOperator(sourceNode.slotContainer, cache.localParentOperator);
+#if _RESTRICT_ATTRIBUTE_ACCESS
+                if (cache.localParentOperator.Any(o => DependOnAttribute(o)))
+                {
+                    if (cache.ancestorOfSpawners == null)
+                        cache.ancestorOfSpawners = CollectAnscestorOfSpawner(viewController.AllSlotContainerControllers);
+                    var additionnalExcludeOperator = cache.ancestorOfSpawners;
+                    cache.localChildrenOperator.UnionWith(additionnalExcludeOperator);
+                }
+#endif
                 result = !cache.localParentOperator.Contains(nodeController.slotContainer);
             }
             else
             {
                 VFXViewController.CollectDescendantOperator(sourceNode.slotContainer, cache.localChildrenOperator);
+#if _RESTRICT_ATTRIBUTE_ACCESS
+
+                var contextTypeInChildren = cache.localChildrenOperator.OfType<VFXBlock>().Select(o => o.GetParent().contextType);
+                if (contextTypeInChildren.Any(o => o == VFXContextType.Spawner))
+                {
+                    if (cache.descendantOfAttribute == null)
+                        cache.descendantOfAttribute = CollectDescendantOfAttribute(viewController.AllSlotContainerControllers);
+
+                    var additionnalExcludeOperator = cache.descendantOfAttribute;
+                    return !cache.localParentOperator.Contains(sourceNode.slotContainer) && !additionnalExcludeOperator.Contains(nodeController.slotContainer);
+                }
+#endif
                 result = !cache.localChildrenOperator.Contains(nodeController.slotContainer);
             }
 
@@ -239,12 +290,17 @@ namespace UnityEditor.VFX.UI
             }
         }
 
-        VFXPropertyAttributes m_Attributes;
+        VFXPropertyAttribute[] m_Attributes;
 
         public virtual void UpdateInfos()
         {
-            portType = model.property.type;
-            m_Attributes = model.property.attributes;
+            bool sameAttributes = (m_Attributes == null && model.property.attributes == null) || (m_Attributes != null && model.property.attributes != null && Enumerable.SequenceEqual(m_Attributes, model.property.attributes));
+
+            if (model.property.type != portType || !sameAttributes)
+            {
+                portType = model.property.type;
+                m_Attributes = model.property.attributes;
+            }
         }
 
         public bool indeterminate
@@ -271,13 +327,7 @@ namespace UnityEditor.VFX.UI
                             Profiler.EndSample();
                             if (evaluatedValue != null)
                             {
-                                if (typeof(UnityObject).IsAssignableFrom(storageType))
-                                {
-                                    int instanceID = (int)evaluatedValue;
-                                    return VFXConverter.ConvertTo(EditorUtility.InstanceIDToObject(instanceID), storageType);
-                                }
-                                else
-                                    return VFXConverter.ConvertTo(evaluatedValue, storageType);
+                                return VFXConverter.ConvertTo(evaluatedValue, storageType);
                             }
                         }
                         catch (System.Exception e)
@@ -334,7 +384,7 @@ namespace UnityEditor.VFX.UI
             }
         }
 
-        public VFXPropertyAttributes attributes
+        public VFXPropertyAttribute[] attributes
         {
             get { return m_Attributes; }
         }
@@ -523,16 +573,6 @@ namespace UnityEditor.VFX.UI
                 }
                 VFXGizmoUtility.Draw(m_GizmoContext, component);
             }
-        }
-
-        void IPropertyRMProvider.StartLiveModification()
-        {
-            sourceNode.viewController.errorRefresh = false;
-        }
-
-        void IPropertyRMProvider.EndLiveModification()
-        {
-            sourceNode.viewController.errorRefresh = true;
         }
     }
 

@@ -31,7 +31,6 @@ namespace  UnityEditor.VFX.UI
                     {Event.KeyboardEvent("^>"), view.FrameNext },
                     {Event.KeyboardEvent("F7"), view.Compile},
                     {Event.KeyboardEvent("#d"), view.OutputToDot},
-                    {Event.KeyboardEvent("^&d"), view.DuplicateSelectionWithEdges},
                     {Event.KeyboardEvent("^#d"), view.OutputToDotReduced},
                     {Event.KeyboardEvent("#c"), view.OutputToDotConstantFolding},
                     {Event.KeyboardEvent("^r"), view.ReinitComponents},
@@ -154,9 +153,6 @@ namespace  UnityEditor.VFX.UI
         {
             VFXManagerEditor.CheckVFXManager();
 
-            if (m_ResourceHistory == null)
-                m_ResourceHistory = new List<VisualEffectResource>();
-
             graphView = new VFXView();
             graphView.StretchToParentSize();
             SetupFramingShortcutHandler(graphView);
@@ -189,9 +185,6 @@ namespace  UnityEditor.VFX.UI
 #if USE_EXIT_WORKAROUND_FOGBUGZ_1062258
             EditorApplication.wantsToQuit += Quitting_Workaround;
 #endif
-
-            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(VisualEffectAssetEditorUtility.editorResourcesPath + "/VFX/" + (EditorGUIUtility.isProSkin ? "vfx_graph_icon_gray_dark.png" : "vfx_graph_icon_gray_light.png"));
-            titleContent.image = icon;
         }
 
 #if USE_EXIT_WORKAROUND_FOGBUGZ_1062258
@@ -237,6 +230,8 @@ namespace  UnityEditor.VFX.UI
 
         public bool autoCompile {get; set; }
 
+        public bool autoCompileDependent { get; set; }
+
         void Update()
         {
             if (graphView == null)
@@ -263,46 +258,26 @@ namespace  UnityEditor.VFX.UI
                         {
                             filename += "*";
                         }
-                        if (autoCompile && graph.IsExpressionGraphDirty() && !graph.GetResource().isSubgraph)
-                        {
-                            VFXGraph.explicitCompile = true;
-                            graph.errorManager.ClearAllErrors(null, VFXErrorOrigin.Compilation);
-                            using (var reporter = new VFXCompileErrorReporter(controller.graph.errorManager))
-                            {
-                                VFXGraph.compileReporter = reporter;
-                                AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graphView.controller.model));
-                                VFXGraph.compileReporter = null;
-                            }
-                            VFXGraph.explicitCompile = false;
-                        }
-                        else
-                            graph.RecompileIfNeeded(true, true);
 
-                        bool wasDirty = graph.IsExpressionGraphDirty();
 
+                        graph.RecompileIfNeeded(!autoCompile, !autoCompileDependent);
                         controller.RecompileExpressionGraphIfNeeded();
-
-                        // Hack to avoid infinite recompilation due to UI triggering a recompile TODO: Fix problematic cases that trigger that error
-                        if (!wasDirty && graph.IsExpressionGraphDirty())
-                        {
-                            Debug.LogError("Expression graph was marked as dirty after compiling context for UI. Discard to avoid infinite compilation loop.");
-                            graph.SetExpressionGraphDirty(false);
-                        }
                     }
                 }
             }
 
-            if (VFXViewModificationProcessor.assetMoved)
+            if (VFXViewModicationProcessor.assetMoved)
             {
                 graphView.AssetMoved();
-                VFXViewModificationProcessor.assetMoved = false;
+                VFXViewModicationProcessor.assetMoved = false;
             }
             titleContent.text = filename;
 
             if (graphView?.controller?.model?.visualEffectObject != null)
             {
                 graphView.checkoutButton.visible = true;
-                if (!graphView.IsAssetEditable() && Provider.isActive && Provider.enabled)
+                if (!AssetDatabase.IsOpenForEdit(graphView.controller.model.visualEffectObject,
+                    StatusQueryOptions.UseCachedIfPossible) && Provider.isActive && Provider.enabled)
                 {
                     graphView.checkoutButton.SetEnabled(true);
                 }

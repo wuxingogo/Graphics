@@ -7,7 +7,6 @@ using UnityEditor.ShaderGraph.Internal;
 namespace UnityEditor.ShaderGraph
 {
     [Title("Input", "Texture", "Texture 2D Asset")]
-    [HasDependencies(typeof(Minimal2d3dTextureAssetNode))]
     class Texture2DAssetNode : AbstractMaterialNode, IPropertyFromNode
     {
         public const int OutputSlotId = 0;
@@ -19,6 +18,7 @@ namespace UnityEditor.ShaderGraph
             name = "Texture 2D Asset";
             UpdateNodeAfterDeserialization();
         }
+
 
         public sealed override void UpdateNodeAfterDeserialization()
         {
@@ -42,21 +42,11 @@ namespace UnityEditor.ShaderGraph
             }
         }
 
-        string GetTexturePropertyName()
-        {
-            return base.GetVariableNameForSlot(OutputSlotId);
-        }
-
-        public override string GetVariableNameForSlot(int slotId)
-        {
-            return $"UnityBuildTexture2DStructNoScale({GetTexturePropertyName()})";
-        }
-
         public override void CollectShaderProperties(PropertyCollector properties, GenerationMode generationMode)
         {
             properties.AddShaderProperty(new Texture2DShaderProperty()
             {
-                overrideReferenceName = GetTexturePropertyName(),
+                overrideReferenceName = GetVariableNameForSlot(OutputSlotId),
                 generatePropertyBlock = true,
                 value = m_Texture,
                 modifiable = false
@@ -67,9 +57,8 @@ namespace UnityEditor.ShaderGraph
         {
             properties.Add(new PreviewProperty(PropertyType.Texture2D)
             {
-                name = GetTexturePropertyName(),
-                textureValue = texture,
-                texture2DDefaultType = Texture2DShaderProperty.DefaultType.White
+                name = GetVariableNameForSlot(OutputSlotId),
+                textureValue = texture
             });
         }
 
@@ -82,21 +71,5 @@ namespace UnityEditor.ShaderGraph
         }
 
         public int outputSlotId { get { return OutputSlotId; } }
-    }
-
-    // this is used for Texture2D AND Texture3D
-    class Minimal2d3dTextureAssetNode : IHasDependencies
-    {
-        [SerializeField]
-        private SerializableTexture m_Texture = null;
-
-        public void GetSourceAssetDependencies(AssetCollection assetCollection)
-        {
-            var guidString = m_Texture.guid;
-            if (!string.IsNullOrEmpty(guidString) && GUID.TryParse(guidString, out var guid))
-            {
-                assetCollection.AddAssetDependency(guid, AssetCollection.Flags.IncludeInExportPackage);
-            }
-        }
     }
 }

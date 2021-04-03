@@ -48,7 +48,7 @@ void ApplyDebugToSurfaceData(float3x3 tangentToWorld, inout SurfaceData surfaceD
     bool overrideAlbedo = _DebugLightingAlbedo.x != 0.0;
     bool overrideSmoothness = _DebugLightingSmoothness.x != 0.0;
     bool overrideNormal = _DebugLightingNormal.x != 0.0;
-    bool overrideAO = _DebugLightingAmbientOcclusion.x != 0.0;
+    bool overrideAO = _DebugLightingAmbientOcclusion.x != 0.0;    
 
     if (overrideAlbedo)
     {
@@ -135,7 +135,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     bsdfData.diffuseNormalWS = surfaceData.irisNormalWS;
     bsdfData.geomNormalWS = surfaceData.geomNormalWS;
 
-    bsdfData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness);
+    bsdfData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness); 
 
     bsdfData.fresnel0 = IorToFresnel0(surfaceData.IOR).xxx;
     bsdfData.IOR = surfaceData.IOR;
@@ -182,23 +182,14 @@ void GetSurfaceDataDebug(uint paramId, SurfaceData surfaceData, inout float3 res
         break;
     case DEBUGVIEW_EYE_SURFACEDATA_NORMAL_VIEW_SPACE:
         // Convert to view space
-        {
-            float3 vsNormal = TransformWorldToViewDir(surfaceData.normalWS);
-            result = IsNormalized(vsNormal) ?  vsNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(surfaceData.normalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_SURFACEDATA_IRIS_NORMAL_VIEW_SPACE:
-        {
-            float3 vsIrisNormal = TransformWorldToViewDir(surfaceData.irisNormalWS);
-            result = IsNormalized(vsIrisNormal) ?  vsIrisNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(surfaceData.irisNormalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-        {
-            float3 vsGeomNormal = TransformWorldToViewDir(surfaceData.geomNormalWS);
-            result = IsNormalized(vsGeomNormal) ?  vsGeomNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(surfaceData.geomNormalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_SURFACEDATA_IOR:
         result = saturate((surfaceData.IOR - 1.0) / 1.5).xxx;
         break;
@@ -218,23 +209,14 @@ void GetBSDFDataDebug(uint paramId, BSDFData bsdfData, inout float3 result, inou
         break;
     case DEBUGVIEW_EYE_BSDFDATA_NORMAL_VIEW_SPACE:
         // Convert to view space
-        {
-            float3 vsNormal = TransformWorldToViewDir(bsdfData.normalWS);
-            result = IsNormalized(vsNormal) ?  vsNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(bsdfData.normalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_BSDFDATA_DIFFUSE_NORMAL_VIEW_SPACE:
-        {
-            float3 vsDiffuseNormal = TransformWorldToViewDir(bsdfData.diffuseNormalWS);
-            result = IsNormalized(vsDiffuseNormal) ?  vsDiffuseNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(bsdfData.diffuseNormalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-        {
-            float3 vsGeomNormal = TransformWorldToViewDir(bsdfData.geomNormalWS);
-            result = IsNormalized(vsGeomNormal) ?  vsGeomNormal * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        }
+        result = TransformWorldToViewDir(bsdfData.geomNormalWS) * 0.5 + 0.5;
+        break;
     case DEBUGVIEW_EYE_BSDFDATA_IOR:
         result = saturate((bsdfData.IOR - 1.0) / 1.5).xxx;
         break;
@@ -309,9 +291,8 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     // Area light
     // UVs for sampling the LUTs
-    // We use V = sqrt( 1 - cos(theta) ) for parametrization which is kind of linear and only requires a single sqrt() instead of an expensive acos()
-    float cosThetaParam = sqrt( 1 - clampedNdotV ); // For Area light - UVs for sampling the LUTs
-    float2 uv = Remap01ToHalfTexelCoord(float2(bsdfData.perceptualRoughness, cosThetaParam), LTC_LUT_SIZE);
+    float theta = FastACosPos(clampedNdotV); // For Area light - UVs for sampling the LUTs
+    float2 uv = Remap01ToHalfTexelCoord(float2(bsdfData.perceptualRoughness, theta * INV_HALF_PI), LTC_LUT_SIZE);
 
     // Note we load the matrix transpose (avoid to have to transpose it in shader)
     preLightData.ltcTransformDiffuse = k_identity3x3;
@@ -320,7 +301,7 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     // Note we load the matrix transpose (avoid to have to transpose it in shader)
     preLightData.ltcTransformSpecular = 0.0;
     preLightData.ltcTransformSpecular._m22 = 1.0;
-    preLightData.ltcTransformSpecular._m00_m02_m11_m20 = SAMPLE_TEXTURE2D_ARRAY_LOD(_LtcData, s_linear_clamp_sampler, uv, LTCLIGHTINGMODEL_GGX, 0);
+    preLightData.ltcTransformSpecular._m00_m02_m11_m20 = SAMPLE_TEXTURE2D_ARRAY_LOD(_LtcData, s_linear_clamp_sampler, uv, LTC_GGX_MATRIX_INDEX, 0);
 
     // Construct a right-handed view-dependent orthogonal basis around the normal
     preLightData.orthoBasisViewDiffuseNormal = GetOrthoBasisViewNormal(V, bsdfData.diffuseNormalWS, preLightData.NdotV);
@@ -336,9 +317,13 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 // This define allow to say that we implement a ModifyBakedDiffuseLighting function to be call in PostInitBuiltinData
 #define MODIFY_BAKED_DIFFUSE_LIGHTING
 
-void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData preLightData, BSDFData bsdfData, inout BuiltinData builtinData)
+void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, SurfaceData surfaceData, inout BuiltinData builtinData)
 {
-    // For SSS we need to take into account the state of diffuseColor
+    // To get the data we need to do the whole process - compiler should optimize everything
+    BSDFData bsdfData = ConvertSurfaceDataToBSDFData(posInput.positionSS, surfaceData);
+    PreLightData preLightData = GetPreLightData(V, posInput, bsdfData);
+
+    // For SSS we need to take into account the state of diffuseColor 
     if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_EYE_SUBSURFACE_SCATTERING))
     {
         bsdfData.diffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
@@ -666,9 +651,6 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
             // This value is what we store in specularFGD, so reuse it
             lighting.specular += preLightData.specularFGD * ltcValue;
 
-            SHADOW_TYPE shadow = EvaluateShadow_RectArea(lightLoopContext, posInput, lightData, builtinData, bsdfData.normalWS, normalize(lightData.positionRWS), length(lightData.positionRWS));
-            lightData.color.rgb *= ComputeShadowColor(shadow, lightData.shadowTint, lightData.penumbraTint);
-
              // Save ALU by applying 'lightData.color' only once.
             lighting.diffuse *= lightData.color;
             lighting.specular *= lightData.color;
@@ -685,6 +667,41 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
         }
 
     }
+
+    float shadow = 1.0;
+    float shadowMask = 1.0;
+#ifdef SHADOWS_SHADOWMASK
+    // shadowMaskSelector.x is -1 if there is no shadow mask
+    // Note that we override shadow value (in case we don't have any dynamic shadow)
+    shadow = shadowMask = (lightData.shadowMaskSelector.x >= 0.0) ? dot(BUILTIN_DATA_SHADOW_MASK, lightData.shadowMaskSelector) : 1.0;
+#endif
+
+ #if defined(SCREEN_SPACE_SHADOWS) && !defined(_SURFACE_TYPE_TRANSPARENT)
+    if (lightData.screenSpaceShadowIndex >= 0)
+    {
+        shadow = GetScreenSpaceShadow(posInput, lightData.screenSpaceShadowIndex);
+    }
+    else
+#endif // ENABLE_RAYTRACING
+    if (lightData.shadowIndex != -1)
+    {
+#if RASTERIZED_AREA_LIGHT_SHADOWS
+        // lightData.positionRWS now contains the Light vector.
+        shadow = GetAreaLightAttenuation(lightLoopContext.shadowContext, posInput.positionSS, posInput.positionWS, bsdfData.normalWS, lightData.shadowIndex, normalize(lightData.positionRWS), length(lightData.positionRWS));
+#ifdef SHADOWS_SHADOWMASK
+        // See comment for punctual light shadow mask
+        shadow = lightData.nonLightMappedOnly ? min(shadowMask, shadow) : shadow;
+#endif
+        shadow = lerp(shadowMask, shadow, lightData.shadowDimmer);
+
+ #endif
+    }
+
+ #if RASTERIZED_AREA_LIGHT_SHADOWS || SUPPORTS_RAYTRACED_AREA_SHADOWS
+    float3 shadowColor = ComputeShadowColor(shadow, lightData.shadowTint, lightData.penumbraTint);
+    lighting.diffuse *= shadowColor;
+    lighting.specular *= shadowColor;
+#endif
 
      return lighting;
 }
@@ -770,11 +787,24 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 R = preLightData.iblR;
 
     // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
-    float intersectionDistance = EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
+    EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
 
     float3 F = preLightData.specularFGD;
 
-    float4 preLD = SampleEnvWithDistanceBaseRoughness(lightLoopContext, posInput, lightData, R, preLightData.iblPerceptualRoughness, intersectionDistance);
+    float iblMipLevel;
+    // TODO: We need to match the PerceptualRoughnessToMipmapLevel formula for planar, so we don't do this test (which is specific to our current lightloop)
+    // Specific case for Texture2Ds, their convolution is a gaussian one and not a GGX one - So we use another roughness mip mapping.
+    if (IsEnvIndexTexture2D(lightData.envIndex))
+    {
+        // Empirical remapping
+        iblMipLevel = PlanarPerceptualRoughnessToMipmapLevel(preLightData.iblPerceptualRoughness, _ColorPyramidScale.z);
+    }
+    else
+    {
+        iblMipLevel = PerceptualRoughnessToMipmapLevel(preLightData.iblPerceptualRoughness);
+    }
+
+    float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, R, iblMipLevel, lightData.rangeCompressionFactorCompensation);
     weight *= preLD.a; // Used by planar reflection to discard pixel
 
     envLighting = F * preLD.rgb;
@@ -794,7 +824,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
 void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
                         float3 V, PositionInputs posInput,
                         PreLightData preLightData, BSDFData bsdfData, BuiltinData builtinData, AggregateLighting lighting,
-                        out LightLoopOutput lightLoopOutput)
+                        out float3 diffuseLighting, out float3 specularLighting)
 {
     AmbientOcclusionFactor aoFactor;
     GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
@@ -805,11 +835,11 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 
     // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
     // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
-    lightLoopOutput.diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
-    lightLoopOutput.specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+    diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
+    specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
 
 #ifdef DEBUG_DISPLAY
-    PostEvaluateBSDFDebugDisplay(aoFactor, builtinData, lighting, bsdfData.diffuseColor, lightLoopOutput);
+    PostEvaluateBSDFDebugDisplay(aoFactor, builtinData, lighting, bsdfData.diffuseColor, diffuseLighting, specularLighting);
 #endif
 }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -47,7 +46,6 @@ namespace UnityEditor.Rendering.Universal
             m_FalseBool = editorObj.FindProperty(nameof(falseBool));
             UpdateEditorList();
         }
-
         private void OnDisable()
         {
             ClearEditorsList();
@@ -147,7 +145,7 @@ namespace UnityEditor.Rendering.Universal
             }
             else
             {
-                CoreEditorUtils.DrawHeaderToggle(Styles.MissingFeature, renderFeatureProperty, m_FalseBool, pos => OnContextClick(pos, index));
+                CoreEditorUtils.DrawHeaderToggle(Styles.MissingFeature,renderFeatureProperty, m_FalseBool,pos => OnContextClick(pos, index));
                 m_FalseBool.boolValue = false; // always make sure false bool is false
                 EditorGUILayout.HelpBox(Styles.MissingFeature.tooltip, MessageType.Error);
                 if (GUILayout.Button("Attempt Fix", EditorStyles.miniButton))
@@ -184,12 +182,6 @@ namespace UnityEditor.Rendering.Universal
             TypeCache.TypeCollection types = TypeCache.GetTypesDerivedFrom<ScriptableRendererFeature>();
             foreach (Type type in types)
             {
-                var data = target as ScriptableRendererData;
-                if (data.DuplicateFeatureCheck(type))
-                {
-                    continue;
-                }
-
                 string path = GetMenuNameFromType(type);
                 menu.AddItem(new GUIContent(path), false, AddComponent, type.Name);
             }
@@ -316,3 +308,4 @@ namespace UnityEditor.Rendering.Universal
         }
     }
 }
+

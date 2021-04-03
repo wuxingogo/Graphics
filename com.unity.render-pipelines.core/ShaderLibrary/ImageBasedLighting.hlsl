@@ -1,10 +1,6 @@
 #ifndef UNITY_IMAGE_BASED_LIGHTING_INCLUDED
 #define UNITY_IMAGE_BASED_LIGHTING_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
-
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/BSDF.hlsl"
@@ -34,6 +30,12 @@ real PerceptualRoughnessToMipmapLevel(real perceptualRoughness, uint mipMapCount
 real PerceptualRoughnessToMipmapLevel(real perceptualRoughness)
 {
     return PerceptualRoughnessToMipmapLevel(perceptualRoughness, UNITY_SPECCUBE_LOD_STEPS);
+}
+
+// Mapping for convolved Texture2D, this is an empirical remapping to match GGX version of cubemap convolution
+real PlanarPerceptualRoughnessToMipmapLevel(real perceptualRoughness, uint mipMapcount)
+{
+    return PositivePow(perceptualRoughness, 0.8) * uint(max(mipMapcount - 1, 0));
 }
 
 // The *accurate* version of the non-linear remapping. It works by
@@ -163,6 +165,71 @@ void SampleGGXDir(real2   u,
     L = mul(localL, localToWorld);
 }
 
+// Ref: "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals".
+void SampleVisibleAnisoGGXDir(real2 u,
+                              real3 V,
+                              real3x3 localToWorld,
+                              real roughnessT,
+                              real roughnessB,
+                          out real3 L,
+                          out real  NdotL,
+                          out real  NdotH,
+                          out real  VdotH,
+                              bool  VeqN = false)
+{
+    real3 localV = mul(V, transpose(localToWorld));
+
+    // Construct an orthonormal basis around the stretched view direction
+    real3x3 viewToLocal;
+    if (VeqN)
+    {
+        viewToLocal = k_identity3x3;
+    }
+    else
+    {
+        // TODO: this code is tacky. We should make it cleaner
+        viewToLocal[2] = normalize(real3(roughnessT * localV.x, roughnessB * localV.y, localV.z));
+        viewToLocal[0] = (viewToLocal[2].z < 0.9999) ? normalize(cross(real3(0, 0, 1), viewToLocal[2])) : real3(1, 0, 0);
+        viewToLocal[1] = cross(viewToLocal[2], viewToLocal[0]);
+    }
+
+    // Compute a sample point with polar coordinates (r, phi)
+    real r   = sqrt(u.x);
+    real phi = 2.0 * PI * u.y;
+    real t1  = r * cos(phi);
+    real t2  = r * sin(phi);
+    float s  = 0.5 * (1.0 + viewToLocal[2].z);
+    t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
+
+    // Reproject onto hemisphere
+    real3 localH = t1 * viewToLocal[0] + t2 * viewToLocal[1] + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * viewToLocal[2];
+
+    // Transform the normal back to the ellipsoid configuration
+    localH = normalize(real3(roughnessT * localH.x, roughnessB * localH.y, max(0.0, localH.z)));
+
+    NdotH = localH.z;
+    VdotH = saturate(dot(localV, localH));
+
+    // Compute the reflection direction
+    real3 localL = 2.0 * VdotH * localH - localV;
+    NdotL = localL.z;
+
+    L = mul(localL, localToWorld);
+}
+
+void SampleVisibleGGXDir(real2 u,
+                         real3 V,
+                         real3x3 localToWorld,
+                         real roughness,
+                     out real3 L,
+                     out real  NdotL,
+                     out real  NdotH,
+                     out real  VdotH,
+                         bool  VeqN = false)
+{
+    SampleVisibleAnisoGGXDir(u, V, localToWorld, roughness, roughness, L, NdotL, NdotH, VdotH, VeqN);
+}
+
 // ref: http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf p26
 void SampleAnisoGGXDir(real2 u,
                        real3 V,
@@ -180,54 +247,6 @@ void SampleAnisoGGXDir(real2 u,
 
     // Convert sample from half angle to incident angle
     L = 2.0 * saturate(dot(V, H)) * H - V;
-}
-
-// Adapted from: "Sampling the GGX Distribution of Visible Normals", by E. Heitz
-// http://jcgt.org/published/0007/04/01/paper.pdf
-void SampleAnisoGGXVisibleNormal(float2 u,
-                                 float3 V,
-                                 float3x3 localToWorld,
-                                 float roughnessX,
-                                 float roughnessY,
-                             out float3 localV,
-                             out float3 localH,
-                             out float  VdotH)
-{
-    localV = mul(V, transpose(localToWorld));
-
-    // Construct an orthonormal basis around the stretched view direction
-    float3x3 viewToLocal;
-    viewToLocal[2] = normalize(float3(roughnessX * localV.x, roughnessY * localV.y, localV.z));
-    viewToLocal[0] = (viewToLocal[2].z < 0.9999) ? normalize(cross(float3(0, 0, 1), viewToLocal[2])) : float3(1, 0, 0);
-    viewToLocal[1] = cross(viewToLocal[2], viewToLocal[0]);
-
-    // Compute a sample point with polar coordinates (r, phi)
-    float r   = sqrt(u.x);
-    float phi = 2.0 * PI * u.y;
-    float t1  = r * cos(phi);
-    float t2  = r * sin(phi);
-    float s  = 0.5 * (1.0 + viewToLocal[2].z);
-    t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
-
-    // Reproject onto hemisphere
-    localH = t1 * viewToLocal[0] + t2 * viewToLocal[1] + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * viewToLocal[2];
-
-    // Transform the normal back to the ellipsoid configuration
-    localH = normalize(float3(roughnessX * localH.x, roughnessY * localH.y, max(0.0, localH.z)));
-
-    VdotH = saturate(dot(localV, localH));
-}
-
-// GGX vsible normal sampling, isotropic variant
-void SampleGGXVisibleNormal(float2 u,
-                            float3 V,
-                            float3x3 localToWorld,
-                            float roughness,
-                        out float3 localV,
-                        out float3 localH,
-                        out float  VdotH)
-{
-    SampleAnisoGGXVisibleNormal(u, V, localToWorld, roughness, roughness, localV, localH, VdotH);
 }
 
 // weightOverPdf return the weight (without the diffuseAlbedo term) over pdf. diffuseAlbedo term must be apply by the caller.
@@ -741,9 +760,5 @@ float InfluenceFadeNormalWeight(float3 normal, float3 centerToPos)
     // Start weight from 0.6f (1 fully transparent) to 0.2f (fully opaque).
     return saturate((-1.0f / 0.4f) * dot(normal, centerToPos) + (0.6f / 0.4f));
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
 
 #endif // UNITY_IMAGE_BASED_LIGHTING_INCLUDED

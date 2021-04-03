@@ -146,7 +146,6 @@ namespace UnityEditor.VFX.UI
         }
 
         VFXView m_View;
-        VFXUIDebug m_DebugUI;
 
         public VFXComponentBoard(VFXView view)
         {
@@ -200,9 +199,6 @@ namespace UnityEditor.VFX.UI
             button.clickable.clicked += () => SendEvent(VisualEffectAsset.StopEventName);
 
             m_EventsContainer = this.Query("events-container");
-
-            m_DebugModes = this.Query<Button>("debug-modes");
-            m_DebugModes.clickable.clicked += OnDebugModes;
 
             Detach();
             this.AddManipulator(new Dragger { clampToParentEdges = true });
@@ -267,21 +263,6 @@ namespace UnityEditor.VFX.UI
             UpdatePlayRate();
         }
 
-        void OnDebugModes()
-        {
-            GenericMenu menu = new GenericMenu();
-            foreach (VFXUIDebug.Modes mode in Enum.GetValues(typeof(VFXUIDebug.Modes)))
-            {
-                menu.AddItem(EditorGUIUtility.TextContent(mode.ToString()), false, SetDebugMode, mode);
-            }
-            menu.DropDown(m_DebugModes.worldBound);
-        }
-
-        void SetDebugMode(object mode)
-        {
-            m_DebugUI.SetDebugMode((VFXUIDebug.Modes)mode, this);
-        }
-
         void OnEffectSlider(float f)
         {
             if (m_AttachedComponent != null)
@@ -295,32 +276,24 @@ namespace UnityEditor.VFX.UI
         {
             if (m_AttachedComponent != null)
                 m_AttachedComponent.ControlStop();
-            if (m_DebugUI != null)
-                m_DebugUI.Notify(VFXUIDebug.Events.VFXStop);
         }
 
         void EffectPlay()
         {
             if (m_AttachedComponent != null)
                 m_AttachedComponent.ControlPlayPause();
-            if (m_DebugUI != null)
-                m_DebugUI.Notify(VFXUIDebug.Events.VFXPlayPause);
         }
 
         void EffectStep()
         {
             if (m_AttachedComponent != null)
                 m_AttachedComponent.ControlStep();
-            if (m_DebugUI != null)
-                m_DebugUI.Notify(VFXUIDebug.Events.VFXStep);
         }
 
         void EffectRestart()
         {
             if (m_AttachedComponent != null)
                 m_AttachedComponent.ControlRestart();
-            if (m_DebugUI != null)
-                m_DebugUI.Notify(VFXUIDebug.Events.VFXReset);
         }
 
         void OnAttachToPanel(AttachToPanelEvent e)
@@ -403,8 +376,6 @@ namespace UnityEditor.VFX.UI
                 m_EventsContainer.Clear();
             m_Events.Clear();
             m_SelectButton.visible = false;
-            if (m_DebugUI != null)
-                m_DebugUI.Clear();
         }
 
         public void Attach(VisualEffect effect = null)
@@ -426,17 +397,6 @@ namespace UnityEditor.VFX.UI
                     m_ComponentContainerParent.Add(m_ComponentContainer);
                 UpdateEventList();
                 m_SelectButton.visible = true;
-
-                var debugMode = VFXUIDebug.Modes.None;
-                if (m_DebugUI != null)
-                {
-                    debugMode = m_DebugUI.GetDebugMode();
-                    m_DebugUI.Clear();
-                }
-
-                m_DebugUI = new VFXUIDebug(m_View);
-                m_DebugUI.SetVisualEffect(m_AttachedComponent);
-                m_DebugUI.SetDebugMode(debugMode, this, true);
             }
         }
 
@@ -543,7 +503,6 @@ namespace UnityEditor.VFX.UI
         IntegerField m_PlayRateField;
 
         Button m_PlayRateMenu;
-        Button m_DebugModes;
 
         Label m_ParticleCount;
 

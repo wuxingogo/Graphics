@@ -1,12 +1,10 @@
 {
     "name": "Unity.RenderPipelines.Universal.Runtime",
-    "rootNamespace": "",
     "references": [
+        "GUID:d60799ab2a985554ea1a39cd38695018",
         "GUID:df380645f10b7bc4b97d4f5eb6303d95",
         "GUID:ab67fb10353d84448ac887a7367cbda8",
-        "GUID:7dbf32976982c98448af054f2512cb79",
-        "GUID:d8b63aba1907145bea998dd612889d6b",
-        "GUID:2665a8d13d1b3f18800f46e256720795"
+        "GUID:7dbf32976982c98448af054f2512cb79"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -16,6 +14,11 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
+        {
+            "name": "com.unity.postprocessing",
+            "expression": "2.0.0",
+            "define": "POST_PROCESSING_STACK_2_0_0_OR_NEWER"
+        },
         {
             "name": "com.unity.visualeffectgraph",
             "expression": "0.0.1",
@@ -50,11 +53,6 @@
             "name": "com.unity.modules.physics2d",
             "expression": "1.0.0",
             "define": "USING_PHYSICS2D_MODULE"
-        },
-        {
-            "name": "com.unity.inputsystem",
-            "expression": "0.0.0",
-            "define": "ENABLE_INPUT_SYSTEM_PACKAGE"
         }
     ],
     "noEngineReferences": false

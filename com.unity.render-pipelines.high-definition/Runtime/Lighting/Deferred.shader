@@ -27,7 +27,7 @@ Shader "Hidden/HDRP/Deferred"
 
             HLSLPROGRAM
             #pragma target 4.5
-            #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+            #pragma only_renderers d3d11 playstation xboxone vulkan metal switch
 
             #pragma vertex Vert
             #pragma fragment Frag
@@ -35,12 +35,9 @@ Shader "Hidden/HDRP/Deferred"
             #define LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
 
             // Split lighting is utilized during the SSS pass.
-            #pragma multi_compile_fragment _ OUTPUT_SPLIT_LIGHTING
-            #pragma multi_compile_fragment _ SHADOWS_SHADOWMASK
-            #pragma multi_compile_fragment PROBE_VOLUMES_OFF PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
-            #pragma multi_compile_fragment SCREEN_SPACE_SHADOWS_OFF SCREEN_SPACE_SHADOWS_ON
-            #pragma multi_compile_fragment _ DEBUG_DISPLAY
-            #pragma multi_compile_fragment SHADOW_LOW SHADOW_MEDIUM SHADOW_HIGH
+            #pragma multi_compile _ OUTPUT_SPLIT_LIGHTING
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
+            #pragma multi_compile _ DEBUG_DISPLAY
 
             #define USE_FPTL_LIGHTLIST // deferred opaque always use FPTL
 
@@ -138,12 +135,9 @@ Shader "Hidden/HDRP/Deferred"
 
                 PreLightData preLightData = GetPreLightData(V, posInput, bsdfData);
 
-                LightLoopOutput lightLoopOutput;
-                LightLoop(V, posInput, preLightData, bsdfData, builtinData, LIGHT_FEATURE_MASK_FLAGS_OPAQUE, lightLoopOutput);
-
-                // Alias
-                float3 diffuseLighting = lightLoopOutput.diffuseLighting;
-                float3 specularLighting = lightLoopOutput.specularLighting;
+                float3 diffuseLighting;
+                float3 specularLighting;
+                LightLoop(V, posInput, preLightData, bsdfData, builtinData, LIGHT_FEATURE_MASK_FLAGS_OPAQUE, diffuseLighting, specularLighting);
 
                 diffuseLighting *= GetCurrentExposureMultiplier();
                 specularLighting *= GetCurrentExposureMultiplier();

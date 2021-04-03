@@ -22,7 +22,7 @@ namespace UnityEngine.Rendering.Universal
 
         public bool IsActive()
         {
-            return Mathf.Abs(intensity.value) > 0
+            return !Mathf.Approximately(intensity.value, 0f)
                 && (xMultiplier.value > 0f || yMultiplier.value > 0f);
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -6,7 +7,8 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
-    class FBXMaterialDescriptionPreprocessor : AssetPostprocessor
+    [Obsolete("FBXMaterialDescriptionPreprocessor is deprecated, consider creating a new AsserPostProcessor rather than overriding it.")]
+    public class FBXMaterialDescriptionPreprocessor : AssetPostprocessor
     {
         static readonly uint k_Version = 1;
         static readonly int k_Order = 2;
@@ -34,7 +36,7 @@ namespace UnityEditor.Rendering.Universal
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(path);
             if (shader == null)
                 return;
-
+            
 
             material.shader = shader;
 
@@ -68,30 +70,30 @@ namespace UnityEditor.Rendering.Universal
 
             if (isTransparent)
             {
-                material.SetFloat("_Mode", 3.0f);
+                material.SetInt("_Mode", 3);
                 material.SetOverrideTag("RenderType", "Transparent");
-                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
-                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                material.SetFloat("_ZWrite", 0.0f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
                 material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-                material.SetFloat("_Surface", 1.0f);
+                material.SetInt("_Surface", 1);
             }
             else
             {
-                material.SetFloat("_Mode", 0.0f);
+                material.SetInt("_Mode", 0);
                 material.SetOverrideTag("RenderType", "");
-                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
-                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
-                material.SetFloat("_ZWrite", 1.0f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_ZWrite", 1);
                 material.DisableKeyword("_ALPHATEST_ON");
                 material.DisableKeyword("_ALPHABLEND_ON");
                 material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.renderQueue = -1;
-                material.SetFloat("_Surface", 0.0f);
+                material.SetInt("_Surface", 0);
             }
 
-            if (description.TryGetProperty("DiffuseColor", out textureProperty) && textureProperty.texture != null)
+            if (description.TryGetProperty("DiffuseColor", out textureProperty) && textureProperty.texture!=null)
             {
                 Color diffuseColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                 if (description.TryGetProperty("DiffuseFactor", out floatProperty))
@@ -164,7 +166,7 @@ namespace UnityEditor.Rendering.Universal
 
             RemapColorCurves(description, clips, "EmissiveColor", "_EmissionColor");
         }
-
+        
         static void RemapTransparencyCurves(MaterialDescription description, AnimationClip[] clips)
         {
             // For some reason, Opacity is never animated, we have to use TransparencyFactor and TransparentColor

@@ -68,9 +68,9 @@ namespace UnityEditor.Rendering.Universal
                         if (!inTestSuite && fileExist)
                         {
                             EditorUtility.DisplayDialog("URP Material upgrade", "The Materials in your Project were created using an older version of the Universal Render Pipeline (URP)." +
-                                " Unity must upgrade them to be compatible with your current version of URP. \n" +
-                                " Unity will re-import all of the Materials in your project, save the upgraded Materials to disk, and check them out in source control if needed.\n" +
-                                " Please see the Material upgrade guide in the URP documentation for more information.", "Ok");
+                                                        " Unity must upgrade them to be compatible with your current version of URP. \n" +
+                                                        " Unity will re-import all of the Materials in your project, save the upgraded Materials to disk, and check them out in source control if needed.\n" +
+                                                        " Please see the Material upgrade guide in the URP documentation for more information.", "Ok");
                         }
 
                         ReimportAllMaterials();
@@ -89,7 +89,7 @@ namespace UnityEditor.Rendering.Universal
         internal static List<string> s_ImportedAssetThatNeedSaving = new List<string>();
         internal static bool s_NeedsSavingAssets = false;
 
-        internal static readonly Action<Material, ShaderPathID>[] k_Upgraders = { UpgradeV1, UpgradeV2, UpgradeV3, UpgradeV4 };
+        internal static readonly Action<Material, ShaderPathID>[] k_Upgraders = { UpgradeV1, UpgradeV2 };
 
         static internal void SaveAssetsToDisk()
         {
@@ -124,7 +124,7 @@ namespace UnityEditor.Rendering.Universal
 
             foreach (var asset in importedAssets)
             {
-                if (!asset.EndsWith(".mat", StringComparison.InvariantCultureIgnoreCase))
+                if (!asset.ToLowerInvariant().EndsWith(".mat"))
                     continue;
 
                 var material = (Material)AssetDatabase.LoadAssetAtPath(asset, typeof(Material));
@@ -133,18 +133,14 @@ namespace UnityEditor.Rendering.Universal
 
                 ShaderPathID id = ShaderUtils.GetEnumFromPath(material.shader.name);
                 var wasUpgraded = false;
-
-                var debug = "\n" + material.name;
-
+                var assetVersions = AssetDatabase.LoadAllAssetsAtPath(asset);
                 AssetVersion assetVersion = null;
-                var allAssets = AssetDatabase.LoadAllAssetsAtPath(asset);
-                foreach (var subAsset in allAssets)
+                foreach (var subAsset in assetVersions)
                 {
-                    if (subAsset is AssetVersion sub)
-                    {
-                        assetVersion = sub;
-                    }
+                    if(subAsset.GetType() == typeof(AssetVersion))
+                        assetVersion = subAsset as AssetVersion;
                 }
+                var debug = "\n" + material.name;
 
                 if (!assetVersion)
                 {
@@ -155,16 +151,15 @@ namespace UnityEditor.Rendering.Universal
                         assetVersion.version = k_Upgraders.Length;
                         s_CreatedAssets.Remove(asset);
                         InitializeLatest(material, id);
-                        debug += " initialized.";
                     }
                     else
                     {
-                        assetVersion.version = UniversalProjectSettings.materialVersionForUpgrade;
-                        debug += $" assumed to be version {UniversalProjectSettings.materialVersionForUpgrade} due to missing version.";
+                        assetVersion.version = 0;
                     }
 
                     assetVersion.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector | HideFlags.NotEditable;
                     AssetDatabase.AddObjectToAsset(assetVersion, asset);
+                    debug += " initialized.";
                 }
 
                 while (assetVersion.version < k_Upgraders.Length)
@@ -188,6 +183,7 @@ namespace UnityEditor.Rendering.Universal
 
         static void InitializeLatest(Material material, ShaderPathID id)
         {
+
         }
 
         static void UpgradeV1(Material material, ShaderPathID shaderID)
@@ -227,35 +223,9 @@ namespace UnityEditor.Rendering.Universal
         static void UpgradeV2(Material material, ShaderPathID shaderID)
         {
             // fix 50 offset on shaders
-            if (material.HasProperty("_QueueOffset"))
+            if(material.HasProperty("_QueueOffset"))
                 BaseShaderGUI.SetupMaterialBlendMode(material);
         }
-
-        static void UpgradeV3(Material material, ShaderPathID shaderID)
-        {
-            switch (shaderID)
-            {
-                case ShaderPathID.Lit:
-                case ShaderPathID.SimpleLit:
-                case ShaderPathID.ParticlesLit:
-                case ShaderPathID.ParticlesSimpleLit:
-                case ShaderPathID.ParticlesUnlit:
-                    var propertyID = Shader.PropertyToID("_EmissionColor");
-                    if (material.HasProperty(propertyID))
-                    {
-                        // In older version there was a bug that these shaders did not had HDR attribute on emission property.
-                        // This caused emission color to be converted from gamma to linear space.
-                        // In order to avoid visual regression on older projects we will do gamma to linear conversion here.
-                        var emissionGamma = material.GetColor(propertyID);
-                        var emissionLinear = emissionGamma.linear;
-                        material.SetColor(propertyID, emissionLinear);
-                    }
-                    break;
-            }
-        }
-
-        static void UpgradeV4(Material material, ShaderPathID shaderID)
-        {}
     }
 
     // Upgraders v1
@@ -268,10 +238,11 @@ namespace UnityEditor.Rendering.Universal
             if (material == null)
                 throw new ArgumentNullException("material");
 
-            if (material.GetTexture("_MetallicGlossMap") || material.GetTexture("_SpecGlossMap") || material.GetFloat("_SmoothnessTextureChannel") >= 0.5f)
+            if(material.GetTexture("_MetallicGlossMap") || material.GetTexture("_SpecGlossMap") || material.GetFloat("_SmoothnessTextureChannel") >= 0.5f)
                 material.SetFloat("_Smoothness", material.GetFloat("_GlossMapScale"));
             else
                 material.SetFloat("_Smoothness", material.GetFloat("_Glossiness"));
+
         }
 
         public LitUpdaterV1(string oldShaderName)
@@ -338,7 +309,7 @@ namespace UnityEditor.Rendering.Universal
                 throw new ArgumentNullException("material");
 
             var smoothnessSource = 1 - (int)material.GetFloat("_GlossinessSource");
-            material.SetFloat("_SmoothnessSource" , smoothnessSource);
+            material.SetFloat("_SmoothnessSource" ,smoothnessSource);
             if (material.GetTexture("_SpecGlossMap") == null)
             {
                 var col = material.GetColor("_SpecColor");
@@ -388,3 +359,4 @@ namespace UnityEditor.Rendering.Universal
     }
     #endregion
 }
+

@@ -1,12 +1,6 @@
 #ifndef UNITY_SPACE_TRANSFORMS_INCLUDED
 #define UNITY_SPACE_TRANSFORMS_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
-
-// Caution: For HDRP, adding a function in this file requires adding the appropriate #define in PickingSpaceTransforms.hlsl
-
 // Return the PreTranslated ObjectToWorld Matrix (i.e matrix with _WorldSpaceCameraPos apply to it if we use camera relative rendering)
 float4x4 GetObjectToWorldMatrix()
 {
@@ -39,7 +33,7 @@ float4x4 GetViewToHClipMatrix()
 float3 GetAbsolutePositionWS(float3 positionRWS)
 {
 #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-    positionRWS += _WorldSpaceCameraPos.xyz;
+    positionRWS += _WorldSpaceCameraPos;
 #endif
     return positionRWS;
 }
@@ -48,7 +42,7 @@ float3 GetAbsolutePositionWS(float3 positionRWS)
 float3 GetCameraRelativePositionWS(float3 positionWS)
 {
 #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-    positionWS -= _WorldSpaceCameraPos.xyz;
+    positionWS -= _WorldSpaceCameraPos;
 #endif
     return positionWS;
 }
@@ -63,20 +57,12 @@ real GetOddNegativeScale()
 
 float3 TransformObjectToWorld(float3 positionOS)
 {
-    #if defined(SHADER_STAGE_RAY_TRACING)
-    return mul(ObjectToWorld3x4(), float4(positionOS, 1.0)).xyz;
-    #else
     return mul(GetObjectToWorldMatrix(), float4(positionOS, 1.0)).xyz;
-    #endif
 }
 
 float3 TransformWorldToObject(float3 positionWS)
 {
-    #if defined(SHADER_STAGE_RAY_TRACING)
-    return mul(WorldToObject3x4(), float4(positionWS, 1.0)).xyz;
-    #else
     return mul(GetWorldToObjectMatrix(), float4(positionWS, 1.0)).xyz;
-    #endif
 }
 
 float3 TransformWorldToView(float3 positionWS)
@@ -106,11 +92,7 @@ float4 TransformWViewToHClip(float3 positionVS)
 // Normalize to support uniform scaling
 float3 TransformObjectToWorldDir(float3 dirOS, bool doNormalize = true)
 {
-    #ifndef SHADER_STAGE_RAY_TRACING
     float3 dirWS = mul((float3x3)GetObjectToWorldMatrix(), dirOS);
-    #else
-    float3 dirWS = mul((float3x3)ObjectToWorld3x4(), dirOS);
-    #endif
     if (doNormalize)
         return SafeNormalize(dirWS);
 
@@ -120,11 +102,7 @@ float3 TransformObjectToWorldDir(float3 dirOS, bool doNormalize = true)
 // Normalize to support uniform scaling
 float3 TransformWorldToObjectDir(float3 dirWS, bool doNormalize = true)
 {
-    #ifndef SHADER_STAGE_RAY_TRACING
     float3 dirOS = mul((float3x3)GetWorldToObjectMatrix(), dirWS);
-    #else
-    float3 dirOS = mul((float3x3)WorldToObject3x4(), dirWS);
-    #endif
     if (doNormalize)
         return normalize(dirOS);
 
@@ -138,7 +116,7 @@ real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)
     if (doNormalize)
         return normalize(dirVS);
 
-    return dirVS;
+    return dirVS; 
 }
 
 // Tranforms vector from world space to homogenous space
@@ -205,20 +183,20 @@ real3 TransformWorldToTangent(real3 dirWS, real3x3 tangentToWorld)
     float3 row0 = tangentToWorld[0];
     float3 row1 = tangentToWorld[1];
     float3 row2 = tangentToWorld[2];
-
+    
     // these are the columns of the inverse matrix but scaled by the determinant
     float3 col0 = cross(row1, row2);
     float3 col1 = cross(row2, row0);
     float3 col2 = cross(row0, row1);
-
+    
     float determinant = dot(row0, col0);
     float sgn = determinant<0.0 ? (-1.0) : 1.0;
-
+    
     // inverse transposed but scaled by determinant
     // Will remove transpose part by using matrix as the first arg in the mul() below
     // this makes it the exact inverse of what TransformTangentToWorld() does.
     real3x3 matTBN_I_T = real3x3(col0, col1, col2);
-
+    
     return SafeNormalize( sgn * mul(matTBN_I_T, dirWS) );
 }
 
@@ -233,15 +211,11 @@ real3 TransformObjectToTangent(real3 dirOS, real3x3 tangentToWorld)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
 
-    // don't normalize, as normalWS will be normalized after TransformWorldToTangent
+    // don't normalize, as normalWS will be normalized after TransformWorldToTangent 
     float3 normalWS = TransformObjectToWorldNormal(dirOS, false);
-
+    
     // transform from world to tangent
     return TransformWorldToTangent(normalWS, tangentToWorld);
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
 
 #endif

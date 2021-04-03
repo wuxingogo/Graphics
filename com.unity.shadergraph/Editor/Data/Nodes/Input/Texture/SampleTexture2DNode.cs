@@ -42,6 +42,7 @@ namespace UnityEditor.ShaderGraph
             UpdateNodeAfterDeserialization();
         }
 
+
         [SerializeField]
         private TextureType m_TextureType = TextureType.Default;
 
@@ -91,11 +92,12 @@ namespace UnityEditor.ShaderGraph
             RemoveSlotsNameNotMatching(new[] { OutputSlotRGBAId, OutputSlotRId, OutputSlotGId, OutputSlotBId, OutputSlotAId, TextureInputId, UVInput, SamplerInput });
         }
 
-        public override void Setup()
+        public override void ValidateNode()
         {
-            base.Setup();
             var textureSlot = FindInputSlot<Texture2DInputMaterialSlot>(TextureInputId);
             textureSlot.defaultType = (textureType == TextureType.Normal ? Texture2DShaderProperty.DefaultType.Bump : Texture2DShaderProperty.DefaultType.White);
+
+            base.ValidateNode();
         }
 
         // Node generations
@@ -108,11 +110,11 @@ namespace UnityEditor.ShaderGraph
             var edgesSampler = owner.GetEdges(samplerSlot.slotReference);
 
             var id = GetSlotValue(TextureInputId, generationMode);
-            var result = string.Format("$precision4 {0} = SAMPLE_TEXTURE2D({1}.tex, {2}.samplerstate, {3});"
-                , GetVariableNameForSlot(OutputSlotRGBAId)
-                , id
-                , edgesSampler.Any() ? GetSlotValue(SamplerInput, generationMode) : id
-                , uvName);
+            var result = string.Format("$precision4 {0} = SAMPLE_TEXTURE2D({1}, {2}, {3});"
+                    , GetVariableNameForSlot(OutputSlotRGBAId)
+                    , id
+                    , edgesSampler.Any() ? GetSlotValue(SamplerInput, generationMode) : "sampler" + id
+                    , uvName);
 
             sb.AppendLine(result);
 

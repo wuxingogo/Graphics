@@ -3,29 +3,36 @@ using System;
 
 namespace UnityEngine.Rendering.HighDefinition
 {
-    [HDRPHelpURLAttribute("HDRP-Asset")]
+    [HelpURL(Documentation.baseURL + Documentation.releaseVersion + Documentation.subURL + "HDRP-Asset" + Documentation.endURL)]
     public partial class HDRenderPipelineEditorResources : ScriptableObject
     {
+        [Reload("Editor/DefaultScene/DefaultSceneRoot.prefab")]
+        public GameObject defaultScene;
+        [Reload("Editor/DefaultDXRScene/DefaultSceneRoot.prefab")]
+        public GameObject defaultDXRScene;
+        [Reload("Editor/DefaultScene/Sky and Fog Settings Profile.asset")]
+        public VolumeProfile defaultSkyAndFogProfile;
+        [Reload("Editor/DefaultDXRScene/Sky and Fog Settings Profile.asset")]
+        public VolumeProfile defaultDXRSkyAndFogProfile;
+        [Reload("Editor/DefaultDXRScene/DXR Settings.asset")]
+        public VolumeProfile defaultDXRSettings;
         [Reload(new[]
         {
-            "Runtime/RenderPipelineResources/SkinDiffusionProfile.asset",
-            "Runtime/RenderPipelineResources/FoliageDiffusionProfile.asset"
+            "Runtime/RenderPipelineResources/Skin Diffusion Profile.asset",
+            "Runtime/RenderPipelineResources/Foliage Diffusion Profile.asset"
         })]
         [SerializeField]
         internal DiffusionProfileSettings[] defaultDiffusionProfileSettingsList;
-
+        
         [Reload("Editor/RenderPipelineResources/DefaultSettingsVolumeProfile.asset")]
         public VolumeProfile defaultSettingsVolumeProfile;
 
         [Serializable, ReloadGroup]
         public sealed class ShaderResources
         {
-            // Terrain
             public Shader terrainDetailLitShader;
             public Shader terrainDetailGrassShader;
             public Shader terrainDetailGrassBillboardShader;
-            [Reload("Editor/RenderPipelineResources/Shaders/ProbeVolumeGizmo.shader")]
-            public Shader probeVolumeGizmoShader;
         }
 
         [Serializable, ReloadGroup]
@@ -42,7 +49,7 @@ namespace UnityEngine.Rendering.HighDefinition
             public Material defaultParticleMat;
             [Reload("Runtime/RenderPipelineResources/Material/DefaultHDTerrainMaterial.mat")]
             public Material defaultTerrainMat;
-            [Reload("Editor/RenderPipelineResources/Material/GUITextureBlit2SRGB.mat")]
+            [Reload("Editor/RenderPipelineResources/Materials/GUITextureBlit2SRGB.mat")]
             public Material GUITextureBlit2SRGB;
         }
 
@@ -54,11 +61,11 @@ namespace UnityEngine.Rendering.HighDefinition
         [Serializable, ReloadGroup]
         public sealed class ShaderGraphResources
         {
-            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractive.shadergraph")]
+            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractive.ShaderGraph")]
             public Shader autodeskInteractive;
-            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveMasked.shadergraph")]
+            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveMasked.ShaderGraph")]
             public Shader autodeskInteractiveMasked;
-            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveTransparent.shadergraph")]
+            [Reload("Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveTransparent.ShaderGraph")]
             public Shader autodeskInteractiveTransparent;
         }
 
@@ -75,7 +82,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public ShaderGraphResources shaderGraphs;
         public LookDevResources lookDev;
     }
-
+    
     [UnityEditor.CustomEditor(typeof(HDRenderPipelineEditorResources))]
     class HDRenderPipelineEditorResourcesEditor : UnityEditor.Editor
     {
@@ -87,7 +94,7 @@ namespace UnityEngine.Rendering.HighDefinition
             if (UnityEditor.EditorPrefs.GetBool("DeveloperMode")
                 && GUILayout.Button("Reload All"))
             {
-                foreach (var field in typeof(HDRenderPipelineEditorResources).GetFields())
+                foreach(var field in typeof(HDRenderPipelineEditorResources).GetFields())
                     field.SetValue(target, null);
 
                 ResourceReloader.ReloadAllNullIn(target, HDUtils.GetHDRenderPipelinePath());

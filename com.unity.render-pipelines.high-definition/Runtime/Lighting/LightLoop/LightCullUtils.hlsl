@@ -3,33 +3,31 @@
 
 // Used to index into our SFiniteLightBound (g_data) and
 // LightVolumeData (_LightVolumeData) buffers.
-uint GenerateLightCullDataIndex(uint lightIndex, uint numVisibleLights, uint eyeIndex)
+int GenerateLightCullDataIndex(int lightIndex, uint numVisibleLights, uint eyeIndex)
 {
-    lightIndex = min(lightIndex, numVisibleLights - 1); // Stay within bounds
-
     // For monoscopic, there is just one set of light cull data structs.
     // In stereo, all of the left eye structs are first, followed by the right eye structs.
-    const uint perEyeBaseIndex = eyeIndex * numVisibleLights;
+    const int perEyeBaseIndex = (int)eyeIndex * (int)numVisibleLights;
     return (perEyeBaseIndex + lightIndex);
 }
 
 struct ScreenSpaceBoundsIndices
 {
-    uint min;
-    uint max;
+    int min;
+    int max;
 };
 
 // The returned values are used to index into our AABB screen space bounding box buffer
 // Usually named g_vBoundsBuffer.  The two values represent the min/max indices.
-ScreenSpaceBoundsIndices GenerateScreenSpaceBoundsIndices(uint lightIndex, uint numVisibleLights, uint eyeIndex)
+ScreenSpaceBoundsIndices GenerateScreenSpaceBoundsIndices(int lightIndex, uint numVisibleLights, uint eyeIndex)
 {
     // In the monoscopic mode, there is one set of bounds (min,max -> 2 * g_iNrVisibLights)
     // In stereo, there are two sets of bounds (leftMin, leftMax, rightMin, rightMax -> 4 * g_iNrVisibLights)
-    const uint eyeRelativeBase = eyeIndex * 2 * numVisibleLights;
+    const int eyeRelativeBase = (int)eyeIndex * 2 * (int)numVisibleLights;
 
     ScreenSpaceBoundsIndices indices;
     indices.min = eyeRelativeBase + lightIndex;
-    indices.max = indices.min + numVisibleLights;
+    indices.max = eyeRelativeBase + lightIndex + (int)numVisibleLights;
 
     return indices;
 }

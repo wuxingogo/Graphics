@@ -6,6 +6,12 @@ Shader "Hidden/Universal Render Pipeline/ScreenSpaceShadows"
 
         HLSLINCLUDE
 
+        // Note: Screenspace shadow resolve is only performed when shadow cascades are enabled
+        // Shadow cascades require cascade index and shadowCoord to be computed on pixel.
+        #define _MAIN_LIGHT_SHADOWS_CASCADE
+
+        #pragma prefer_hlslcc gles
+        #pragma exclude_renderers d3d11_9x
         //Keep compiler quiet about Shadows.hlsl.
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
@@ -49,14 +55,15 @@ Shader "Hidden/Universal Render Pipeline/ScreenSpaceShadows"
         {
             UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-#if UNITY_REVERSED_Z
             float deviceDepth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, input.uv.xy).r;
-#else
-            float deviceDepth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, input.uv.xy).r;
-            deviceDepth = deviceDepth * 2.0 - 1.0;
-#endif
 
-            float3 wpos = ComputeWorldSpacePosition(input.uv.xy, deviceDepth, unity_MatrixInvVP);
+#if UNITY_REVERSED_Z
+            deviceDepth = 1 - deviceDepth;
+#endif
+            deviceDepth = 2 * deviceDepth - 1; //NOTE: Currently must massage depth before computing CS position.
+
+            float3 vpos = ComputeViewSpacePosition(input.uv.zw, deviceDepth, unity_CameraInvProjection);
+            float3 wpos = mul(unity_CameraToWorld, float4(vpos, 1)).xyz;
 
             //Fetch shadow coordinates for cascade.
             float4 coords = TransformWorldToShadowCoord(wpos);
@@ -77,7 +84,7 @@ Shader "Hidden/Universal Render Pipeline/ScreenSpaceShadows"
             Cull Off
 
             HLSLPROGRAM
-            #pragma multi_compile _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
 
             #pragma vertex   Vertex

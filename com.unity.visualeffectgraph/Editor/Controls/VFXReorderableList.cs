@@ -175,22 +175,18 @@ namespace UnityEditor.VFX.UI
         {
             DraggingContext context = (DraggingContext)ctx;
 
-
             foreach (var child in m_ListContainer.Children())
             {
                 child.ResetPositionProperties();
             }
-            if (context != null)
+            int hoveredIndex = GetHoveredIndex(context, mouseWorldPosition);
+
+            m_ListContainer.Insert(hoveredIndex != -1 ? hoveredIndex : context.draggedIndex, item);
+            m_ListContainer.ResetPositionProperties();
+
+            if (hoveredIndex != -1)
             {
-                int hoveredIndex = GetHoveredIndex(context, mouseWorldPosition);
-
-                m_ListContainer.Insert(hoveredIndex != -1 ? hoveredIndex : context.draggedIndex, item);
-                m_ListContainer.ResetPositionProperties();
-
-                if (hoveredIndex != -1)
-                {
-                    ElementMoved(context.draggedIndex, hoveredIndex);
-                }
+                ElementMoved(context.draggedIndex, hoveredIndex);
             }
         }
 
@@ -198,8 +194,6 @@ namespace UnityEditor.VFX.UI
         {
             DraggingContext context = (DraggingContext)ctx;
 
-            if (context == null)
-                return;
             item.style.top = context.originalPositions[context.draggedIndex].y + offset;
 
             int hoveredIndex = GetHoveredIndex(context, mouseWorldPosition);

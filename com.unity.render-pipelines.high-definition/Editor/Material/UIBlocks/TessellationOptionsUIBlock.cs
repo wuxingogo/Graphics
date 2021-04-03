@@ -9,22 +9,19 @@ using static UnityEngine.Rendering.HighDefinition.HDMaterialProperties;
 
 namespace UnityEditor.Rendering.HighDefinition
 {
-    /// <summary>
-    /// The UI block that represents Tessellation Option properties for materials.
-    /// </summary>
-    public class TessellationOptionsUIBlock : MaterialUIBlock
+    class TessellationOptionsUIBlock : MaterialUIBlock
     {
-        internal class Styles
+        public class Styles
         {
-            public static GUIContent header { get; } = EditorGUIUtility.TrTextContent("Tessellation Options");
+            public const string header = "Tessellation Options";
 
             public static string tessellationModeStr = "Tessellation Mode";
             public static readonly string[] tessellationModeNames = Enum.GetNames(typeof(TessellationMode));
 
             public static GUIContent tessellationText = new GUIContent("Tessellation Options", "Tessellation options");
             public static GUIContent tessellationFactorText = new GUIContent("Tessellation Factor", "Controls the strength of the tessellation effect. Higher values result in more tessellation. Maximum tessellation factor is 15 on the Xbox One and PS4");
-            public static GUIContent tessellationFactorMinDistanceText = new GUIContent("Start Fade Distance", "Sets the distance from the camera at which tessellation begins to fade out.");
-            public static GUIContent tessellationFactorMaxDistanceText = new GUIContent("End Fade Distance", "Sets the maximum distance from the Camera where HDRP tessellates triangle.");
+            public static GUIContent tessellationFactorMinDistanceText = new GUIContent("Start Fade Distance", "Sets the distance (in meters) at which tessellation begins to fade out.");
+            public static GUIContent tessellationFactorMaxDistanceText = new GUIContent("End Fade Distance", "Sets the maximum distance (in meters) to the Camera where HDRP tessellates triangle.");
             public static GUIContent tessellationFactorTriangleSizeText = new GUIContent("Triangle Size", "Sets the desired screen space size of triangles (in pixels). Smaller values result in smaller triangle.");
             public static GUIContent tessellationShapeFactorText = new GUIContent("Shape Factor", "Controls the strength of Phong tessellation shape (lerp factor).");
             public static GUIContent tessellationBackFaceCullEpsilonText = new GUIContent("Triangle Culling Epsilon", "Controls triangle culling. A value of -1.0 disables back face culling for tessellation, higher values produce more aggressive culling and better performance.");
@@ -47,18 +44,13 @@ namespace UnityEditor.Rendering.HighDefinition
         const string kTessellationBackFaceCullEpsilon = "_TessellationBackFaceCullEpsilon";
         MaterialProperty doubleSidedEnable = null;
 
-        /// <summary>
-        /// Constructs a TessellationOptionsUIBlock based on the parameters.
-        /// </summary>
-        /// <param name="expandableBit">Bit used to store the foldout state</param>
-        public TessellationOptionsUIBlock(ExpandableBit expandableBit)
-            : base(expandableBit, Styles.header)
+        Expandable m_ExpandableBit;
+
+        public TessellationOptionsUIBlock(Expandable expandableBit)
         {
+            m_ExpandableBit = expandableBit;
         }
 
-        /// <summary>
-        /// Loads the material properties for the block.
-        /// </summary>
         public override void LoadMaterialProperties()
         {
             doubleSidedEnable = FindProperty(kDoubleSidedEnable, false);
@@ -73,15 +65,22 @@ namespace UnityEditor.Rendering.HighDefinition
             tessellationBackFaceCullEpsilon = FindProperty(kTessellationBackFaceCullEpsilon);
         }
 
-        /// <summary>
-        /// If the section should be shown
-        /// </summary>
-        protected override bool showSection => tessellationMode != null;
+        public override void OnGUI()
+        {
+            // If we don't have tesselation
+            if (tessellationMode == null)
+                return ;
 
-        /// <summary>
-        /// Renders the properties in the block.
-        /// </summary>
-        protected override void OnGUIOpen()
+            using (var header = new MaterialHeaderScope(Styles.header, (uint)m_ExpandableBit, materialEditor))
+            {
+                if (header.expanded)
+                {
+                    DrawTesselationGUI();
+                }
+            }
+        }
+
+        void DrawTesselationGUI()
         {
             TessellationModePopup();
             materialEditor.ShaderProperty(tessellationFactor, Styles.tessellationFactorText);

@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.VFX;
 using UnityEditor.VFX.UIElements;
+using Branch = UnityEditor.VFX.Operator.VFXOperatorDynamicBranch;
 
 namespace UnityEditor.VFX.UI
 {
@@ -111,10 +112,10 @@ namespace UnityEditor.VFX.UI
                 edit.controller = controller as VFXNumericUniformOperatorController;
                 return edit;
             }
-            if (controller is VFXDynamicTypeOperatorController)
+            if (controller is VFXBranchOperatorController)
             {
-                var edit = new VFXUniformOperatorEdit<VFXDynamicTypeOperatorController, VFXOperatorDynamicType>();
-                edit.controller = controller as VFXDynamicTypeOperatorController;
+                var edit = new VFXUniformOperatorEdit<VFXBranchOperatorController, Branch>();
+                edit.controller = controller as VFXBranchOperatorController;
                 return edit;
             }
             if (controller is VFXUnifiedOperatorController)

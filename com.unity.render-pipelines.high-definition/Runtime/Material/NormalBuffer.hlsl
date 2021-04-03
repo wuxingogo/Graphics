@@ -1,6 +1,3 @@
-#ifndef UNITY_NORMAL_BUFFER_INCLUDED
-#define UNITY_NORMAL_BUFFER_INCLUDED
-
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
 
@@ -14,10 +11,10 @@ struct NormalData
     float  perceptualRoughness;
 };
 
-// NormalBuffer texture declaration
+// SSSBuffer texture declaration
 TEXTURE2D_X(_NormalBufferTexture);
 
-void EncodeIntoNormalBuffer(NormalData normalData, out float4 outNormalBuffer0)
+void EncodeIntoNormalBuffer(NormalData normalData, uint2 positionSS, out float4 outNormalBuffer0)
 {
     // The sign of the Z component of the normal MUST round-trip through the G-Buffer, otherwise
     // the reconstruction of the tangent frame for anisotropic GGX creates a seam along the Z axis.
@@ -35,7 +32,7 @@ void EncodeIntoNormalBuffer(NormalData normalData, out float4 outNormalBuffer0)
     outNormalBuffer0 = float4(packNormalWS, normalData.perceptualRoughness);
 }
 
-void DecodeFromNormalBuffer(float4 normalBuffer, out NormalData normalData)
+void DecodeFromNormalBuffer(float4 normalBuffer, uint2 positionSS, out NormalData normalData)
 {
     float3 packNormalWS = normalBuffer.rgb;
     float2 octNormalWS = Unpack888ToFloat2(packNormalWS);
@@ -46,20 +43,7 @@ void DecodeFromNormalBuffer(float4 normalBuffer, out NormalData normalData)
 void DecodeFromNormalBuffer(uint2 positionSS, out NormalData normalData)
 {
     float4 normalBuffer = LOAD_TEXTURE2D_X(_NormalBufferTexture, positionSS);
-    DecodeFromNormalBuffer(normalBuffer, normalData);
+    DecodeFromNormalBuffer(normalBuffer, positionSS, normalData);
 }
 
-// Keep for compatibility with old code, no idea why there was a positionSS param
-// Obsolete, don't used
-void EncodeIntoNormalBuffer(NormalData normalData, uint2 positionSS, out float4 outNormalBuffer0)
-{
-    EncodeIntoNormalBuffer(normalData, outNormalBuffer0);
-}
-
-// Obsolete, don't used
-void DecodeFromNormalBuffer(float4 normalBuffer, uint2 positionSS, out NormalData normalData)
-{
-    DecodeFromNormalBuffer(normalBuffer, normalData);
-}
-
-#endif // UNITY_NORMAL_BUFFER_INCLUDED
+// OUTPUT_NORMAL_NORMALBUFFER start from SV_Target0 as it is used during depth prepass where there is no color buffer

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.VFX;
 
-namespace UnityEditor.VFX.Test
+namespace UnityEditor.VFX
 {
     class VFXCustomSpawnerTest : VFXSpawnerCallbacks
     {

@@ -12,7 +12,7 @@ Shader "Hidden/HDRP/DebugViewTiles"
 
             HLSLPROGRAM
             #pragma target 4.5
-            #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+            #pragma only_renderers d3d11 playstation xboxone vulkan metal switch
 
             #pragma vertex Vert
             #pragma fragment Frag
@@ -20,7 +20,6 @@ Shader "Hidden/HDRP/DebugViewTiles"
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
             #pragma multi_compile SHOW_LIGHT_CATEGORIES SHOW_FEATURE_VARIANTS
             #pragma multi_compile _ IS_DRAWPROCEDURALINDIRECT
-            #pragma multi_compile _ DISABLE_TILE_MODE
 
             //-------------------------------------------------------------------------------------
             // Include
@@ -29,9 +28,9 @@ Shader "Hidden/HDRP/DebugViewTiles"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
 
-            #define DEBUG_DISPLAY
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
@@ -46,28 +45,9 @@ Shader "Hidden/HDRP/DebugViewTiles"
 
             uint _ViewTilesFlags;
             uint _NumTiles;
-            float _ClusterDebugDistance;
-            int _ClusterDebugMode;
 
             StructuredBuffer<uint> g_TileList;
             Buffer<uint> g_DispatchIndirectBuffer;
-
-            float GetTileDepth(uint2 coord)
-            {
-                float depth = 0.0;
-
-                if (_ClusterDebugMode == CLUSTERDEBUGMODE_VISUALIZE_OPAQUE)
-                {
-                    depth = LoadCameraDepth(coord.xy);
-                }
-                else
-                {
-                    float4 temp = mul(UNITY_MATRIX_P, float4(0.0, 0.0, _ClusterDebugDistance, 1.0));
-                    depth = temp.z / temp.w;
-                }
-
-                return depth;
-            }
 
             uint GetDispatchIndirectCount(uint variant)
             {
@@ -196,8 +176,7 @@ Shader "Hidden/HDRP/DebugViewTiles"
                 // To solve that, we compute pixel coordinates from full screen quad texture coordinates which start correctly at (0,0)
                 uint2 pixelCoord = uint2(input.texcoord.xy * _ScreenSize.xy);
 
-                float depth = GetTileDepth(pixelCoord);
-
+                float depth = LoadCameraDepth(pixelCoord);
                 PositionInputs posInput = GetPositionInput(pixelCoord.xy, _ScreenSize.zw, depth, UNITY_MATRIX_I_VP, UNITY_MATRIX_V, pixelCoord / GetTileSize());
 
                 int2 tileCoord = (float2)pixelCoord / GetTileSize();
@@ -225,24 +204,6 @@ Shader "Hidden/HDRP/DebugViewTiles"
 
                 float4 result = float4(0.0, 0.0, 0.0, 0.0);
 
-#ifdef DISABLE_TILE_MODE
-                // Tile debug mode is not supported in MSAA (only cluster)
-                int maxLights = 32;
-                const int textSize = 23;
-                const int text[textSize] = {'N', 'o', 't', ' ', 's', 'u', 'p', 'p', 'o', 'r', 't', 'e', 'd', ' ', 'w', 'i', 't', 'h', ' ', 'M', 'S', 'A', 'A'};
-                if (input.positionCS.y < DEBUG_FONT_TEXT_HEIGHT)
-                {
-                    float4 result2 = float4(.1,.1,.1,.9);
-
-                    uint2 unormCoord = input.positionCS.xy;
-                    float3 textColor = float3(0.5f, 0.5f, 0.5f);
-                    uint2 textLocation = uint2(0, 0);
-                    for (int i = 0; i < textSize; i++)
-                        DrawCharacter(text[i], textColor, unormCoord, textLocation, result2.rgb, 1, text[i] >= 97 ? 7 : 10);
-
-                    result = AlphaBlend(result, result2);
-                }
-#else
                 // Tile overlap counter
                 if (n >= 0)
                 {
@@ -262,14 +223,12 @@ Shader "Hidden/HDRP/DebugViewTiles"
                 int maxLights = 32;
                 if (tileCoord.y < LIGHTCATEGORY_COUNT && tileCoord.x < maxLights + 3)
                 {
-                    float depthMouse = GetTileDepth(_MousePixelCoord.xy);
-
+                    float depthMouse = LoadCameraDepth(_MousePixelCoord.xy);
                     PositionInputs mousePosInput = GetPositionInput(_MousePixelCoord.xy, _ScreenSize.zw, depthMouse, UNITY_MATRIX_I_VP, UNITY_MATRIX_V, mouseTileCoord);
 
                     uint category = (LIGHTCATEGORY_COUNT - 1) - tileCoord.y;
                     uint start;
                     uint count;
-
                     GetCountAndStart(mousePosInput, category, start, count);
 
                     float4 result2 = float4(.1,.1,.1,.9);
@@ -296,7 +255,6 @@ Shader "Hidden/HDRP/DebugViewTiles"
 
                     result = AlphaBlend(result, result2);
                 }
-#endif
 #endif
 
                 return result;

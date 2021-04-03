@@ -7,7 +7,6 @@ using UnityEditor.ShaderGraph.Internal;
 namespace UnityEditor.ShaderGraph
 {
     [Title("Input", "Texture", "Texture 3D Asset")]
-    [HasDependencies(typeof(Minimal2d3dTextureAssetNode))]
     class Texture3DAssetNode : AbstractMaterialNode, IPropertyFromNode
     {
         public const int OutputSlotId = 0;
@@ -19,6 +18,7 @@ namespace UnityEditor.ShaderGraph
             name = "Texture 3D Asset";
             UpdateNodeAfterDeserialization();
         }
+
 
         public sealed override void UpdateNodeAfterDeserialization()
         {
@@ -42,21 +42,11 @@ namespace UnityEditor.ShaderGraph
             }
         }
 
-        string GetTexturePropertyName()
-        {
-            return base.GetVariableNameForSlot(OutputSlotId);
-        }
-
-        public override string GetVariableNameForSlot(int slotId)
-        {
-            return $"UnityBuildTexture3DStruct({GetTexturePropertyName()})";
-        }
-
         public override void CollectShaderProperties(PropertyCollector properties, GenerationMode generationMode)
         {
             properties.AddShaderProperty(new Texture3DShaderProperty()
             {
-                overrideReferenceName = GetTexturePropertyName(),
+                overrideReferenceName = GetVariableNameForSlot(OutputSlotId),
                 generatePropertyBlock = true,
                 value = m_Texture,
                 modifiable = false
@@ -67,7 +57,7 @@ namespace UnityEditor.ShaderGraph
         {
             properties.Add(new PreviewProperty(PropertyType.Texture3D)
             {
-                name = GetTexturePropertyName(),
+                name = GetVariableNameForSlot(OutputSlotId),
                 textureValue = texture
             });
         }

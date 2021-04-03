@@ -30,7 +30,7 @@ namespace UnityEditor.ShaderGraph
             public int subgraph_count;
         }
 
-        public static void SendShaderGraphEvent(string assetGuid, GraphData graph)
+        internal static void SendShaderGraphEvent(string assetGuid, GraphData graph)
         {
             //The event shouldn't be able to report if this is disabled but if we know we're not going to report
             //Lets early out and not waste time gathering all the data

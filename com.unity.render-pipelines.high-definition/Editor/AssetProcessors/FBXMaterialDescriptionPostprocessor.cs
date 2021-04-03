@@ -1,13 +1,8 @@
 using System.IO;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
-#if UNITY_2020_2_OR_NEWER
-using UnityEditor.AssetImporters;
-#else
-using UnityEditor.Experimental.AssetImporters;
-#endif
-
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -42,6 +37,12 @@ namespace UnityEditor.Rendering.HighDefinition
 
             material.shader = shader;
 
+            material.SetShaderPassEnabled("DistortionVectors", false);
+            material.SetShaderPassEnabled("TransparentDepthPrepass", false);
+            material.SetShaderPassEnabled("TransparentDepthPostpass", false);
+            material.SetShaderPassEnabled("TransparentBackface", false);
+            material.SetShaderPassEnabled("MOTIONVECTORS", false);
+
             Vector4 vectorProperty;
             float floatProperty;
             TexturePropertyDescription textureProperty;
@@ -72,25 +73,25 @@ namespace UnityEditor.Rendering.HighDefinition
 
             if (isTransparent)
             {
-                material.SetFloat("_BlendMode", (float)BlendMode.Alpha);
-                material.SetFloat("_EnableBlendModePreserveSpecularLighting", 1.0f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
+                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.EnableKeyword("_BLENDMODE_PRESERVE_SPECULAR_LIGHTING");
+                material.EnableKeyword("_ENABLE_FOG_ON_TRANSPARENT");
+                material.EnableKeyword("_BLENDMODE_ALPHA");
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-                material.SetFloat("_SurfaceType", (float)SurfaceType.Transparent);
-                material.SetFloat("_Cutoff", .0f);
-                material.SetFloat("_AlphaCutoffEnable", 1.0f);
-                material.SetFloat("_AlphaCutoff", .0f);
-                material.SetFloat("_AlphaCutoffShadow", 1.0f);
-                material.SetFloat("_UseShadowThreshold", 1.0f);
             }
             else
             {
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_ZWrite", 1);
                 material.renderQueue = -1;
             }
 
-            if (description.TryGetProperty("ReflectionFactor", out floatProperty))
-                material.SetFloat("_Metallic", floatProperty);
-
-            if (description.TryGetProperty("DiffuseColor", out textureProperty) && textureProperty.texture != null)
+            if (description.TryGetProperty("DiffuseColor", out textureProperty) && textureProperty.texture!=null)
             {
                 Color diffuseColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                 if (description.TryGetProperty("DiffuseFactor", out floatProperty))
@@ -112,6 +113,7 @@ namespace UnityEditor.Rendering.HighDefinition
             if (description.TryGetProperty("Bump", out textureProperty) && textureProperty.texture != null)
             {
                 SetMaterialTextureProperty("_BumpMap", material, textureProperty);
+                material.EnableKeyword("_NORMALMAP_TANGENT_SPACE");
 
                 if (description.TryGetProperty("BumpFactor", out floatProperty))
                     material.SetFloat("_BumpScale", floatProperty);
@@ -119,9 +121,14 @@ namespace UnityEditor.Rendering.HighDefinition
             else if (description.TryGetProperty("NormalMap", out textureProperty) && textureProperty.texture != null)
             {
                 SetMaterialTextureProperty("_BumpMap", material, textureProperty);
+                material.EnableKeyword("_NORMALMAP_TANGENT_SPACE");
 
                 if (description.TryGetProperty("BumpFactor", out floatProperty))
                     material.SetFloat("_BumpScale", floatProperty);
+            }
+            else
+            {
+                material.DisableKeyword("_NORMALMAP");
             }
 
             if (description.TryGetProperty("EmissiveColor", out textureProperty))
@@ -138,8 +145,8 @@ namespace UnityEditor.Rendering.HighDefinition
                     material.globalIlluminationFlags |= MaterialGlobalIlluminationFlags.RealtimeEmissive;
                 }
             }
-            else if (description.TryGetProperty("EmissiveColor", out vectorProperty) && vectorProperty.magnitude > vectorProperty.w
-                     || description.HasAnimationCurve("EmissiveColor.x"))
+            else if ( description.TryGetProperty("EmissiveColor", out vectorProperty) && vectorProperty.magnitude > vectorProperty.w
+                || description.HasAnimationCurve("EmissiveColor.x"))
             {
                 if (description.TryGetProperty("EmissiveFactor", out floatProperty))
                     vectorProperty *= floatProperty;
@@ -164,8 +171,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
             RemapColorCurves(description, clips, "EmissiveColor", "_EmissionColor");
             RemapColorCurves(description, clips, "EmissiveColor", "_EmissiveColor");
-
-            HDShaderUtils.ResetMaterialKeywords(material);
         }
 
         static void RemapTransparencyCurves(MaterialDescription description, AnimationClip[] clips)

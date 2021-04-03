@@ -16,7 +16,7 @@ namespace UnityEditor.VFX.UI
 
         public override float GetPreferredControlWidth()
         {
-            Vector2 range = m_Provider.attributes.FindRange();
+            Vector2 range = VFXPropertyAttribute.FindRange(m_Provider.attributes);
             if (RangeShouldCreateSlider(range))
             {
                 return 120;
@@ -30,14 +30,14 @@ namespace UnityEditor.VFX.UI
         }
 
         protected VFXBaseSliderField<U> m_Slider;
-        protected TextValueField<U>     m_TextField;
+        protected TextValueField<U> m_TextField;
 
         protected abstract INotifyValueChanged<U> CreateSimpleField(out TextValueField<U> textField);
         protected abstract INotifyValueChanged<U> CreateSliderField(out VFXBaseSliderField<U> slider);
 
         public override INotifyValueChanged<U> CreateField()
         {
-            Vector2 range = m_Provider.attributes.FindRange();
+            Vector2 range = VFXPropertyAttribute.FindRange(m_Provider.attributes);
             INotifyValueChanged<U> result;
             if (!RangeShouldCreateSlider(range))
             {
@@ -51,8 +51,6 @@ namespace UnityEditor.VFX.UI
             else
             {
                 result = CreateSliderField(out m_Slider);
-                m_Slider.onValueDragFinished = ValueDragFinished;
-                m_Slider.onValueDragStarted = ValueDragStarted;
                 m_Slider.RegisterCallback<BlurEvent>(OnFocusLost);
                 m_Slider.range = range;
             }
@@ -74,19 +72,7 @@ namespace UnityEditor.VFX.UI
             UpdateGUI(true);
         }
 
-        protected void ValueDragFinished()
-        {
-            m_Provider.EndLiveModification();
-            hasChangeDelayed = false;
-            NotifyValueChanged();
-        }
-
-        protected void ValueDragStarted()
-        {
-            m_Provider.StartLiveModification();
-        }
-
-        void DelayedNotifyValueChange()
+        protected void DelayedNotifyValueChange()
         {
             if (isDelayed && hasChangeDelayed)
             {
@@ -108,7 +94,7 @@ namespace UnityEditor.VFX.UI
         {
             if (!base.IsCompatible(provider)) return false;
 
-            Vector2 range = m_Provider.attributes.FindRange();
+            Vector2 range = VFXPropertyAttribute.FindRange(m_Provider.attributes);
 
             return RangeShouldCreateSlider(range) != (m_Slider == null);
         }
@@ -117,20 +103,17 @@ namespace UnityEditor.VFX.UI
         {
             if (m_Slider != null)
             {
-                Vector2 range = m_Provider.attributes.FindRange();
+                Vector2 range = VFXPropertyAttribute.FindRange(m_Provider.attributes);
 
                 m_Slider.range = range;
             }
-            if (m_TooltipHolder != null && m_Value != null)
-                m_TooltipHolder.tooltip = m_Value.ToString();
-
             base.UpdateGUI(force);
         }
 
         public abstract T FilterValue(Vector2 range, T value);
         public override object FilterValue(object value)
         {
-            Vector2 range = m_Provider.attributes.FindRange();
+            Vector2 range = VFXPropertyAttribute.FindRange(m_Provider.attributes);
 
             if (range != Vector2.zero)
             {
@@ -161,7 +144,7 @@ namespace UnityEditor.VFX.UI
                 if (m_IndeterminateLabel.parent == null)
                 {
                     field.RemoveFromHierarchy();
-                    m_FieldParent.Add(m_IndeterminateLabel);
+                    Add(m_IndeterminateLabel);
                 }
             }
             else
@@ -169,7 +152,7 @@ namespace UnityEditor.VFX.UI
                 if (field.parent == null)
                 {
                     m_IndeterminateLabel.RemoveFromHierarchy();
-                    m_FieldParent.Add(field);
+                    Add(field);
                 }
             }
         }
@@ -183,54 +166,14 @@ namespace UnityEditor.VFX.UI
         {
         }
 
-        public override float GetPreferredControlWidth()
-        {
-            if (m_Provider.attributes.Is(VFXPropertyAttributes.Type.Enum))
-                return 120;
-
-            return base.GetPreferredControlWidth();
-        }
-
-        protected VFXEnumValuePopup m_EnumPopup;
-
-        public override INotifyValueChanged<long> CreateField()
-        {
-            INotifyValueChanged<long> result;
-            if (m_Provider.attributes.Is(VFXPropertyAttributes.Type.Enum))
-            {
-                result = m_EnumPopup = new VFXEnumValuePopup();
-                m_EnumPopup.enumValues = m_Provider.attributes.FindEnum();
-            }
-            else
-                result = base.CreateField();
-            return result;
-        }
-
         protected override bool RangeShouldCreateSlider(Vector2 range)
         {
             return base.RangeShouldCreateSlider(range) && (uint)range.x < (uint)range.y;
         }
 
-        public override bool IsCompatible(IPropertyRMProvider provider)
-        {
-            if (!base.IsCompatible(provider)) return false;
-
-
-            if (m_Provider.attributes.Is(VFXPropertyAttributes.Type.Enum) == (m_EnumPopup == null))
-                return false;
-
-            if (m_Provider.attributes.Is(VFXPropertyAttributes.Type.Enum))
-            {
-                string[] enumValues = m_Provider.attributes.FindEnum();
-
-                return Enumerable.SequenceEqual(enumValues, m_EnumPopup.enumValues);
-            }
-            return true;
-        }
-
         protected override INotifyValueChanged<long> CreateSimpleField(out TextValueField<long> textField)
         {
-            if (m_Provider.attributes.Is(VFXPropertyAttributes.Type.BitField))
+            if (VFXPropertyAttribute.IsBitField(m_Provider.attributes))
             {
                 var bitfield = new VFXLabeledField<VFX32BitField, long>(m_Label);
                 textField = null;
@@ -238,8 +181,7 @@ namespace UnityEditor.VFX.UI
             }
             var field =  new VFXLabeledField<LongField, long>(m_Label);
 
-            field.onValueDragFinished = t => ValueDragFinished();
-            field.onValueDragStarted = t => ValueDragStarted();
+            field.onValueDragFinished = t => DelayedNotifyValueChange();
             textField = field.control;
             return field;
         }
@@ -303,8 +245,7 @@ namespace UnityEditor.VFX.UI
         {
             var field = new VFXLabeledField<IntegerField, int>(m_Label);
             textField = field.control;
-            field.onValueDragFinished = t => ValueDragFinished();
-            field.onValueDragStarted = t => ValueDragStarted();
+            field.onValueDragFinished = t => DelayedNotifyValueChange();
             return field;
         }
 
@@ -345,8 +286,7 @@ namespace UnityEditor.VFX.UI
         protected override INotifyValueChanged<float> CreateSimpleField(out TextValueField<float> textField)
         {
             var field = new VFXLabeledField<FloatField, float>(m_Label);
-            field.onValueDragFinished = t => ValueDragFinished();
-            field.onValueDragStarted = t => ValueDragStarted();
+            field.onValueDragFinished = t => DelayedNotifyValueChange();
             textField = field.control;
             return field;
         }

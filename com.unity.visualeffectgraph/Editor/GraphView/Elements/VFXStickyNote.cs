@@ -43,7 +43,7 @@ namespace UnityEditor.VFX.UI
                 Modified();
             }
         }
-        public string fontSize
+        public string textSize
         {
             get
             {
@@ -62,6 +62,11 @@ namespace UnityEditor.VFX.UI
         public void OnMoved()
         {
             controller.position = new Rect(resolvedStyle.left, resolvedStyle.top, resolvedStyle.width, resolvedStyle.height);
+        }
+
+        public override void OnResized()
+        {
+            controller.position = new Rect(resolvedStyle.left, resolvedStyle.top, style.width.value.value, style.height.value.value);
         }
 
         Controller IControlledElement.controller
@@ -88,60 +93,59 @@ namespace UnityEditor.VFX.UI
         VFXStickyNoteController m_Controller;
         public VFXStickyNote() : base(Vector2.zero)
         {
-            this.RegisterCallback<StickyNoteChangeEvent>(OnUIChange);
+            OnChange += OnUIChange;
         }
 
-        void OnUIChange(StickyNoteChangeEvent e)
+        void OnUIChange(StickyNodeChangeEvent.Change change)
         {
             if (m_Controller == null) return;
 
-            switch (e.change)
+            switch (change)
             {
-                case StickyNoteChange.Title:
-                    controller.title = title;
+                case StickyNodeChangeEvent.Change.title:
+                    m_Controller.title = title;
                     break;
-                case StickyNoteChange.Contents:
-                    controller.contents = contents;
+                case StickyNodeChangeEvent.Change.contents:
+                    m_Controller.contents = contents;
                     break;
-                case StickyNoteChange.Theme:
-                    controller.theme = theme.ToString();
+                case StickyNodeChangeEvent.Change.theme:
+                    m_Controller.theme = theme.ToString();
                     break;
-                case StickyNoteChange.FontSize:
-                    controller.fontSize = fontSize.ToString();
-                    break;
-                case StickyNoteChange.Position:
-                    controller.position = new Rect(resolvedStyle.left, resolvedStyle.top, style.width.value.value, style.height.value.value);
+                case StickyNodeChangeEvent.Change.textSize:
+                    m_Controller.textSize = textSize.ToString();
                     break;
             }
         }
 
         void IControlledElement.OnControllerChanged(ref ControllerChangedEvent e)
         {
-            title = controller.title;
-            contents = controller.contents;
+            if (m_TitleField != null && !m_TitleField.HasFocus())
+                title = controller.title;
+            if (m_ContentsField != null && !m_ContentsField.HasFocus())
+                contents = controller.contents;
 
             if (!string.IsNullOrEmpty(controller.theme))
             {
                 try
                 {
-                    theme = (StickyNoteTheme)System.Enum.Parse(typeof(StickyNoteTheme), controller.theme, true);
+                    theme = (Theme)System.Enum.Parse(typeof(Theme), controller.theme, true);
                 }
                 catch (System.ArgumentException)
                 {
-                    controller.theme = StickyNoteTheme.Classic.ToString();
+                    controller.theme = Theme.Classic.ToString();
                     Debug.LogError("Unknown theme name");
                 }
             }
 
-            if (!string.IsNullOrEmpty(controller.fontSize))
+            if (!string.IsNullOrEmpty(controller.textSize))
             {
                 try
                 {
-                    fontSize = (StickyNoteFontSize)System.Enum.Parse(typeof(StickyNoteFontSize), controller.fontSize, true);
+                    textSize = (TextSize)System.Enum.Parse(typeof(TextSize), controller.textSize, true);
                 }
                 catch (System.ArgumentException)
                 {
-                    controller.theme = StickyNoteFontSize.Medium.ToString();
+                    controller.theme = TextSize.Medium.ToString();
                     Debug.LogError("Unknown text size name");
                 }
             }

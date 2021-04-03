@@ -13,10 +13,7 @@ namespace UnityEditor.VFX
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected VisualEffectSubgraphBlock m_Subgraph;
 
-        [NonSerialized]
         VFXModel[] m_SubChildren;
-
-        [NonSerialized]
         VFXBlock[] m_SubBlocks;
         VFXGraph m_UsedSubgraph;
 
@@ -31,22 +28,7 @@ namespace UnityEditor.VFX
             }
         }
 
-        public override void GetImportDependentAssets(HashSet<int> dependencies)
-        {
-            base.GetImportDependentAssets(dependencies);
-            if (!object.ReferenceEquals(m_Subgraph, null))
-                dependencies.Add(m_Subgraph.GetInstanceID());
-        }
-
-        public override void CheckGraphBeforeImport()
-        {
-            base.CheckGraphBeforeImport();
-            // If the graph is reimported it can be because one of its depedency such as the subgraphs, has been changed.
-
-            ResyncSlots(true);
-        }
-
-        public sealed override string name { get { return m_Subgraph != null ? ObjectNames.NicifyVariableName(m_Subgraph.name) : "Empty Subgraph Block"; } }
+        public sealed override string name { get { return m_Subgraph != null ? m_Subgraph.name : "Empty Subgraph Block"; } }
 
         protected override IEnumerable<VFXPropertyWithValue> inputProperties
         {
@@ -62,8 +44,6 @@ namespace UnityEditor.VFX
                 }
                 else
                 {
-                    if (m_Subgraph == null && !object.ReferenceEquals(m_Subgraph, null))
-                        m_Subgraph = EditorUtility.InstanceIDToObject(m_Subgraph.GetInstanceID()) as VisualEffectSubgraphBlock;
                     if (m_SubChildren == null && subgraph != null) // if the subasset exists but the subchildren has not been recreated yet, return the existing slots
                         RecreateCopy();
 
@@ -251,13 +231,6 @@ namespace UnityEditor.VFX
                         (child as VFXModel).CollectDependencies(objs, false);
                 }
             }
-        }
-
-        public void SetSubblocksFlattenedParent()
-        {
-            VFXContext parent = GetParent();
-            foreach (var block in recursiveSubBlocks)
-                block.flattenedParent = parent;
         }
 
         protected internal override void Invalidate(VFXModel model, InvalidationCause cause)

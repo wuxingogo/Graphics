@@ -12,8 +12,7 @@ namespace UnityEngine.Rendering.HighDefinition
             CaptureSettings,
             ProbeSettings,
             SeparatePassThrough,
-            UpgradeFrameSettingsToStruct,
-            PlanarResolutionScalability
+            UpgradeFrameSettingsToStruct
         }
 
         [SerializeField, FormerlySerializedAs("version"), FormerlySerializedAs("m_Version")]
@@ -56,21 +55,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 p.m_LocalReferencePosition = Quaternion.Euler(-90, 0, 0) * -p.m_LocalReferencePosition;
             }),
             MigrationStep.New(PlanarProbeVersion.SeparatePassThrough, (PlanarReflectionProbe t) => k_Migration.ExecuteStep(t, Version.SeparatePassThrough)),
-            MigrationStep.New(PlanarProbeVersion.UpgradeFrameSettingsToStruct, (PlanarReflectionProbe t) => k_Migration.ExecuteStep(t, Version.UpgradeFrameSettingsToStruct)),
-            MigrationStep.New(PlanarProbeVersion.PlanarResolutionScalability, (PlanarReflectionProbe p) =>
-            {
-                k_Migration.ExecuteStep(p, Version.PlanarResolutionScalability);
-                // Previously, we would only specify the value directly on the probe (so we set use override to true)
-                p.m_ProbeSettings.resolutionScalable.useOverride = true;
-                if (p.m_ProbeSettings.resolution != 0)
-                {
-                    p.m_ProbeSettings.resolutionScalable.@override = p.m_ProbeSettings.resolution;
-                }
-                else
-                {
-                    p.m_ProbeSettings.resolutionScalable.@override = PlanarReflectionAtlasResolution.Resolution512;
-                }
-            })
+            MigrationStep.New(PlanarProbeVersion.UpgradeFrameSettingsToStruct, (PlanarReflectionProbe t) => k_Migration.ExecuteStep(t, Version.UpgradeFrameSettingsToStruct))
         );
 
         // Obsolete Properties

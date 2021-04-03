@@ -1,5 +1,5 @@
 //
-// This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
+// This file was automatically generated. Please don't edit by hand.
 //
 
 #ifndef AXF_CS_HLSL
@@ -14,140 +14,81 @@
 #define FEATUREFLAGS_AXF_BRDFCOLOR_DIAGONAL_CLAMP (16)
 #define FEATUREFLAGS_AXF_HONOR_MIN_ROUGHNESS (256)
 #define FEATUREFLAGS_AXF_HONOR_MIN_ROUGHNESS_COAT (512)
-#define FEATUREFLAGS_AXF_DEBUG_TEST (8388608)
 
 //
 // UnityEngine.Rendering.HighDefinition.AxF+SurfaceData:  static fields
 //
-#define DEBUGVIEW_AXF_SURFACEDATA_SMOOTHNESS (1200)
-#define DEBUGVIEW_AXF_SURFACEDATA_AMBIENT_OCCLUSION (1201)
-#define DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_OCCLUSION (1202)
-#define DEBUGVIEW_AXF_SURFACEDATA_NORMAL (1203)
-#define DEBUGVIEW_AXF_SURFACEDATA_NORMAL_VIEW_SPACE (1204)
-#define DEBUGVIEW_AXF_SURFACEDATA_TANGENT (1205)
-#define DEBUGVIEW_AXF_SURFACEDATA_DIFFUSE_COLOR (1206)
-#define DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_COLOR (1207)
-#define DEBUGVIEW_AXF_SURFACEDATA_FRESNEL_F0 (1208)
-#define DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_LOBE (1209)
-#define DEBUGVIEW_AXF_SURFACEDATA_HEIGHT (1210)
-#define DEBUGVIEW_AXF_SURFACEDATA_ANISOTROPIC_ANGLE (1211)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_UV_(OR_PLANAR_ZY) (1212)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_PLANAR_XZ (1213)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_PLANAR_XY (1214)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_(AND_FOR_PLANAR_ZY) (1215)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_FOR_PLANAR_XZ (1216)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_FOR_PLANAR_XY (1217)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_TRIPLANAR_WEIGHTS (1218)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_(AND_FOR_PLANAR_ZY) (1219)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_(AND_FOR_PLANAR_ZY) (1220)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_FOR_PLANAR_XZ (1221)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_FOR_PLANAR_XZ (1222)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_FOR_PLANAR_XY (1223)
-#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_FOR_PLANAR_XY (1224)
-#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_COLOR (1225)
-#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_NORMAL (1226)
-#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_IOR (1227)
-#define DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL (1228)
-#define DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1229)
-#define DEBUGVIEW_AXF_SURFACEDATA_VIEW_DIRECTION (1230)
+#define DEBUGVIEW_AXF_SURFACEDATA_NORMAL (1200)
+#define DEBUGVIEW_AXF_SURFACEDATA_NORMAL_VIEW_SPACE (1201)
+#define DEBUGVIEW_AXF_SURFACEDATA_TANGENT (1202)
+#define DEBUGVIEW_AXF_SURFACEDATA_DIFFUSE_COLOR (1203)
+#define DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_COLOR (1204)
+#define DEBUGVIEW_AXF_SURFACEDATA_FRESNEL_F0 (1205)
+#define DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_LOBE (1206)
+#define DEBUGVIEW_AXF_SURFACEDATA_HEIGHT (1207)
+#define DEBUGVIEW_AXF_SURFACEDATA_ANISOTROPIC_ANGLE (1208)
+#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_UV (1209)
+#define DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP (1210)
+#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_COLOR (1211)
+#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_NORMAL (1212)
+#define DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_IOR (1213)
+#define DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL (1214)
+#define DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1215)
 
 //
 // UnityEngine.Rendering.HighDefinition.AxF+BSDFData:  static fields
 //
-#define DEBUGVIEW_AXF_BSDFDATA_AMBIENT_OCCLUSION (1250)
-#define DEBUGVIEW_AXF_BSDFDATA_SPECULAR_OCCLUSION (1251)
-#define DEBUGVIEW_AXF_BSDFDATA_NORMAL_WS (1252)
-#define DEBUGVIEW_AXF_BSDFDATA_NORMAL_VIEW_SPACE (1253)
-#define DEBUGVIEW_AXF_BSDFDATA_TANGENT_WS (1254)
-#define DEBUGVIEW_AXF_BSDFDATA_BI_TANGENT_WS (1255)
-#define DEBUGVIEW_AXF_BSDFDATA_DIFFUSE_COLOR (1256)
-#define DEBUGVIEW_AXF_BSDFDATA_SPECULAR_COLOR (1257)
-#define DEBUGVIEW_AXF_BSDFDATA_FRESNEL_F0 (1258)
-#define DEBUGVIEW_AXF_BSDFDATA_PERCEPTUAL_ROUGHNESS (1259)
-#define DEBUGVIEW_AXF_BSDFDATA_ROUGHNESS (1260)
-#define DEBUGVIEW_AXF_BSDFDATA_HEIGHT_MM (1261)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVZY (1262)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVXZ (1263)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVXY (1264)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_ZY (1265)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_XZ (1266)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_XY (1267)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_TRIPLANAR_WEIGHTS (1268)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_ZY (1269)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_ZY (1270)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_XZ (1271)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_XZ (1272)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_XY (1273)
-#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_XY (1274)
-#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_COLOR (1275)
-#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_NORMAL_WS (1276)
-#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_IOR (1277)
-#define DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL (1278)
-#define DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1279)
+#define DEBUGVIEW_AXF_BSDFDATA_NORMAL_WS (1250)
+#define DEBUGVIEW_AXF_BSDFDATA_NORMAL_VIEW_SPACE (1251)
+#define DEBUGVIEW_AXF_BSDFDATA_TANGENT_WS (1252)
+#define DEBUGVIEW_AXF_BSDFDATA_BI_TANGENT_WS (1253)
+#define DEBUGVIEW_AXF_BSDFDATA_DIFFUSE_COLOR (1254)
+#define DEBUGVIEW_AXF_BSDFDATA_SPECULAR_COLOR (1255)
+#define DEBUGVIEW_AXF_BSDFDATA_FRESNEL_F0 (1256)
+#define DEBUGVIEW_AXF_BSDFDATA_ROUGHNESS (1257)
+#define DEBUGVIEW_AXF_BSDFDATA_HEIGHT_MM (1258)
+#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_UV (1259)
+#define DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP (1260)
+#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_COLOR (1261)
+#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_NORMAL_WS (1262)
+#define DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_IOR (1263)
+#define DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL (1264)
+#define DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1265)
 
 // Generated from UnityEngine.Rendering.HighDefinition.AxF+SurfaceData
 // PackingRules = Exact
 struct SurfaceData
 {
-    real perceptualSmoothness;
-    float ambientOcclusion;
-    float specularOcclusion;
     float3 normalWS;
     float3 tangentWS;
     float3 diffuseColor;
     float3 specularColor;
     float3 fresnelF0;
-    float3 specularLobe;
+    float2 specularLobe;
     float height_mm;
     float anisotropyAngle;
-    float2 flakesUVZY;
-    float2 flakesUVXZ;
-    float2 flakesUVXY;
-    float flakesMipLevelZY;
-    float flakesMipLevelXZ;
-    float flakesMipLevelXY;
-    float3 flakesTriplanarWeights;
-    float2 flakesDdxZY;
-    float2 flakesDdyZY;
-    float2 flakesDdxXZ;
-    float2 flakesDdyXZ;
-    float2 flakesDdxXY;
-    float2 flakesDdyXY;
+    float2 flakesUV;
+    float flakesMipLevel;
     float3 clearcoatColor;
     float3 clearcoatNormalWS;
     float clearcoatIOR;
     float3 geomNormalWS;
-    float3 viewWS;
 };
 
 // Generated from UnityEngine.Rendering.HighDefinition.AxF+BSDFData
 // PackingRules = Exact
 struct BSDFData
 {
-    float ambientOcclusion;
-    float specularOcclusion;
     float3 normalWS;
     float3 tangentWS;
     float3 biTangentWS;
     float3 diffuseColor;
     float3 specularColor;
     float3 fresnelF0;
-    float perceptualRoughness;
-    float3 roughness;
+    float2 roughness;
     float height_mm;
-    float2 flakesUVZY;
-    float2 flakesUVXZ;
-    float2 flakesUVXY;
-    float flakesMipLevelZY;
-    float flakesMipLevelXZ;
-    float flakesMipLevelXY;
-    float3 flakesTriplanarWeights;
-    float2 flakesDdxZY;
-    float2 flakesDdyZY;
-    float2 flakesDdxXZ;
-    float2 flakesDdyXZ;
-    float2 flakesDdxXY;
-    float2 flakesDdyXY;
+    float2 flakesUV;
+    float flakesMipLevel;
     float3 clearcoatColor;
     float3 clearcoatNormalWS;
     float clearcoatIOR;
@@ -161,20 +102,11 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
 {
     switch (paramId)
     {
-        case DEBUGVIEW_AXF_SURFACEDATA_SMOOTHNESS:
-            result = surfacedata.perceptualSmoothness.xxx;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_AMBIENT_OCCLUSION:
-            result = surfacedata.ambientOcclusion.xxx;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_OCCLUSION:
-            result = surfacedata.specularOcclusion.xxx;
-            break;
         case DEBUGVIEW_AXF_SURFACEDATA_NORMAL:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.normalWS)? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_TANGENT:
             result = surfacedata.tangentWS * 0.5 + 0.5;
@@ -191,7 +123,7 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.fresnelF0;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_SPECULAR_LOBE:
-            result = surfacedata.specularLobe;
+            result = float3(surfacedata.specularLobe, 0.0);
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_HEIGHT:
             result = surfacedata.height_mm.xxx;
@@ -199,44 +131,11 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
         case DEBUGVIEW_AXF_SURFACEDATA_ANISOTROPIC_ANGLE:
             result = surfacedata.anisotropyAngle.xxx;
             break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_UV_(OR_PLANAR_ZY):
-            result = float3(surfacedata.flakesUVZY, 0.0);
+        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_UV:
+            result = float3(surfacedata.flakesUV, 0.0);
             break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_PLANAR_XZ:
-            result = float3(surfacedata.flakesUVXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_PLANAR_XY:
-            result = float3(surfacedata.flakesUVXY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_(AND_FOR_PLANAR_ZY):
-            result = surfacedata.flakesMipLevelZY.xxx;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_FOR_PLANAR_XZ:
-            result = surfacedata.flakesMipLevelXZ.xxx;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP_FOR_PLANAR_XY:
-            result = surfacedata.flakesMipLevelXY.xxx;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_TRIPLANAR_WEIGHTS:
-            result = surfacedata.flakesTriplanarWeights;
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_(AND_FOR_PLANAR_ZY):
-            result = float3(surfacedata.flakesDdxZY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_(AND_FOR_PLANAR_ZY):
-            result = float3(surfacedata.flakesDdyZY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_FOR_PLANAR_XZ:
-            result = float3(surfacedata.flakesDdxXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_FOR_PLANAR_XZ:
-            result = float3(surfacedata.flakesDdyXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDX_FOR_PLANAR_XY:
-            result = float3(surfacedata.flakesDdxXY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_DDY_FOR_PLANAR_XY:
-            result = float3(surfacedata.flakesDdyXY, 0.0);
+        case DEBUGVIEW_AXF_SURFACEDATA_FLAKES_MIP:
+            result = surfacedata.flakesMipLevel.xxx;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_CLEARCOAT_COLOR:
             result = surfacedata.clearcoatColor;
@@ -248,13 +147,10 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.clearcoatIOR.xxx;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.geomNormalWS)? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_AXF_SURFACEDATA_VIEW_DIRECTION:
-            result = surfacedata.viewWS * 0.5 + 0.5;
+            result = surfacedata.geomNormalWS * 0.5 + 0.5;
             break;
     }
 }
@@ -266,17 +162,11 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
 {
     switch (paramId)
     {
-        case DEBUGVIEW_AXF_BSDFDATA_AMBIENT_OCCLUSION:
-            result = bsdfdata.ambientOcclusion.xxx;
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_SPECULAR_OCCLUSION:
-            result = bsdfdata.specularOcclusion.xxx;
-            break;
         case DEBUGVIEW_AXF_BSDFDATA_NORMAL_WS:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_BSDFDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.normalWS)? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.normalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_BSDFDATA_TANGENT_WS:
             result = bsdfdata.tangentWS * 0.5 + 0.5;
@@ -293,53 +183,17 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
         case DEBUGVIEW_AXF_BSDFDATA_FRESNEL_F0:
             result = bsdfdata.fresnelF0;
             break;
-        case DEBUGVIEW_AXF_BSDFDATA_PERCEPTUAL_ROUGHNESS:
-            result = bsdfdata.perceptualRoughness.xxx;
-            break;
         case DEBUGVIEW_AXF_BSDFDATA_ROUGHNESS:
-            result = bsdfdata.roughness;
+            result = float3(bsdfdata.roughness, 0.0);
             break;
         case DEBUGVIEW_AXF_BSDFDATA_HEIGHT_MM:
             result = bsdfdata.height_mm.xxx;
             break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVZY:
-            result = float3(bsdfdata.flakesUVZY, 0.0);
+        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_UV:
+            result = float3(bsdfdata.flakesUV, 0.0);
             break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVXZ:
-            result = float3(bsdfdata.flakesUVXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_UVXY:
-            result = float3(bsdfdata.flakesUVXY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_ZY:
-            result = bsdfdata.flakesMipLevelZY.xxx;
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_XZ:
-            result = bsdfdata.flakesMipLevelXZ.xxx;
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP_LEVEL_XY:
-            result = bsdfdata.flakesMipLevelXY.xxx;
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_TRIPLANAR_WEIGHTS:
-            result = bsdfdata.flakesTriplanarWeights;
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_ZY:
-            result = float3(bsdfdata.flakesDdxZY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_ZY:
-            result = float3(bsdfdata.flakesDdyZY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_XZ:
-            result = float3(bsdfdata.flakesDdxXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_XZ:
-            result = float3(bsdfdata.flakesDdyXZ, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDX_XY:
-            result = float3(bsdfdata.flakesDdxXY, 0.0);
-            break;
-        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_DDY_XY:
-            result = float3(bsdfdata.flakesDdyXY, 0.0);
+        case DEBUGVIEW_AXF_BSDFDATA_FLAKES_MIP:
+            result = bsdfdata.flakesMipLevel.xxx;
             break;
         case DEBUGVIEW_AXF_BSDFDATA_CLEARCOAT_COLOR:
             result = bsdfdata.clearcoatColor;
@@ -351,10 +205,10 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
             result = bsdfdata.clearcoatIOR.xxx;
             break;
         case DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
         case DEBUGVIEW_AXF_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.geomNormalWS)? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
+            result = bsdfdata.geomNormalWS * 0.5 + 0.5;
             break;
     }
 }

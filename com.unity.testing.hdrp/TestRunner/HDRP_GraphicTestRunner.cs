@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Graphics;
 using UnityEngine.Rendering.HighDefinition;
@@ -12,17 +11,15 @@ using System.IO;
 
 public class HDRP_GraphicTestRunner
 {
-    [UnityTest]
     [PrebuildSetup("SetupGraphicsTestCases")]
     [UseGraphicsTestCases]
-    [Timeout(450 * 1000)] // Set timeout to 450 sec. to handle complex scenes with many shaders (previous timeout was 300s)
     public IEnumerator Run(GraphicsTestCase testCase)
     {
         SceneManager.LoadScene(testCase.ScenePath);
 
         // Arbitrary wait for 5 frames for the scene to load, and other stuff to happen (like Realtime GI to appear ...)
         for (int i=0 ; i<5 ; ++i)
-            yield return new WaitForEndOfFrame();
+            yield return null;
 
         // Load the test settings
         var settings = GameObject.FindObjectOfType<HDRP_TestSettings>();
@@ -36,21 +33,20 @@ public class HDRP_GraphicTestRunner
 
         Time.captureFramerate = settings.captureFramerate;
 
-        int waitFrames = settings.waitFrames;
-
-        if (XRGraphicsAutomatedTests.enabled)
+        if (XRSystem.testModeEnabled)
         {
-            waitFrames = Unity.Testing.XR.Runtime.ConfigureMockHMD.SetupTest(settings.xrCompatible, waitFrames, settings.ImageComparisonSettings);
-
-            // Increase tolerance to account for slight changes due to float precision
-            settings.ImageComparisonSettings.AverageCorrectnessThreshold *= settings.xrThresholdMultiplier;
-            settings.ImageComparisonSettings.PerPixelCorrectnessThreshold *= settings.xrThresholdMultiplier;
-
-            // Increase number of volumetric slices to compensate for initial half-resolution due to XR single-pass optimization
-            foreach (var volume in GameObject.FindObjectsOfType<Volume>())
+            if (settings.xrCompatible)
             {
-                if (volume.profile.TryGet<Fog>(out Fog fog))
-                    fog.volumeSliceCount.value *= 2;
+                XRSystem.automatedTestRunning = true;
+
+                // Increase tolerance to account for slight changes due to float precision
+                settings.ImageComparisonSettings.AverageCorrectnessThreshold *= settings.xrThresholdMultiplier;
+                settings.ImageComparisonSettings.PerPixelCorrectnessThreshold *= settings.xrThresholdMultiplier;
+            }
+            else
+            {
+                // Skip incompatible XR tests
+                yield break;
             }
         }
 
@@ -59,14 +55,14 @@ public class HDRP_GraphicTestRunner
             settings.doBeforeTest.Invoke();
 
             // Wait again one frame, to be sure.
-            yield return new WaitForEndOfFrame();
+            yield return null;
         }
 
         // Reset temporal effects on hdCamera
         HDCamera.GetOrCreate(camera).Reset();
 
-        for (int i=0; i<waitFrames; ++i)
-            yield return new WaitForEndOfFrame();
+        for (int i=0 ; i<settings.waitFrames ; ++i)
+            yield return null;
 
         var settingsSG = (GameObject.FindObjectOfType<HDRP_TestSettings>() as HDRP_ShaderGraph_TestSettings);
         if (settingsSG == null || !settingsSG.compareSGtoBI)
@@ -74,17 +70,20 @@ public class HDRP_GraphicTestRunner
             // Standard Test
             ImageAssert.AreEqual(testCase.ReferenceImage, camera, settings?.ImageComparisonSettings);
 
-            // For some reason, tests on mac os have started failing with render graph enabled by default.
-            // Some tests have 400+ gcalloc in them. Unfortunately it's not reproductible outside of command line so it's impossible to debug.
-            // That's why we don't test on macos anymore.
-            if (settings.checkMemoryAllocation && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal)
+            if (settings.checkMemoryAllocation)
             {
                 // Does it allocate memory when it renders what's on camera?
                 bool allocatesMemory = false;
                 try
                 {
                     // GC alloc from Camera.CustomRender (case 1206364)
-                    int gcAllocThreshold = 0;
+                    int gcAllocThreshold = 2;
+
+#if UNITY_2019_3
+                    // In case playmode tests for XR are enabled in 2019.3 we allow one GC alloc from XRSystem:120
+                    if (XRSystem.testModeEnabled)
+                        gcAllocThreshold += 1;
+#endif
 
                     ImageAssert.AllocatesMemory(camera, settings?.ImageComparisonSettings, gcAllocThreshold);
                 }
@@ -109,8 +108,8 @@ public class HDRP_GraphicTestRunner
 
             settingsSG.sgObjs.SetActive(true);
             settingsSG.biObjs.SetActive(false);
-            yield return new WaitForEndOfFrame();
-            yield return new WaitForEndOfFrame();
+            yield return null; // Wait a frame
+            yield return null;
             bool sgFail = false;
             bool biFail = false;
 
@@ -127,8 +126,8 @@ public class HDRP_GraphicTestRunner
             settingsSG.sgObjs.SetActive(false);
             settingsSG.biObjs.SetActive(true);
             settingsSG.biObjs.transform.position = settingsSG.sgObjs.transform.position; // Move to the same location.
-            yield return new WaitForEndOfFrame();
-            yield return new WaitForEndOfFrame();
+            yield return null; // Wait a frame
+            yield return null;
 
             // Second test: HDRP/Lit Materials
             try
@@ -156,9 +155,9 @@ public class HDRP_GraphicTestRunner
     }
 
     [TearDown]
-    public void TearDownXR()
+    public void ResetSystemState()
     {
-        XRGraphicsAutomatedTests.running = false;
+        XRSystem.automatedTestRunning = false;
     }
 #endif
 

@@ -54,12 +54,10 @@ float3 shadergraph_LWReflectionProbe(float3 viewDir, float3 normalOS, float lod)
     return DecodeHDREnvironment(SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVec, lod), unity_SpecCube0_HDR);
 }
 
-void shadergraph_LWFog(float3 positionOS, out float4 color, out float density)
+void shadergraph_LWFog(float3 position, out float4 color, out float density)
 {
     color = unity_FogColor;
-    float viewZ = -TransformWorldToView(TransformObjectToWorld(positionOS)).z;
-    float nearZ0ToFarZ = max(viewZ - _ProjectionParams.y, 0);
-    density = 1.0f - ComputeFogIntensity(ComputeFogFactorZ0ToFar(nearZ0ToFarZ));
+    density = ComputeFogFactor(TransformObjectToHClip(position).z);
 }
 
 // This function assumes the bitangent flip is encoded in tangentWS.w
@@ -79,13 +77,13 @@ float3x3 BuildTangentToWorld(float4 tangentWS, float3 normalWS)
     // by uniformly scaling all 3 vectors since normalization of the perturbed normal will cancel it.
     tangentToWorld[0] = tangentToWorld[0] * renormFactor;
     tangentToWorld[1] = tangentToWorld[1] * renormFactor;
-    tangentToWorld[2] = tangentToWorld[2] * renormFactor;       // normalizes the interpolated vertex normal
+    tangentToWorld[2] = tangentToWorld[2] * renormFactor;		// normalizes the interpolated vertex normal
 
     return tangentToWorld;
 }
 
 // Always include Shader Graph version
 // Always include last to avoid double macros
-#include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl"
+#include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl" 
 
 #endif // UNITY_GRAPHFUNCTIONS_LW_INCLUDED

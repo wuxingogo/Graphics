@@ -52,12 +52,8 @@ VaryingsEdge VertEdge(Attributes input)
     VaryingsEdge output;
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-#if _USE_DRAW_PROCEDURAL
-    GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
-#else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     output.uv = UnityStereoTransformScreenSpaceTex(input.uv);
-#endif
     SMAAEdgeDetectionVS(output.uv, output.offsets);
     return output;
 }
@@ -85,12 +81,8 @@ VaryingsBlend VertBlend(Attributes input)
     VaryingsBlend output;
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-#if _USE_DRAW_PROCEDURAL
-    GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
-#else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     output.uv = UnityStereoTransformScreenSpaceTex(input.uv);
-#endif
     SMAABlendingWeightCalculationVS(output.uv, output.pixcoord, output.offsets);
     return output;
 }
@@ -117,12 +109,8 @@ VaryingsNeighbor VertNeighbor(Attributes input)
     VaryingsNeighbor output;
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-#if _USE_DRAW_PROCEDURAL
-    GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
-#else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     output.uv = UnityStereoTransformScreenSpaceTex(input.uv);
-#endif
     SMAANeighborhoodBlendingVS(output.uv, output.offset);
     return output;
 }
